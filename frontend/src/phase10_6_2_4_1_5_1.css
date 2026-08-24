@@ -1,0 +1,373 @@
+/* GMX 10.6.2.4.1.5.1 — POS Visual Reflow */
+
+/* Main two-column composition */
+.pos-layout-reflow{
+  display:grid !important;
+  grid-template-columns:minmax(0,1fr) 400px !important;
+  align-items:start !important;
+  gap:0 !important;
+}
+
+.pos-layout-reflow .pos-catalog{
+  min-width:0;
+  padding:22px 24px 28px !important;
+  border-right:1px solid #eaecf0;
+}
+
+/* Top controls: branch + sale type on row 1, search full row 2 */
+.pos-primary-controls{
+  display:grid !important;
+  grid-template-columns:minmax(220px,300px) minmax(420px,1fr) !important;
+  gap:14px 16px !important;
+  align-items:end !important;
+  padding:0 !important;
+  margin-bottom:14px !important;
+}
+
+.pos-primary-controls > label:first-child{
+  grid-column:1;
+}
+
+.pos-primary-controls .pos-sale-type{
+  grid-column:2;
+}
+
+.pos-search-wide{
+  grid-column:1/-1 !important;
+}
+
+.pos-search-wide input{
+  min-height:50px !important;
+  font-size:15px !important;
+  padding:0 16px !important;
+}
+
+/* Sale type becomes a compact segmented control */
+.pos-sale-type{
+  display:grid;
+  gap:6px;
+}
+
+.pos-sale-type > span{
+  font-size:11px;
+  font-weight:850;
+  color:#344054;
+}
+
+.pos-sale-type > div{
+  display:flex;
+  gap:8px;
+  flex-wrap:wrap;
+}
+
+.pos-sale-type button{
+  min-height:44px;
+  padding:0 18px;
+}
+
+/* Secondary filter strip */
+.pos-secondary-filters{
+  display:flex;
+  align-items:end;
+  gap:12px;
+  flex-wrap:wrap;
+  padding:14px 0 18px;
+  margin-bottom:4px;
+  border-top:1px solid #f2f4f7;
+  border-bottom:1px solid #f2f4f7;
+}
+
+.pos-secondary-filters .pos-tcg-filters,
+.pos-secondary-filters .pos-product-filters{
+  display:flex !important;
+  align-items:end !important;
+  gap:12px !important;
+  margin:0 !important;
+  flex:0 1 auto;
+}
+
+.pos-secondary-filters label{
+  display:grid;
+  gap:5px;
+  min-width:220px;
+  font-size:11px;
+  font-weight:800;
+  color:#344054;
+}
+
+.pos-secondary-filters select{
+  min-height:44px;
+}
+
+/* Result heading */
+.pos-result-head-reflow{
+  display:flex !important;
+  align-items:end !important;
+  justify-content:space-between !important;
+  gap:16px !important;
+  padding:20px 0 14px !important;
+}
+
+.pos-result-head-reflow > div{
+  display:grid;
+  gap:3px;
+}
+
+.pos-result-head-reflow b{
+  font-size:18px;
+}
+
+.pos-result-head-reflow span{
+  font-size:11px;
+  color:#667085;
+}
+
+.pos-result-head-reflow > strong{
+  white-space:nowrap;
+  font-size:14px;
+}
+
+/* Catalog cards - larger and more legible */
+.pos-catalog-grid-reflow{
+  display:grid !important;
+  grid-template-columns:repeat(auto-fill,minmax(250px,1fr)) !important;
+  gap:14px !important;
+  align-items:stretch !important;
+}
+
+.pos-catalog-grid-reflow .pos-product-card{
+  display:grid !important;
+  grid-template-columns:76px minmax(0,1fr) !important;
+  grid-template-areas:
+    "image main"
+    "image meta"
+    "button button" !important;
+  gap:8px 12px !important;
+  align-items:start !important;
+  padding:12px !important;
+  border:1px solid #e4e7ec !important;
+  border-radius:14px !important;
+  background:#fff !important;
+  min-height:184px !important;
+}
+
+.pos-catalog-grid-reflow .pos-item-image{
+  grid-area:image;
+  width:76px !important;
+  height:104px !important;
+  border-radius:10px !important;
+  overflow:hidden !important;
+}
+
+.pos-catalog-grid-reflow .pos-item-image img{
+  width:100%;
+  height:100%;
+  object-fit:cover;
+}
+
+.pos-catalog-grid-reflow .pos-item-main{
+  grid-area:main;
+  min-width:0;
+}
+
+.pos-catalog-grid-reflow .pos-item-main strong{
+  display:block;
+  margin-top:2px;
+  font-size:14px;
+  line-height:1.25;
+}
+
+.pos-catalog-grid-reflow .pos-item-main small{
+  display:block;
+  margin-top:3px;
+  font-size:10px;
+  color:#667085;
+}
+
+.pos-catalog-grid-reflow .pos-product-meta{
+  grid-area:meta;
+  display:flex !important;
+  align-items:center !important;
+  justify-content:space-between !important;
+  gap:10px !important;
+}
+
+.pos-catalog-grid-reflow .pos-product-meta > strong{
+  font-size:17px;
+}
+
+.pos-catalog-grid-reflow .pos-product-card > button{
+  grid-area:button;
+  width:100%;
+  min-height:40px;
+  margin-top:2px;
+}
+
+/* Right cart */
+.pos-cart-reflow{
+  position:sticky !important;
+  top:0 !important;
+  align-self:start !important;
+  display:grid !important;
+  gap:16px !important;
+  min-width:0;
+  max-height:calc(100vh - 24px);
+  overflow:auto;
+  padding:24px 22px 28px !important;
+  background:#fbfcfe !important;
+}
+
+.pos-cart-reflow h2{
+  margin:2px 0 0;
+  font-size:28px;
+}
+
+.pos-cart-reflow > label{
+  display:grid;
+  gap:6px;
+  font-size:11px;
+  font-weight:800;
+  color:#344054;
+}
+
+.pos-cart-reflow input,
+.pos-cart-reflow select,
+.pos-cart-reflow textarea{
+  width:100%;
+  box-sizing:border-box;
+}
+
+.pos-cart-lines-reflow{
+  display:grid;
+  gap:8px;
+  max-height:280px;
+  overflow:auto;
+}
+
+.pos-cart-lines-reflow .empty-cart{
+  min-height:100px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  text-align:center;
+}
+
+/* Benefits should feel like a compact card, not a second form */
+.pos-benefits-reflow{
+  display:grid !important;
+  gap:10px !important;
+  padding:14px !important;
+  border-radius:14px !important;
+}
+
+.pos-benefits-reflow .pos-benefit-head{
+  display:flex !important;
+  justify-content:space-between !important;
+  align-items:flex-start !important;
+  gap:10px !important;
+}
+
+.pos-benefits-reflow .pos-benefit-head strong{
+  font-size:15px;
+}
+
+.pos-benefits-reflow .pos-benefit-head span{
+  max-width:150px;
+  text-align:right;
+  font-size:10px;
+}
+
+.pos-benefits-reflow .pos-benefit-grid{
+  display:grid !important;
+  grid-template-columns:1.4fr .8fr !important;
+  gap:8px !important;
+}
+
+.pos-benefits-reflow button{
+  min-height:40px;
+}
+
+/* Total anchored visually */
+.pos-total-reflow{
+  margin-top:2px !important;
+  padding:16px 0 4px !important;
+  border-top:1px solid #d0d5dd;
+}
+
+.pos-total-reflow span{
+  font-size:13px;
+}
+
+.pos-total-reflow strong{
+  font-size:28px !important;
+}
+
+.pos-cart-reflow .checkout-btn{
+  min-height:52px;
+  font-size:15px;
+  font-weight:900;
+}
+
+/* Responsive */
+@media(max-width:1250px){
+  .pos-layout-reflow{
+    grid-template-columns:minmax(0,1fr) 350px !important;
+  }
+
+  .pos-primary-controls{
+    grid-template-columns:260px minmax(0,1fr) !important;
+  }
+
+  .pos-catalog-grid-reflow{
+    grid-template-columns:repeat(auto-fill,minmax(220px,1fr)) !important;
+  }
+}
+
+@media(max-width:980px){
+  .pos-layout-reflow{
+    grid-template-columns:1fr !important;
+  }
+
+  .pos-layout-reflow .pos-catalog{
+    border-right:0;
+    border-bottom:1px solid #eaecf0;
+  }
+
+  .pos-cart-reflow{
+    position:relative !important;
+    top:auto !important;
+    max-height:none !important;
+  }
+}
+
+@media(max-width:720px){
+  .pos-primary-controls{
+    grid-template-columns:1fr !important;
+  }
+
+  .pos-primary-controls > label:first-child,
+  .pos-primary-controls .pos-sale-type,
+  .pos-search-wide{
+    grid-column:1 !important;
+  }
+
+  .pos-secondary-filters,
+  .pos-secondary-filters .pos-tcg-filters,
+  .pos-secondary-filters .pos-product-filters{
+    display:grid !important;
+    grid-template-columns:1fr !important;
+    width:100%;
+  }
+
+  .pos-secondary-filters label{
+    min-width:0;
+  }
+
+  .pos-catalog-grid-reflow{
+    grid-template-columns:1fr !important;
+  }
+
+  .pos-benefits-reflow .pos-benefit-grid{
+    grid-template-columns:1fr !important;
+  }
+}

@@ -1,0 +1,252 @@
+.pos-stack {
+  display: grid;
+  gap: 16px;
+}
+
+.pos-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.7fr) minmax(330px, .8fr);
+  min-height: 620px;
+}
+
+.pos-catalog {
+  border-right: 1px solid #eaecf0;
+}
+
+.pos-controls {
+  display: grid;
+  grid-template-columns: minmax(180px, .6fr) minmax(260px, 1.4fr);
+  gap: 12px;
+  padding: 18px 20px;
+  border-bottom: 1px solid #eaecf0;
+}
+
+.pos-controls label,
+.pos-cart label,
+.cancel-order-box label {
+  display: grid;
+  gap: 6px;
+  color: #344054;
+  font-size: 12px;
+  font-weight: 750;
+}
+
+.pos-product-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  padding: 16px 20px 22px;
+  max-height: 650px;
+  overflow: auto;
+}
+
+.pos-product-card {
+  display: grid;
+  gap: 12px;
+  border: 1px solid #eaecf0;
+  border-radius: 13px;
+  padding: 14px;
+  background: white;
+}
+
+.pos-product-card > div > strong,
+.pos-product-card > div > span,
+.pos-product-meta > strong,
+.pos-product-meta > span {
+  display: block;
+}
+
+.pos-product-card > div > span,
+.pos-product-meta > span {
+  margin-top: 3px;
+  color: #667085;
+  font-size: 11px;
+}
+
+.pos-product-meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  align-items: end;
+}
+
+.pos-product-meta strong {
+  font-size: 16px;
+}
+
+.pos-cart {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 20px;
+  background: #fafbfc;
+}
+
+.pos-cart h2 {
+  margin: 3px 0 0;
+}
+
+.cart-lines {
+  display: grid;
+  gap: 8px;
+  max-height: 290px;
+  overflow: auto;
+}
+
+.cart-line {
+  display: grid;
+  grid-template-columns: minmax(0,1fr) 65px auto 34px;
+  gap: 8px;
+  align-items: center;
+  padding: 10px;
+  border: 1px solid #eaecf0;
+  border-radius: 10px;
+  background: white;
+}
+
+.cart-line > div > strong,
+.cart-line > div > span {
+  display: block;
+}
+
+.cart-line > div > span {
+  margin-top: 2px;
+  color: #667085;
+  font-size: 11px;
+}
+
+.cart-line input {
+  min-width: 0;
+  width: 100%;
+}
+
+.empty-cart {
+  padding: 24px 12px;
+  text-align: center;
+  color: #667085;
+  border: 1px dashed #d0d5dd;
+  border-radius: 10px;
+  font-size: 12px;
+}
+
+.pos-total {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 12px;
+  border-top: 1px solid #d0d5dd;
+}
+
+.pos-total span {
+  color: #667085;
+  font-size: 13px;
+}
+
+.pos-total strong {
+  font-size: 25px;
+}
+
+.checkout-btn {
+  width: 100%;
+  padding: 12px 14px;
+}
+
+.checkout-btn:disabled {
+  opacity: .45;
+  cursor: not-allowed;
+}
+
+.order-toolbar {
+  display: flex;
+  gap: 8px;
+  padding: 14px 20px;
+  border-bottom: 1px solid #eaecf0;
+}
+
+.order-toolbar input {
+  min-width: 320px;
+}
+
+.order-detail-modal {
+  max-height: calc(100vh - 30px);
+  overflow: auto;
+}
+
+.order-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0,1fr));
+  gap: 10px;
+  margin-bottom: 18px;
+}
+
+.order-summary-grid > div {
+  border: 1px solid #eaecf0;
+  border-radius: 10px;
+  padding: 12px;
+}
+
+.order-summary-grid span,
+.order-summary-grid strong {
+  display: block;
+}
+
+.order-summary-grid span {
+  color: #667085;
+  font-size: 11px;
+}
+
+.order-summary-grid strong {
+  margin-top: 4px;
+  font-size: 13px;
+}
+
+.cancel-order-box {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 10px;
+  align-items: end;
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px solid #eaecf0;
+}
+
+@media (max-width: 1100px) {
+  .pos-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .pos-catalog {
+    border-right: 0;
+    border-bottom: 1px solid #eaecf0;
+  }
+
+  .pos-product-grid {
+    grid-template-columns: repeat(2, minmax(0,1fr));
+  }
+}
+
+@media (max-width: 700px) {
+  .pos-controls,
+  .pos-product-grid,
+  .order-summary-grid,
+  .cancel-order-box {
+    grid-template-columns: 1fr;
+  }
+
+  .cart-line {
+    grid-template-columns: 1fr 60px auto;
+  }
+
+  .cart-line .danger {
+    grid-column: 1 / -1;
+  }
+
+  .order-toolbar {
+    flex-direction: column;
+  }
+
+  .order-toolbar input {
+    min-width: 0;
+    width: 100%;
+  }
+}

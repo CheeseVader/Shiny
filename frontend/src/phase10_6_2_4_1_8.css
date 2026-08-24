@@ -1,0 +1,8 @@
+/* GMX 10.6.2.4.1.8 — TCG workflow deduplication */
+.master-card-gmx-actions{
+  display:grid;gap:6px;margin:14px 0;padding:12px;border:1px solid #d0d5dd;border-radius:12px;background:#f9fafb
+}
+.master-card-gmx-actions button{justify-self:start}
+.master-card-gmx-actions small,.tcg-flow-help{color:#667085;line-height:1.45}
+.tcg-acq-history{padding:18px 22px}
+.tcg-acq-history>.section-head{margin-bottom:12px}

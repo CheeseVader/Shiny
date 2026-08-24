@@ -1,0 +1,59 @@
+
+/* GMX 10.6.2.4.1.12.2.0.3.5 — Premium Arcade / TCG Templates */
+.template-card{position:relative;overflow:hidden}
+.template-card.premium-template{
+  min-height:190px;
+  border-width:1px;
+  transition:transform .18s ease,box-shadow .18s ease,border-color .18s ease;
+}
+.template-card.premium-template:hover{transform:translateY(-3px);box-shadow:0 14px 30px rgba(15,23,42,.13)}
+.template-badges{display:flex;gap:5px;flex-wrap:wrap;min-height:18px}
+.premium-badge{
+  display:inline-flex;align-items:center;width:max-content;padding:3px 7px;border-radius:999px;
+  background:#101828;color:#fff;font-size:7px;font-weight:900;letter-spacing:.08em
+}
+.template-card .recommended{position:static!important;width:max-content}
+
+/* Effects intentionally CSS-only: no extra media dependencies. */
+.store-preview[class*="fx-"]{isolation:isolate}
+.store-preview.fx-scanlines::after{
+  content:"";position:absolute;inset:0;z-index:20;pointer-events:none;opacity:.13;
+  background:repeating-linear-gradient(0deg,transparent 0 3px,rgba(255,255,255,.18) 4px);
+  mix-blend-mode:overlay
+}
+.store-preview.fx-grid::after{
+  content:"";position:absolute;inset:0;z-index:0;pointer-events:none;opacity:.14;
+  background-image:linear-gradient(rgba(34,211,238,.5) 1px,transparent 1px),linear-gradient(90deg,rgba(34,211,238,.5) 1px,transparent 1px);
+  background-size:34px 34px
+}
+.store-preview.fx-sunset::after{
+  content:"";position:absolute;inset:0;z-index:0;pointer-events:none;opacity:.28;
+  background:radial-gradient(circle at 50% 20%,rgba(251,113,133,.9),transparent 23%),linear-gradient(180deg,transparent 55%,rgba(168,85,247,.35))
+}
+.store-preview.fx-pixels::after{
+  content:"";position:absolute;inset:0;z-index:0;pointer-events:none;opacity:.09;
+  background-image:linear-gradient(90deg,#fff 1px,transparent 1px),linear-gradient(#fff 1px,transparent 1px);background-size:8px 8px
+}
+.store-preview.fx-hud::before{
+  content:"";position:absolute;inset:12px;z-index:18;pointer-events:none;border:1px solid rgba(56,189,248,.22);
+  clip-path:polygon(0 0,18% 0,18% 2px,82% 2px,82% 0,100% 0,100% 22%,calc(100% - 2px) 22%,calc(100% - 2px) 78%,100% 78%,100% 100%,82% 100%,82% calc(100% - 2px),18% calc(100% - 2px),18% 100%,0 100%,0 78%,2px 78%,2px 22%,0 22%)
+}
+.store-preview.fx-embers::after{
+  content:"";position:absolute;inset:0;z-index:0;pointer-events:none;opacity:.22;
+  background:radial-gradient(circle at 15% 90%,#f97316 0 2px,transparent 3px),radial-gradient(circle at 70% 75%,#fbbf24 0 1px,transparent 2px),radial-gradient(circle at 90% 88%,#dc2626 0 2px,transparent 3px);background-size:90px 80px,130px 100px,170px 140px
+}
+.store-preview.fx-arcana::after{
+  content:"";position:absolute;inset:0;z-index:0;pointer-events:none;opacity:.18;
+  background:radial-gradient(circle at 15% 20%,rgba(192,132,252,.8),transparent 2%),radial-gradient(circle at 85% 30%,rgba(129,140,248,.8),transparent 2%),radial-gradient(circle at 60% 80%,rgba(255,255,255,.7),transparent 1%);background-size:110px 110px,150px 150px,80px 80px
+}
+.store-preview.fx-holo::after{
+  content:"";position:absolute;inset:0;z-index:19;pointer-events:none;opacity:.12;
+  background:linear-gradient(115deg,#67e8f9,#c084fc,#f0abfc,#fde68a,#67e8f9);background-size:300% 300%;
+  mix-blend-mode:screen;animation:gmxHoloShift 8s ease infinite
+}
+@keyframes gmxHoloShift{0%,100%{background-position:0 50%}50%{background-position:100% 50%}}
+.store-preview.fx-grid>*,
+.store-preview.fx-sunset>*,
+.store-preview.fx-pixels>*,
+.store-preview.fx-embers>*,
+.store-preview.fx-arcana>*{position:relative;z-index:1}

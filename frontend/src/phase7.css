@@ -1,0 +1,12 @@
+.tcg-stack,.tcg-body{display:grid;gap:16px}
+.tcg-body{padding:18px 20px}
+.tcg-form-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.tcg-form-card,.tcg-card-create,.tcg-entry-card{display:grid;gap:10px;border:1px solid #eaecf0;border-radius:14px;padding:16px;background:#fff}
+.tcg-form-card h3,.tcg-card-create h3,.tcg-entry-card h3{margin:0 0 4px}
+.tcg-form-card label,.tcg-card-create label,.tcg-entry-card label{display:grid;gap:6px;font-size:12px;font-weight:700;color:#344054}
+.tcg-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.tcg-kpis article{border:1px solid #eaecf0;border-radius:12px;padding:14px;background:white}
+.tcg-kpis span,.tcg-kpis strong{display:block}.tcg-kpis span{font-size:11px;color:#667085}.tcg-kpis strong{margin-top:5px;font-size:24px}
+.tcg-filter{display:grid;grid-template-columns:220px 220px minmax(260px,1fr);gap:8px}
+@media(max-width:1000px){.tcg-form-grid{grid-template-columns:1fr 1fr}.tcg-kpis{grid-template-columns:1fr 1fr}.tcg-filter{grid-template-columns:1fr 1fr}}
+@media(max-width:650px){.tcg-form-grid,.tcg-kpis,.tcg-filter{grid-template-columns:1fr}}

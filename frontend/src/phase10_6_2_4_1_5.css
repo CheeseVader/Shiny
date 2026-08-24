@@ -1,0 +1,42 @@
+/* GMX 10.6.2.4.1.5 — POS unified search */
+.pos-product-filters{
+  display:grid;
+  grid-template-columns:minmax(220px,360px);
+  gap:10px;
+  margin:0 0 12px;
+}
+.pos-product-filters label{display:grid;gap:5px;font-size:11px;font-weight:800;color:#344054}
+.pos-product-filters select{min-height:42px}
+
+.pos-client-picker{position:relative;display:grid;gap:6px}
+.pos-client-picker>label{display:grid;gap:5px}
+.pos-client-results{
+  position:absolute;
+  left:0;right:0;top:68px;
+  z-index:50;
+  display:grid;
+  max-height:260px;
+  overflow:auto;
+  padding:6px;
+  border:1px solid #d0d5dd;
+  border-radius:12px;
+  background:white;
+  box-shadow:0 12px 30px rgba(16,24,40,.14);
+}
+.pos-client-result{
+  display:grid;
+  gap:2px;
+  width:100%;
+  padding:9px 10px;
+  text-align:left;
+  border:0;
+  border-radius:9px;
+  background:transparent;
+  color:#101828;
+}
+button.pos-client-result{cursor:pointer}
+button.pos-client-result:hover,button.pos-client-result.selected{background:#f2f4f7}
+.pos-client-result span{font-size:10px;color:#667085;font-weight:500}
+.pos-client-result.muted{color:#667085;font-size:11px}
+.pos-smart-search input{font-size:14px}
+.pos-item-main small{line-height:1.35}

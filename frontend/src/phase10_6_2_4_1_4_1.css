@@ -1,0 +1,15 @@
+/* GMX 10.6.2.4.1.4.1 — unified stock */
+.product-stock-source-note{
+  padding:10px 12px;
+  border:1px solid #b2ddff;
+  border-radius:10px;
+  background:#eff8ff;
+  color:#175cd3;
+  font-size:12px;
+  font-weight:700;
+}
+.product-modal-complete input:disabled{
+  background:#f2f4f7;
+  color:#475467;
+  cursor:not-allowed;
+}

@@ -1,0 +1,153 @@
+/* GMX 10.6.2.4.1.11 — Cotizaciones UX */
+.quotes-v11{display:grid;gap:18px}
+.quote-create-panel,.quote-history-panel{width:100%;box-sizing:border-box}
+.quote-panel-head,.quote-history-head{display:flex;justify-content:space-between;align-items:flex-start;gap:16px}
+.quote-panel-head p,.quote-history-head p{margin:3px 0 0;color:#667085}
+.quote-live-total{display:grid;text-align:right;gap:2px;padding:10px 14px;border:1px solid #d0d5dd;border-radius:12px;background:#f9fafb}
+.quote-live-total span{font-size:10px;text-transform:uppercase;font-weight:850;color:#667085}
+.quote-live-total strong{font-size:22px}
+.quote-customer-box,.quote-products-box,.quote-conditions-box{display:grid;gap:12px;margin-top:16px;padding:15px;border:1px solid #e4e7ec;border-radius:14px;background:#fcfcfd}
+.quote-block-title{display:flex;gap:10px;align-items:flex-start}
+.quote-block-title>span{display:flex;align-items:center;justify-content:center;min-width:27px;height:27px;border-radius:999px;background:#101828;color:#fff;font-weight:850;font-size:11px}
+.quote-block-title>div{display:grid;gap:2px}.quote-block-title small{color:#667085}
+.quote-search-shell{position:relative}
+.quote-search-shell>label{display:grid;gap:6px;font-size:11px;font-weight:800}
+.quote-suggestions{position:absolute;z-index:30;top:100%;left:0;right:0;max-height:310px;overflow:auto;border:1px solid #d0d5dd;border-radius:0 0 12px 12px;background:#fff;box-shadow:0 16px 32px rgba(16,24,40,.12)}
+.quote-suggestions button{display:flex;width:100%;justify-content:space-between;gap:16px;text-align:left;padding:10px 12px;border:0;border-bottom:1px solid #f2f4f7;border-radius:0;background:#fff;color:#101828}
+.quote-suggestions button:hover{background:#f9fafb}
+.quote-suggestions button>span{display:grid;gap:2px}.quote-suggestions small{color:#667085;font-weight:500}
+.quote-editor-v11{display:grid;gap:8px}
+.quote-item-v11{display:grid;grid-template-columns:minmax(240px,1fr) 110px 150px 130px auto;gap:10px;align-items:end;padding:10px 12px;border:1px solid #eaecf0;border-radius:11px;background:#fff}
+.quote-item-v11 label{display:grid;gap:5px;font-size:10px;font-weight:800}
+.quote-item-name{display:grid;gap:3px}.quote-item-name small{color:#667085}
+.quote-line-total{display:grid;gap:3px;padding-bottom:8px}.quote-line-total span{font-size:10px;color:#667085;text-transform:uppercase;font-weight:850}
+.quote-empty{min-height:80px;display:flex;align-items:center;justify-content:center}
+.quote-summary-bar{display:grid;grid-template-columns:repeat(4,minmax(90px,1fr)) minmax(140px,1.2fr) auto;gap:10px;align-items:center;margin-top:16px;padding:14px;border:1px solid #d0d5dd;border-radius:14px;background:#f9fafb}
+.quote-summary-bar>div{display:grid;gap:2px}.quote-summary-bar span{font-size:10px;text-transform:uppercase;font-weight:850;color:#667085}
+.quote-summary-bar strong{font-size:16px}.quote-summary-bar .grand strong{font-size:22px}
+.quote-history-head{margin-bottom:12px}
+.quote-history-filters{display:flex;gap:8px;min-width:min(560px,100%)}
+.quote-history-filters input{flex:1}.quote-history-filters select{width:190px}
+.table-subline{display:block;margin-top:2px;color:#667085;font-size:10px}
+.quote-convert-modal{width:min(540px,calc(100vw - 30px)) !important}
+.quote-convert-modal>label{display:grid;gap:6px;font-weight:800}
+.quote-convert-summary{display:flex;justify-content:space-between;gap:12px;margin-top:14px;padding:12px;border:1px solid #e4e7ec;border-radius:11px;background:#f9fafb}
+.quote-convert-summary span{display:grid;gap:2px;color:#667085}.quote-convert-summary strong{color:#101828}
+@media(max-width:1050px){
+  .quote-item-v11{grid-template-columns:1fr 100px 140px}
+  .quote-line-total{grid-column:2}.quote-item-v11>.danger{grid-column:3}
+  .quote-summary-bar{grid-template-columns:repeat(3,1fr)}
+  .quote-summary-bar button{grid-column:1/-1}
+}
+@media(max-width:760px){
+  .quote-panel-head,.quote-history-head{flex-direction:column}
+  .quote-live-total{width:100%;text-align:left}
+  .quote-history-filters{width:100%;min-width:0;flex-direction:column}
+  .quote-history-filters select{width:100%}
+  .quote-item-v11{grid-template-columns:1fr}
+  .quote-line-total,.quote-item-v11>.danger{grid-column:auto}
+  .quote-summary-bar{grid-template-columns:1fr 1fr}
+  .quote-summary-bar .grand,.quote-summary-bar button{grid-column:1/-1}
+}
+
+/* GMX 10.6.2.4.1.11.1 — Searchable registered catalog menus */
+.quote-picker-input{display:grid;grid-template-columns:1fr 44px;align-items:stretch}
+.quote-picker-input input{border-radius:10px 0 0 10px !important}
+.quote-picker-toggle{
+  min-width:44px;padding:0;border:1px solid #d0d5dd;border-left:0;
+  border-radius:0 10px 10px 0;background:#f9fafb;color:#344054;font-size:20px
+}
+.quote-picker-toggle:hover{background:#f2f4f7}
+.quote-suggestions{top:calc(100% + 2px);overflow:hidden;display:grid;grid-template-rows:auto minmax(0,1fr);max-height:360px}
+.quote-suggestions-head{
+  position:sticky;top:0;z-index:2;display:flex;justify-content:space-between;align-items:center;
+  padding:8px 12px;border-bottom:1px solid #e4e7ec;background:#f9fafb;color:#667085;
+  font-size:10px;text-transform:uppercase;font-weight:850
+}
+.quote-suggestions>button{min-height:58px}
+.quote-suggestions.product-results>button,.quote-suggestions>button{overflow:visible}
+.quote-result-meta{text-align:right;align-items:end}
+.quote-no-results{padding:18px;text-align:center;color:#667085;background:#fff}
+.quote-selected-client{
+  display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:9px 11px;
+  border:1px solid #abefc6;border-radius:10px;background:#ecfdf3
+}
+.quote-selected-client>span{font-size:10px;text-transform:uppercase;color:#067647;font-weight:850}
+.quote-selected-client>strong{color:#101828}
+.quote-selected-client>small{color:#475467}
+@media(max-width:700px){
+  .quote-result-meta{text-align:left;align-items:start}
+  .quote-suggestions button{flex-direction:column}
+}
+
+.quote-catalog-toolbar{display:grid;grid-template-columns:minmax(260px,.7fr) 1fr;gap:12px;align-items:end}
+.quote-catalog-toolbar>label{display:grid;gap:6px;font-size:11px;font-weight:800}
+.quote-catalog-legend{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+.quote-catalog-legend>span{padding:7px 9px;border:1px solid #e4e7ec;border-radius:9px;background:#fff;color:#667085;font-size:10px}
+.quote-kind-pill{display:inline-flex;width:max-content;margin-bottom:3px;padding:3px 6px;border-radius:999px;font-size:9px;font-weight:900}
+.quote-kind-pill.product{background:#f2f4f7;color:#344054}.quote-kind-pill.tcg{background:#eef4ff;color:#3538cd}
+@media(max-width:800px){.quote-catalog-toolbar{grid-template-columns:1fr}.quote-catalog-legend{justify-content:flex-start}}
+
+/* GMX 10.6.2.4.1.12.1 — Selected client visual fix */
+.quote-selected-client-v2{
+  display:grid;
+  grid-template-columns:auto minmax(0,1fr);
+  align-items:center;
+  gap:14px;
+  padding:12px 14px;
+  border:1px solid #abefc6;
+  border-radius:12px;
+  background:#ecfdf3;
+}
+.quote-selected-client-status{
+  display:flex;
+  align-items:center;
+  gap:7px;
+  color:#067647;
+  font-size:10px;
+  font-weight:900;
+  text-transform:uppercase;
+  letter-spacing:.03em;
+  white-space:nowrap;
+}
+.quote-selected-client-check{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  width:23px;
+  height:23px;
+  border-radius:999px;
+  background:#12b76a;
+  color:#fff;
+  font-size:13px;
+}
+.quote-selected-client-main{
+  display:grid;
+  gap:4px;
+  min-width:0;
+}
+.quote-selected-client-main>strong{
+  color:#101828;
+  font-size:17px;
+  line-height:1.15;
+}
+.quote-selected-client-contact{
+  display:flex;
+  flex-wrap:wrap;
+  gap:6px 16px;
+  color:#475467;
+  font-size:12px;
+}
+.quote-selected-client-contact span{
+  overflow-wrap:anywhere;
+}
+.quote-selected-client-contact b{
+  margin-right:3px;
+  color:#344054;
+}
+@media(max-width:700px){
+  .quote-selected-client-v2{
+    grid-template-columns:1fr;
+    align-items:start;
+  }
+}

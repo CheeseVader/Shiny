@@ -1,0 +1,31 @@
+
+/* GMX 10.6.2.3.13 — Smart dependent filters + POS catalog */
+.pos-controls-smart{
+  display:grid;grid-template-columns:240px minmax(360px,1fr);gap:12px;align-items:end
+}
+.pos-sale-type{display:grid;gap:7px}.pos-sale-type>span{font-size:12px;font-weight:850;color:#344054}
+.pos-sale-type>div{display:flex;gap:6px;flex-wrap:wrap}
+.pos-sale-type button{min-height:40px;padding:0 14px;border:1px solid #d0d5dd;border-radius:9px;background:#fff;color:#344054;font-weight:800;cursor:pointer}
+.pos-sale-type button.active{background:#101828;border-color:#101828;color:#fff}
+.pos-smart-search{grid-column:1/-1}
+.pos-tcg-filters{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:10px 0}
+.pos-tcg-filters label{display:grid;gap:5px;font-size:12px;font-weight:800}
+.pos-tcg-filters select{height:42px;border:1px solid #d0d5dd;border-radius:9px;padding:0 10px;background:#fff}
+.pos-result-head{display:flex;justify-content:space-between;gap:12px;align-items:center;margin:12px 0 8px}
+.pos-result-head>div{display:grid;gap:2px}.pos-result-head span{font-size:11px;color:#667085}
+.pos-catalog-loading{padding:14px;border-radius:10px;background:#f9fafb;color:#475467;text-align:center;font-weight:800}
+.pos-smart-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.pos-smart-grid .pos-product-card{display:grid;grid-template-columns:72px minmax(0,1fr);grid-template-areas:"img main" "img meta" "button button";gap:8px;padding:10px}
+.pos-item-image{grid-area:img;display:grid;place-items:center;width:72px;height:100px;border-radius:8px;background:#f2f4f7;overflow:hidden}
+.pos-item-image img{width:100%;height:100%;object-fit:contain}.pos-item-image span{font-size:10px;font-weight:950;color:#667085}
+.pos-item-main{grid-area:main;display:grid;align-content:start;gap:3px;min-width:0}
+.pos-item-main strong{font-size:13px;line-height:1.25}.pos-item-main small{font-size:10px;color:#667085;line-height:1.3}
+.pos-item-kind{font-size:9px;font-weight:950;letter-spacing:.08em;color:#175cd3}
+.pos-smart-grid .pos-product-meta{grid-area:meta;display:flex;justify-content:space-between;align-items:end;gap:8px}
+.pos-smart-grid .pos-product-card>button{grid-area:button;min-height:38px}
+.pos-smart-grid .pos-product-card.tcg{border-color:#dbeafe}
+@media(max-width:1200px){.pos-smart-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:760px){
+  .pos-controls-smart,.pos-tcg-filters,.pos-smart-grid{grid-template-columns:1fr}
+  .pos-smart-search{grid-column:auto}
+}

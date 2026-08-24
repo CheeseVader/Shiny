@@ -1,0 +1,18 @@
+.ops-stack,.phase6-body{display:grid;gap:16px}
+.phase6-body{padding:18px 20px}
+.purchase-create,.cash-open-card,.cash-actions>div{border:1px solid #eaecf0;border-radius:14px;padding:16px;background:#fff}
+.purchase-create h3,.phase6-body h3,.cash-actions h3{margin:0 0 12px}
+.form-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.form-grid label,.receive-bar label,.cash-branch label,.cash-open-card label,.cash-actions label{display:grid;gap:6px;font-size:12px;font-weight:700;color:#344054}
+.form-grid .wide{grid-column:span 2}
+.purchase-lines{display:grid;gap:8px;margin:14px 0}
+.purchase-line{display:grid;grid-template-columns:minmax(180px,1fr) 110px 130px auto 34px;gap:8px;align-items:end;border:1px solid #eaecf0;border-radius:10px;padding:10px}
+.purchase-line>div strong,.purchase-line>div span{display:block}.purchase-line>div span{font-size:11px;color:#667085}
+.purchase-total{display:flex;justify-content:space-between;align-items:center;border-top:1px solid #eaecf0;padding:12px 0}
+.receive-bar,.cash-branch{display:flex;justify-content:flex-end}.receive-bar label,.cash-branch label{min-width:280px}
+.cash-summary{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.cash-summary article{border:1px solid #eaecf0;border-radius:12px;padding:14px;background:white}
+.cash-summary span,.cash-summary strong{display:block}.cash-summary span{font-size:11px;color:#667085}.cash-summary strong{margin-top:5px;font-size:21px}
+.cash-actions{display:grid;grid-template-columns:1.5fr .7fr;gap:12px}.cash-diff{padding:12px 0;color:#475467}
+@media(max-width:1000px){.form-grid{grid-template-columns:repeat(2,1fr)}.cash-summary{grid-template-columns:repeat(2,1fr)}.cash-actions{grid-template-columns:1fr}}
+@media(max-width:650px){.form-grid,.cash-summary{grid-template-columns:1fr}.form-grid .wide{grid-column:auto}.purchase-line{grid-template-columns:1fr 1fr}.purchase-line>div{grid-column:1/-1}.receive-bar,.cash-branch{justify-content:stretch}.receive-bar label,.cash-branch label{min-width:0;width:100%}}

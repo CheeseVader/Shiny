@@ -1,0 +1,38 @@
+
+/* GMX 10.6.2.4.1 - Core UX/Data Integrity */
+body > .gmx-portal-backdrop{
+  position:fixed !important;
+  inset:0 !important;
+  z-index:100000 !important;
+  display:flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+  padding:24px !important;
+  overflow:auto !important;
+  background:rgba(16,24,40,.52) !important;
+  backdrop-filter:blur(3px);
+}
+body > .gmx-portal-backdrop > .modal{
+  position:relative !important;
+  width:min(900px,calc(100vw - 48px)) !important;
+  max-height:calc(100dvh - 48px) !important;
+  overflow:auto !important;
+  margin:auto !important;
+}
+body > .gmx-portal-backdrop > .client-modal{width:min(980px,calc(100vw - 48px)) !important}
+.fiscal-details{
+  margin-top:18px;padding:14px 16px;border:1px solid #d0d5dd;border-radius:14px;background:#f8fafc
+}
+.fiscal-details summary{cursor:pointer;font-weight:800;color:#344054}
+.fiscal-grid{margin-top:14px}
+.form-grid input:disabled,.form-grid input[readonly]{
+  background:#f2f4f7;color:#667085;cursor:not-allowed
+}
+@media(max-width:720px){
+  body > .gmx-portal-backdrop{padding:10px !important;align-items:flex-start !important}
+  body > .gmx-portal-backdrop > .modal{
+    width:100% !important;max-height:calc(100dvh - 20px) !important;border-radius:14px !important
+  }
+  .form-grid{grid-template-columns:1fr !important}
+  .form-grid .wide{grid-column:auto !important}
+}

@@ -1,0 +1,36 @@
+
+/* GMX 10.6.2.3.7 — global operation progress */
+.gmx-operation-backdrop{
+  position:fixed;inset:0;z-index:100000;display:grid;place-items:center;
+  padding:20px;background:rgba(15,23,42,.48);backdrop-filter:blur(3px)
+}
+.gmx-operation-modal{
+  width:min(560px,calc(100vw - 32px));padding:22px;border-radius:18px;
+  background:#fff;border:1px solid #d0d5dd;box-shadow:0 24px 60px rgba(16,24,40,.28);
+  color:#101828
+}
+.gmx-operation-head{display:flex;justify-content:space-between;align-items:flex-start;gap:14px}
+.gmx-operation-kicker{display:block;font-size:11px;font-weight:950;letter-spacing:.12em;color:#175cd3}
+.gmx-operation-head h3{margin:4px 0 0;font-size:24px}
+.gmx-operation-close{
+  display:grid;place-items:center;width:34px;height:34px;border:0;border-radius:999px;
+  background:#f2f4f7;color:#475467;font-size:23px;cursor:pointer
+}
+.gmx-operation-detail{margin:18px 0 14px;color:#475467;line-height:1.5}
+.gmx-operation-progress-meta{display:flex;justify-content:space-between;align-items:center;margin-bottom:7px;font-size:12px;color:#667085}
+.gmx-operation-progress-meta strong{font-size:17px;color:#101828}
+.gmx-operation-progress-track{width:100%;height:16px;border-radius:999px;background:#eaecf0;overflow:hidden}
+.gmx-operation-progress-bar{height:100%;border-radius:inherit;background:#1570ef;transition:width .35s ease}
+.gmx-operation-foot{display:flex;justify-content:space-between;gap:12px;margin-top:10px;color:#667085;font-size:11px}
+.gmx-operation-modal.success .gmx-operation-kicker{color:#067647}
+.gmx-operation-modal.success .gmx-operation-progress-bar{background:#12b76a}
+.gmx-operation-modal.error .gmx-operation-kicker{color:#b42318}
+.gmx-operation-modal.error .gmx-operation-progress-bar{background:#f04438}
+.admin-auth-gate{position:fixed;inset:0;display:grid;place-items:center;background:#f2f4f7}
+.admin-auth-gate-spinner{width:34px;height:34px;border:4px solid #d0d5dd;border-top-color:#1570ef;border-radius:50%;animation:gmx-spin .8s linear infinite}
+@keyframes gmx-spin{to{transform:rotate(360deg)}}
+@media(max-width:600px){
+  .gmx-operation-modal{padding:18px}
+  .gmx-operation-head h3{font-size:20px}
+  .gmx-operation-foot{flex-direction:column}
+}

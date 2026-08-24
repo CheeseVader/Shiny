@@ -1,0 +1,72 @@
+/* GMX 10.6.2.4.1.7 — TCG catalog deduplication */
+.tcg-tabs-dedup{flex-wrap:wrap}
+.tcg-master-unified{display:grid;gap:18px}
+.tcg-master-admin-tools{
+  margin:0 22px 22px;
+  padding:18px;
+  border:1px solid #e4e7ec;
+  border-radius:16px;
+  background:#fff;
+}
+.tcg-master-admin-grid{
+  display:grid;
+  grid-template-columns:minmax(300px,.8fr) minmax(420px,1.2fr);
+  gap:14px;
+}
+.tcg-master-admin-grid>article{
+  display:grid;
+  align-content:start;
+  gap:10px;
+  padding:16px;
+  border:1px solid #eaecf0;
+  border-radius:14px;
+  background:#f9fafb;
+}
+.tcg-master-admin-grid h4{margin:0;font-size:16px}
+.tcg-master-admin-grid p{margin:0;color:#667085;font-size:12px;line-height:1.5}
+.tcg-master-admin-grid label{display:grid;gap:5px;font-size:11px;font-weight:800}
+.tcg-game-toggle-compact{display:grid;gap:7px}
+.tcg-store-game-row{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:12px;
+  padding:9px 10px;
+  border:1px solid #e4e7ec;
+  border-radius:10px;
+  background:#fff;
+}
+.tcg-store-game-row>span{display:grid;gap:2px}
+.tcg-store-game-row small{color:#667085}
+.tcg-master-import-tools{
+  margin-top:14px;
+  border:1px solid #d0d5dd;
+  border-radius:12px;
+  background:#fcfcfd;
+}
+.tcg-master-import-tools>summary{
+  cursor:pointer;
+  padding:13px 15px;
+  font-weight:850;
+  color:#344054;
+}
+.tcg-master-import-tools>p{margin:0;padding:0 15px 12px;color:#667085;font-size:12px}
+.tcg-import-center-inline{
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:10px;
+  padding:0 14px 14px;
+}
+.tcg-import-center-inline .tcg-import-card{margin:0}
+.tcg-operational-heading{
+  grid-column:1/-1;
+  margin-bottom:12px;
+  padding-bottom:12px;
+  border-bottom:1px solid #eaecf0;
+}
+.tcg-operational-heading h3{margin:2px 0 4px}
+.tcg-operational-heading p{margin:0;color:#667085;font-size:12px}
+@media(max-width:1000px){
+  .tcg-master-admin-grid{grid-template-columns:1fr}
+  .tcg-import-center-inline{grid-template-columns:1fr}
+}

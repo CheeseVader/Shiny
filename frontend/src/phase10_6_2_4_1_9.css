@@ -1,0 +1,287 @@
+/* GMX 10.6.2.4.1.9 — Operación TCG esencial */
+.tcgops-essential .section-copy{margin:4px 0 0;color:#667085}
+.tcgops-tabs-essential{gap:4px}
+.tcgops-toolbar{display:grid;grid-template-columns:320px minmax(0,1fr);gap:14px;align-items:end}
+.tcgops-toolbar label{display:grid;gap:5px;font-size:11px;font-weight:800;color:#344054}
+.tcgops-search input{min-height:46px}
+.tcgops-purpose-note{margin-bottom:14px;padding:11px 13px;border:1px solid #b2ddff;border-radius:12px;background:#eff8ff;color:#175cd3;font-size:12px;line-height:1.5}
+.tcgops-movement-history{margin-top:18px}
+.tcgops-advanced{margin-top:18px;border:1px solid #d0d5dd;border-radius:12px;background:#fcfcfd}
+.tcgops-advanced summary{cursor:pointer;padding:13px 15px;font-weight:850}
+.tcgops-advanced>p{margin:0;padding:0 15px 12px;color:#667085;font-size:12px}
+.tcgops-advanced>.actions{padding:0 15px 15px}
+@media(max-width:800px){.tcgops-toolbar{grid-template-columns:1fr}}
+
+/* 10.6.2.4.1.9.1 */
+.ops-card select{min-width:0;width:100%}
+.label-controls-improved{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.label-controls-improved .label-search{min-width:320px;flex:1}
+.barcode{width:96px;height:48px;display:flex;align-items:center}
+.barcode svg{width:100%;height:100%}
+.count-template-primary{
+  display:flex;justify-content:space-between;align-items:center;gap:18px;
+  padding:14px 16px;margin-bottom:12px;border:1px solid #b2ddff;border-radius:12px;background:#eff8ff
+}
+.count-template-primary p{margin:4px 0 0;color:#475467;font-size:12px}
+.count-manual-fallback{margin:10px 0 14px;border:1px solid #e4e7ec;border-radius:10px}
+.count-manual-fallback summary{cursor:pointer;padding:11px 13px;font-weight:800}
+.count-manual-fallback p{padding:0 13px 12px;margin:0;color:#667085;font-size:12px}
+@media(max-width:800px){
+  .count-template-primary{display:grid}
+  .label-controls-improved .label-search{min-width:0;width:100%}
+}
+
+/* ==========================================================
+   TCG-006F-FIX3C
+   Etiquetas fisicas TCG - QR / CODE128
+   ========================================================== */
+
+.label-print-area{
+  display:none;
+}
+
+@media print {
+
+  @page{
+    margin:0;
+  }
+
+  body *{
+    visibility:hidden !important;
+  }
+
+  .label-print-area,
+  .label-print-area *{
+    visibility:visible !important;
+  }
+
+  .label-print-area{
+    display:block !important;
+    position:absolute;
+    left:0;
+    top:0;
+    margin:0;
+    padding:0;
+  }
+
+  .print-label{
+    box-sizing:border-box;
+    display:grid;
+    grid-template-columns:minmax(0,58%) minmax(0,42%);
+    align-items:center;
+    gap:1.2mm;
+
+    overflow:hidden;
+    page-break-after:always;
+    break-after:page;
+
+    padding:1.5mm;
+
+    font-family:Arial,sans-serif;
+    color:#000;
+    background:#fff;
+  }
+
+  .print-label.size-50x30{
+    width:50mm;
+    height:30mm;
+  }
+
+  .print-label.size-60x40{
+    width:60mm;
+    height:40mm;
+  }
+
+  .print-label .barcode{
+    width:100% !important;
+    height:17mm !important;
+
+    display:flex;
+    align-items:center;
+    justify-content:center;
+
+    overflow:visible;
+    min-width:0;
+  }
+
+  .print-label .barcode svg{
+    display:block;
+    width:100% !important;
+    height:100% !important;
+
+    max-width:none !important;
+    max-height:none !important;
+
+    shape-rendering:crispEdges;
+  }
+
+  .print-label .qr{
+    display:block;
+    width:21mm;
+    height:21mm;
+    max-width:100%;
+    object-fit:contain;
+    justify-self:center;
+  }
+
+  .print-label .label-info{
+    min-width:0;
+    overflow:hidden;
+
+    display:flex;
+    flex-direction:column;
+    justify-content:center;
+
+    font-size:6.5pt;
+    line-height:1.08;
+    overflow-wrap:anywhere;
+  }
+
+  .print-label .label-info strong{
+    display:block;
+    font-size:7pt;
+    line-height:1.05;
+    margin-bottom:.7mm;
+  }
+
+  .print-label .label-info span,
+  .print-label .label-info b,
+  .print-label .label-info small{
+    display:block;
+    margin:.2mm 0;
+  }
+
+  .print-label .label-info small{
+    font-size:4.5pt;
+    line-height:1;
+  }
+}
+
+
+/* ==========================================================
+   TCG-006F-FIX3D
+   Refinamiento final etiquetas fisicas 50x30 / CODE128
+   ========================================================== */
+
+@media print {
+
+  .print-label.size-50x30.type-barcode{
+    grid-template-columns:minmax(0,66%) minmax(0,34%);
+    gap:1mm;
+    padding:1.2mm;
+  }
+
+  .print-label.size-50x30.type-barcode .barcode{
+    width:100% !important;
+    height:19mm !important;
+    align-self:center;
+  }
+
+  .print-label.size-50x30.type-barcode .barcode svg{
+    width:100% !important;
+    height:100% !important;
+    shape-rendering:crispEdges;
+  }
+
+  .print-label.size-50x30.type-barcode .label-info{
+    font-size:6.8pt;
+    line-height:1.05;
+    overflow:hidden;
+  }
+
+  .print-label.size-50x30.type-barcode .label-info strong{
+    font-size:7.4pt;
+    line-height:1.02;
+    margin-bottom:.8mm;
+  }
+
+  .print-label.size-50x30.type-barcode .label-info span{
+    font-size:6.2pt;
+    line-height:1.02;
+    margin:.15mm 0;
+  }
+
+  .print-label.size-50x30.type-barcode .label-info b{
+    font-size:7.5pt;
+    line-height:1;
+    margin-top:.6mm;
+  }
+
+  .print-label.size-50x30.type-barcode .label-payload{
+    display:none !important;
+  }
+
+  .print-label.size-60x40.type-barcode{
+    grid-template-columns:minmax(0,64%) minmax(0,36%);
+    gap:1.4mm;
+  }
+
+  .print-label.size-60x40.type-barcode .barcode{
+    height:24mm !important;
+  }
+
+  .print-label.size-60x40.type-barcode .label-payload{
+    display:none !important;
+  }
+}
+
+
+/* GMX TCG INVENTORY FILTER R1 */
+.tcg-scope-filter{
+  grid-template-columns:minmax(220px,1fr) minmax(260px,1.35fr) minmax(260px,1.35fr);
+  align-items:center;
+}
+.tcg-inventory-search{
+  width:100%;
+  min-height:46px;
+}
+@media(max-width:900px){
+  .tcg-scope-filter{
+    grid-template-columns:1fr;
+  }
+}
+/* GMX PRODUCT IMAGE SEARCH R11 */
+.gmx-product-image-search{display:grid;gap:12px}
+.gmx-product-image-search-actions{display:flex;gap:8px;flex-wrap:wrap}
+.gmx-product-image-candidates{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(130px,1fr));
+  gap:10px;
+}
+.gmx-product-image-candidate{
+  position:relative;
+  display:grid;
+  gap:5px;
+  text-align:left;
+  padding:8px;
+  border:1px solid rgba(255,255,255,.12);
+  background:rgba(255,255,255,.035);
+  border-radius:12px;
+  cursor:pointer;
+}
+.gmx-product-image-candidate.selected{
+  outline:2px solid var(--accent,#f59e0b);
+}
+.gmx-product-image-candidate img{
+  width:100%;
+  height:120px;
+  object-fit:contain;
+  background:#fff;
+  border-radius:8px;
+}
+.gmx-product-image-candidate small{
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+.gmx-product-image-confidence{
+  position:absolute;
+  top:12px;
+  right:12px;
+  padding:3px 7px;
+  border-radius:999px;
+  background:rgba(0,0,0,.78);
+  color:#fff;
+  font-size:11px;
+  font-weight:800;
+}

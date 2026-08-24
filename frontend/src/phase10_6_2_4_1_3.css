@@ -1,0 +1,15 @@
+/* GMX 10.6.2.4.1.3 — Clients */
+.client-tools .actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.client-tools .actions input{min-width:min(440px,60vw)}
+.client-live-search-status{font-size:11px;color:#667085;font-weight:700;padding:0 4px}
+.client-form-error{
+  margin-top:12px;padding:11px 13px;border:1px solid #fecdca;border-radius:10px;
+  background:#fef3f2;color:#b42318;font-size:13px;font-weight:750
+}
+.identity-badge{
+  display:inline-flex;align-items:center;justify-content:center;min-height:24px;padding:0 8px;
+  border-radius:999px;font-size:10px;font-weight:850
+}
+.identity-badge.verified{background:#ecfdf3;color:#027a48}
+.identity-badge.pending{background:#fffaeb;color:#b54708}
+.client-modal input[name="telefono"]{letter-spacing:.02em}

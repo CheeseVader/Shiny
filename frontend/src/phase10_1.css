@@ -1,0 +1,42 @@
+.admin-user-editor {
+  margin: 18px 20px;
+  padding: 16px;
+  border: 1px solid #d0d5dd;
+  border-radius: 14px;
+  background: #fcfcfd;
+}
+.admin-user-editor h3 { margin: 2px 0 0; }
+.security-confirm {
+  display: grid;
+  grid-template-columns: minmax(240px,1fr) auto;
+  gap: 10px;
+  align-items: end;
+  margin-top: 14px;
+}
+.security-confirm label,
+.password-change label {
+  display: grid;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #344054;
+}
+.password-change {
+  display: grid;
+  grid-template-columns: 1fr 1fr auto auto;
+  gap: 10px;
+  align-items: end;
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid #eaecf0;
+}
+.password-change h4 {
+  grid-column: 1 / -1;
+  margin: 0;
+}
+@media (max-width: 850px) {
+  .security-confirm,
+  .password-change {
+    grid-template-columns: 1fr;
+  }
+}

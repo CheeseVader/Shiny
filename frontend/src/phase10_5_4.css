@@ -1,0 +1,39 @@
+
+/* GMX 10.5.4 - storefront closer to real TCG commerce layouts */
+.store-preview{background:#f7f8fa}
+.store-main-flow{position:relative;z-index:2;display:grid;gap:var(--home-gap,18px);padding:0 14px 24px}
+.store-header{display:grid;grid-template-columns:auto minmax(260px,1fr) auto;gap:18px;align-items:center}
+.store-search{min-width:0;padding:10px 14px;border:1px solid rgba(255,255,255,.14);border-radius:10px;background:rgba(255,255,255,.08);color:var(--p-muted);font-size:12px}
+.store-header nav{white-space:nowrap}
+.preview-carousel{position:relative;overflow:hidden;border-radius:var(--p-radius);background:linear-gradient(120deg,var(--p-primary),var(--p-accent));box-shadow:0 6px 18px rgba(16,24,40,.14)}
+.preview-carousel-hero{margin-top:14px}
+.preview-carousel-wide{margin:0 12px}
+.preview-carousel-wide .wide-copy{max-width:58%;padding:28px 36px}
+.preview-carousel-wide .wide-copy h1{font-size:30px;margin:5px 0 8px}
+.preview-carousel-wide .wide-copy p{font-size:14px}
+.preview-carousel-wide .hero-actions{margin-top:10px}
+.preview-carousel-wide .hero-actions button{padding:9px 14px}
+.compact-section{padding:8px 12px 12px}
+.compact-section .store-title{margin-bottom:8px}
+.compact-section .store-title h2{font-size:20px;margin:0}
+.store-preview .product-row{grid-template-columns:repeat(4,minmax(0,1fr))}
+.store-preview .product-mock{background:#fff;color:#172033;border-color:#e4e7ec;box-shadow:0 2px 8px rgba(16,24,40,.06)}
+.store-preview .product-mock small{color:#667085}
+.store-preview .category-row>div{background:#fff;color:#172033;border-color:#e4e7ec;box-shadow:0 2px 8px rgba(16,24,40,.05)}
+.store-preview .promo-strip{margin:0;border-radius:0;font-size:11px;padding:7px 14px}
+.banner-row .banner-info span{font-weight:750;color:#475467}
+.hero-editor-card select option{color:#101828}
+.store-preview.device-tablet .store-header{grid-template-columns:auto 1fr}
+.store-preview.device-tablet .store-header nav{grid-column:1/-1;justify-content:center}
+.store-preview.device-mobile .store-header{display:flex}
+.store-preview.device-mobile .store-search,.store-preview.device-mobile .store-header nav{display:none}
+.store-preview.device-mobile .store-main-flow{padding:0 7px 16px;gap:10px}
+.store-preview.device-mobile .preview-carousel-wide{margin:0}
+.store-preview.device-mobile .preview-carousel-wide .wide-copy{max-width:85%;padding:18px 20px}
+.store-preview.device-mobile .preview-carousel-wide .wide-copy h1{font-size:22px}
+.store-preview.device-mobile .product-row,.store-preview.device-mobile .category-row{grid-template-columns:repeat(2,minmax(0,1fr))}
+.store-preview.device-mobile .compact-section{padding:5px 0 8px}
+.store-preview.device-mobile .preview-carousel-hero{margin-top:7px}
+@media(max-width:900px){
+  .hero-builder-grid{grid-template-columns:1fr}
+}

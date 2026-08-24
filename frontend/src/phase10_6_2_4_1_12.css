@@ -1,0 +1,57 @@
+/* GMX 10.6.2.4.1.12 — POS ticket/comprobante */
+.pos-sale-completed{display:flex;justify-content:space-between;align-items:center;gap:16px;margin:12px 0;padding:14px 16px;border:1px solid #abefc6;border-radius:14px;background:#ecfdf3}
+.pos-sale-completed>div:first-child{display:grid;gap:3px}.pos-sale-completed>div:first-child>strong{font-size:18px}.pos-sale-completed small{color:#475467}
+.pos-receipt-actions,.pos-history-actions{display:flex;gap:7px;flex-wrap:wrap;align-items:center}.pos-history-actions{justify-content:flex-end}
+@media(max-width:850px){.pos-sale-completed{align-items:stretch;flex-direction:column}.pos-receipt-actions>*{flex:1 1 180px}}
+
+/* GMX 10.6.2.4.1.12.1.2 — Pago de pedido pendiente */
+.pos-pay-order-btn{background:#101828;color:#fff}
+.pos-payment-modal{width:min(680px,calc(100vw - 28px)) !important}
+.pos-payment-order-summary{
+  display:grid;
+  grid-template-columns:1fr 1fr 1fr;
+  gap:10px;
+  margin-bottom:14px;
+}
+.pos-payment-order-summary>div{
+  display:grid;
+  gap:4px;
+  padding:11px 12px;
+  border:1px solid #e4e7ec;
+  border-radius:11px;
+  background:#f9fafb;
+}
+.pos-payment-order-summary span{
+  color:#667085;
+  font-size:10px;
+  font-weight:850;
+  text-transform:uppercase;
+}
+.pos-payment-order-summary strong{font-size:15px}
+.pos-payment-fields{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:12px;
+}
+.pos-payment-fields label{
+  display:grid;
+  gap:6px;
+  font-size:11px;
+  font-weight:800;
+}
+.pos-payment-fields .span-2{grid-column:1/-1}
+.pos-payment-warning{
+  margin-top:14px;
+  padding:11px 12px;
+  border:1px solid #fedf89;
+  border-radius:10px;
+  background:#fffaeb;
+  color:#854a0e;
+  font-size:11px;
+  line-height:1.45;
+}
+@media(max-width:720px){
+  .pos-payment-order-summary,
+  .pos-payment-fields{grid-template-columns:1fr}
+  .pos-payment-fields .span-2{grid-column:auto}
+}

@@ -1,0 +1,14 @@
+.buylist-stack,.buylist-body{display:grid;gap:16px}
+.buylist-body{padding:18px 20px}
+.buylist-top{display:grid;grid-template-columns:1fr 1fr 1.3fr;gap:10px}
+.buylist-top label,.buylist-line label,.rule-form label{display:grid;gap:6px;font-size:12px;font-weight:700;color:#344054}
+.buylist-lines{display:grid;gap:8px}
+.buylist-line{display:grid;grid-template-columns:minmax(180px,1.4fr) 90px 80px 80px 130px 34px;gap:8px;align-items:end;border:1px solid #eaecf0;border-radius:10px;padding:10px}
+.buylist-line>div strong,.buylist-line>div span{display:block}.buylist-line>div span{font-size:11px;color:#667085}
+.buylist-actions{display:flex;justify-content:flex-end;gap:12px;align-items:center}.buylist-actions>div{text-align:right}.buylist-actions span,.buylist-actions strong{display:block}.buylist-actions span{font-size:11px;color:#667085}.buylist-actions strong{font-size:22px}
+.rule-form{border:1px solid #eaecf0;border-radius:14px;padding:16px}.rule-form h3{margin-top:0}
+.buylist-modal{max-height:calc(100vh - 30px);overflow:auto}
+.buylist-status{display:flex;gap:18px;padding:10px 0}.decision-box{display:grid;grid-template-columns:160px 1fr auto auto;gap:8px;margin:14px 0}
+.secondary-danger{margin-top:10px}
+.audit-list{display:grid;gap:6px;margin-top:18px;border-top:1px solid #eaecf0;padding-top:14px}.audit-list h3{margin:0 0 4px}.audit-list>div{display:grid;grid-template-columns:150px 170px 1fr;gap:8px;font-size:12px;padding:7px 0;border-bottom:1px solid #f2f4f7}.audit-list small{color:#667085}
+@media(max-width:900px){.buylist-top{grid-template-columns:1fr}.buylist-line{grid-template-columns:1fr 1fr 1fr}.buylist-line>div{grid-column:1/-1}.decision-box{grid-template-columns:1fr 1fr}.audit-list>div{grid-template-columns:1fr}}

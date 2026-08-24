@@ -1,0 +1,10 @@
+
+/* GMX 10.6.2.3.3 — per-expansion sync result */
+.tcg-sync-result-card{padding:18px;border:1px solid #eaecf0;border-radius:14px;background:#fff}
+.tcg-sync-result-list{display:grid;gap:8px}
+.tcg-sync-result-list article{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:5px 12px;padding:11px;border-radius:10px;border:1px solid #eaecf0}
+.tcg-sync-result-list article>div{display:grid}.tcg-sync-result-list article small{color:#667085}.tcg-sync-result-list article>span{font-weight:850}
+.tcg-sync-result-list article p{grid-column:1/-1;margin:2px 0 0;font-size:11px;line-height:1.45;overflow-wrap:anywhere}
+.tcg-sync-result-list article.success{background:#ecfdf3;border-color:#abefc6;color:#067647}
+.tcg-sync-result-list article.warning{background:#fffaeb;border-color:#fedf89;color:#93370d}
+.tcg-sync-result-list article.error{background:#fef3f2;border-color:#fecdca;color:#b42318}

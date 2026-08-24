@@ -1,0 +1,14 @@
+/* GMX 10.6.2.4.1.12.1.7 — Portal Público completo */
+.public-search-section{display:grid;gap:12px;margin:26px 0}
+.tcg-public-detail .product-detail-image{align-self:start}
+.tcg-detail-badges{display:flex;gap:6px;flex-wrap:wrap}
+.tcg-detail-badges span{padding:5px 8px;border:1px solid color-mix(in srgb,var(--ps-muted) 30%,transparent);border-radius:999px;font-size:11px}
+.public-regular-price{color:var(--ps-muted);font-size:12px;text-decoration:line-through}
+.checkout-master-lock{margin:8px 0 14px;padding:10px 12px;border:1px solid color-mix(in srgb,#12b76a 50%,transparent);border-radius:10px;background:color-mix(in srgb,#12b76a 10%,transparent);font-size:11px}
+.checkout-saved-address{display:grid;gap:6px;margin:10px 0 14px;font-size:11px;font-weight:800}
+.account-loyalty-card{margin:16px 0;padding:18px;border:1px solid color-mix(in srgb,var(--ps-muted) 25%,transparent);border-radius:var(--ps-radius);background:color-mix(in srgb,var(--ps-surface) 86%,transparent)}
+.account-loyalty-head{display:flex;justify-content:space-between;align-items:center;gap:12px}.account-loyalty-head h2{margin:0}.account-loyalty-head p{margin:4px 0 0;color:var(--ps-muted);font-size:11px}.account-loyalty-head>strong{font-size:22px}
+.loyalty-public-ledger{display:grid;margin-top:12px;border-top:1px solid color-mix(in srgb,var(--ps-muted) 20%,transparent)}
+.loyalty-public-ledger>div{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:12px;align-items:center;padding:10px 0;border-bottom:1px solid color-mix(in srgb,var(--ps-muted) 16%,transparent);font-size:11px}
+.loyalty-public-ledger span{display:grid;gap:2px}.loyalty-public-ledger small,.loyalty-public-ledger em{color:var(--ps-muted);font-size:10px;font-style:normal}.loyalty-public-ledger .positive{color:#12b76a}.loyalty-public-ledger .negative{color:#f04438}
+@media(max-width:700px){.loyalty-public-ledger>div{grid-template-columns:1fr auto}.loyalty-public-ledger em{grid-column:1/-1}}

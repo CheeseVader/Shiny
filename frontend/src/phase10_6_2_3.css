@@ -1,0 +1,36 @@
+
+/* GMX 10.6.2.3 — selective TCG auto sync */
+.tcg-autosync-page{display:grid;gap:14px}
+.tcg-sync-explainer{display:flex;justify-content:space-between;align-items:center;gap:18px;padding:18px;border:1px solid #d1e9ff;border-radius:14px;background:#eff8ff}
+.tcg-sync-explainer span{color:#175cd3;font-size:11px;font-weight:950;letter-spacing:.1em}.tcg-sync-explainer h3{margin:3px 0}.tcg-sync-explainer p{margin:0;color:#475467}
+.tcg-sync-flow{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.tcg-sync-flow b{padding:7px 9px;border-radius:8px;background:#fff;color:#175cd3}.tcg-sync-flow i{color:#667085}
+.tcg-sync-layout{display:grid;grid-template-columns:280px minmax(0,1fr);gap:14px}
+.tcg-provider-list{align-self:start;display:grid;gap:6px;padding:12px;border:1px solid #eaecf0;border-radius:14px;background:#fff;max-height:calc(100vh - 200px);overflow:auto}
+.tcg-provider-head{display:flex;justify-content:space-between;align-items:end;padding:4px 5px 9px}.tcg-provider-head h3{margin:0}.tcg-provider-head small{color:#667085}
+.tcg-provider-list>button{display:flex;justify-content:space-between;align-items:center;gap:8px;width:100%;padding:10px;border:1px solid transparent;border-radius:10px;background:#f9fafb;color:#101828;text-align:left;cursor:pointer}
+.tcg-provider-list>button:hover{background:#f2f4f7}.tcg-provider-list>button.active{border-color:#84adff;background:#eff4ff}
+.tcg-provider-list button>div{display:grid;gap:2px}.tcg-provider-list button small{color:#667085}
+.provider-status{padding:4px 6px;border-radius:999px;background:#f2f4f7;color:#475467;font-size:9px;font-weight:900;white-space:nowrap}.provider-status.ready{background:#ecfdf3;color:#027a48}
+.tcg-sync-main{display:grid;gap:12px;min-width:0}
+.tcg-sync-provider-card,.tcg-select-sets-card,.tcg-sync-options-card,.tcg-price-compare-card{padding:18px;border:1px solid #eaecf0;border-radius:14px;background:#fff}
+.tcg-sync-provider-title{display:flex;justify-content:space-between;gap:18px}.tcg-sync-provider-title span{color:#667085;font-size:11px;font-weight:800}.tcg-sync-provider-title h2{margin:3px 0}.tcg-sync-provider-title p{margin:0;color:#667085}
+.tcg-provider-capabilities{display:flex;gap:5px;flex-wrap:wrap;justify-content:flex-end}.tcg-provider-capabilities span{padding:6px 8px;border-radius:999px;font-size:10px;font-weight:900}.tcg-provider-capabilities .yes{background:#ecfdf3;color:#027a48}.tcg-provider-capabilities .no{background:#f2f4f7;color:#98a2b3}
+.tcg-sync-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-top:14px}.tcg-sync-stats>div{display:grid;gap:4px;padding:11px;border-radius:10px;background:#f9fafb}.tcg-sync-stats span{color:#667085;font-size:10px}.tcg-sync-stats strong{font-size:13px;overflow-wrap:anywhere}
+.tcg-provider-error{margin-top:10px;padding:10px;border-radius:9px;background:#fef3f2;color:#b42318;font-size:12px}
+.tcg-sync-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:12px}.tcg-sync-actions button{min-height:42px}
+.tcg-set-select-actions{display:flex;gap:5px}
+.tcg-select-sets-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;max-height:430px;overflow:auto;padding-right:3px}
+.tcg-select-sets-grid>label{display:grid;grid-template-columns:22px minmax(0,1fr) auto;align-items:center;gap:8px;padding:10px;border:1px solid #eaecf0;border-radius:10px;background:#f9fafb;cursor:pointer}.tcg-select-sets-grid>label.selected{border-color:#84adff;background:#eff4ff}
+.tcg-select-sets-grid label div{display:grid}.tcg-select-sets-grid small{color:#667085}.tcg-select-sets-grid label>span{color:#667085;font-size:10px}
+.tcg-sync-options-card h3{margin-top:0}.tcg-sync-options{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}.tcg-sync-options>label{display:flex;align-items:center;gap:7px;padding:10px;border:1px solid #eaecf0;border-radius:10px;background:#f9fafb;font-size:12px;font-weight:750}.tcg-sync-options select{margin-left:auto;max-width:110px}
+.tcg-catalog-only-note{flex:1;padding:10px;border-radius:9px;background:#fffaeb;color:#93370d;font-size:12px;line-height:1.4}
+.tcg-price-search{display:grid;grid-template-columns:1fr auto;gap:7px}.tcg-price-search input{height:42px;padding:0 11px;border:1px solid #d0d5dd;border-radius:9px}
+.tcg-price-card-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-top:12px}.tcg-price-card-grid>button{display:grid;grid-template-columns:54px 1fr;gap:8px;padding:8px;border:1px solid #eaecf0;border-radius:10px;background:#fff;text-align:left;color:#101828;cursor:pointer}.tcg-price-card-grid>button:hover{border-color:#84adff;background:#f9fbff}
+.tcg-sync-card-image{display:grid;place-items:center;width:54px;height:74px;border-radius:6px;background:#f2f4f7;overflow:hidden;font-size:9px;font-weight:900}.tcg-sync-card-image img{width:100%;height:100%;object-fit:contain}
+.tcg-price-card-grid button>div:last-child{display:grid;align-content:center;gap:2px;min-width:0}.tcg-price-card-grid small,.tcg-price-card-grid span{color:#667085;font-size:9px;overflow:hidden;text-overflow:ellipsis}.tcg-price-card-grid b{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tcg-price-comparison{display:grid;gap:12px;margin-top:14px;padding-top:14px;border-top:1px solid #eaecf0}.tcg-price-selected{display:flex;gap:12px;align-items:center}.tcg-price-selected h3{margin:2px 0}.tcg-price-selected p{margin:0;color:#667085}.tcg-price-large-image{display:grid;place-items:center;width:90px;height:125px;border-radius:8px;background:#f2f4f7;overflow:hidden}.tcg-price-large-image img{width:100%;height:100%;object-fit:contain}
+.tcg-price-provider-select{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:800}.tcg-price-provider-select select{height:38px;padding:0 8px;border:1px solid #d0d5dd;border-radius:8px;background:#fff}
+.tcg-price-comparison table a{color:#175cd3;font-weight:800}
+@media(max-width:1150px){.tcg-sync-layout{grid-template-columns:1fr}.tcg-provider-list{grid-template-columns:repeat(3,1fr);max-height:none}.tcg-provider-head{grid-column:1/-1}.tcg-price-card-grid{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:850px){.tcg-sync-stats,.tcg-sync-options{grid-template-columns:1fr 1fr}.tcg-select-sets-grid{grid-template-columns:1fr}.tcg-provider-list{grid-template-columns:1fr 1fr}.tcg-price-card-grid{grid-template-columns:1fr 1fr}.tcg-sync-explainer{align-items:flex-start;flex-direction:column}}
+@media(max-width:560px){.tcg-sync-stats,.tcg-sync-options,.tcg-provider-list,.tcg-price-card-grid{grid-template-columns:1fr}.tcg-sync-provider-title{flex-direction:column}.tcg-provider-capabilities{justify-content:flex-start}}

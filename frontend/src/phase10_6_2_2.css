@@ -1,0 +1,37 @@
+
+/* GMX 10.6.2.2 — TCG master catalog + Excel import */
+.tcg-master-add small,.tcg-store-games p,.tcg-import-card p{color:#667085;line-height:1.45}
+.tcg-master-summary{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0}.tcg-master-summary span{padding:6px 9px;border-radius:999px;background:#f2f4f7;color:#344054;font-size:11px;font-weight:850}
+.tcg-master-actions{display:grid;grid-template-columns:1fr 1fr;gap:7px}.tcg-master-actions button{min-height:40px}
+.tcg-store-games{margin-top:14px;padding:18px;border:1px solid #eaecf0;border-radius:14px;background:#fff}.section-head.compact{padding:0 0 12px;border:0}.section-head.compact h3{margin:0}.section-head.compact p{margin:4px 0 0}
+.tcg-game-toggle-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}.tcg-game-toggle-grid>article{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px;border:1px solid #eaecf0;border-radius:11px;background:#f9fafb}.tcg-game-toggle-grid article>div{display:grid}.tcg-game-toggle-grid small{color:#667085}
+.tcg-visible-toggle{display:flex;align-items:center;gap:7px;font-size:11px;font-weight:850;color:#344054}.tcg-visible-toggle input{width:17px;height:17px}
+.tcg-import-center{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}.tcg-import-card{display:grid;align-content:start;gap:9px;padding:18px;border:1px solid #eaecf0;border-radius:14px;background:#fff}.tcg-import-card h3{margin:0}.button-link{display:inline-flex;align-items:center;justify-content:center;min-height:40px;padding:0 13px;border-radius:9px;text-decoration:none;font-weight:850}
+.file-action,.file-inline{display:inline-flex;align-items:center;justify-content:center;min-height:40px;padding:0 13px;border-radius:9px;background:#101828;color:#fff;font-weight:850;cursor:pointer;text-align:center}.file-action input,.file-inline input{display:none}.file-inline.secondary{background:#f2f4f7;color:#344054;border:1px solid #d0d5dd}
+.products-head-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+@media(max-width:1100px){.tcg-game-toggle-grid,.tcg-import-center{grid-template-columns:1fr 1fr}}
+@media(max-width:700px){.tcg-game-toggle-grid,.tcg-import-center,.tcg-master-actions{grid-template-columns:1fr}.products-head-actions{align-items:stretch;flex-direction:column}.products-head-actions>*{width:100%}}
+
+.tcg-scope-filter{grid-template-columns:repeat(3,minmax(180px,1fr))!important}
+.tcg-scope-note{margin:-4px 0 10px;padding:9px 11px;border-radius:9px;background:#eff8ff;color:#175cd3;font-size:12px;font-weight:750}
+@media(max-width:800px){.tcg-scope-filter{grid-template-columns:1fr!important}}
+
+/* GMX global form validation */
+input[data-gmx-validation]:invalid:not(:placeholder-shown),
+textarea[data-gmx-validation]:invalid:not(:placeholder-shown){
+  border-color:#f04438!important;
+  outline-color:#f04438!important;
+  box-shadow:0 0 0 3px rgba(240,68,56,.10);
+}
+input[data-gmx-validation]:valid:not(:placeholder-shown){
+  border-color:#12b76a;
+}
+.address-form .geo-select-grid{grid-column:1/-1}
+.form-validation-hint{font-size:11px;color:#667085}
+
+.tcg-master-sync-card{display:grid;align-content:start;gap:10px}
+.tcg-master-catalog-list{display:grid;gap:8px}
+.tcg-master-preview-select{width:100%;min-height:42px;padding:0 10px;border:1px solid #d0d5dd;border-radius:9px;background:#fff;color:#101828}
+.tcg-master-empty{padding:10px;border:1px dashed #d0d5dd;border-radius:9px;background:#f9fafb;color:#667085;font-size:12px;line-height:1.45}
+.tcg-master-rarity-chips{display:flex;gap:6px;flex-wrap:wrap}
+.tcg-master-rarity-chips span{padding:6px 8px;border-radius:999px;background:#eff8ff;color:#175cd3;font-size:11px;font-weight:850}

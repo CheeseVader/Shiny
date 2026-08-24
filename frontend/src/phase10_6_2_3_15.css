@@ -1,0 +1,101 @@
+
+/* GMX 10.6.2.3.15 — large card detail inside the CURRENT viewport */
+.master-card-modal-backdrop{
+  position:fixed !important;
+  inset:0 !important;
+  width:100vw !important;
+  height:100dvh !important;
+  padding:clamp(16px,3vh,34px) !important;
+  display:flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+  overflow:hidden !important;
+}
+
+.master-card-modal{
+  position:relative !important;
+  width:min(78vw,1180px) !important;
+  max-width:none !important;
+  height:min(80dvh,820px) !important;
+  max-height:calc(100dvh - 32px) !important;
+  margin:0 !important;
+  display:flex !important;
+  flex-direction:column !important;
+  overflow:auto !important;
+}
+
+.master-card-modal-main{
+  display:grid !important;
+  grid-template-columns:minmax(250px,36%) minmax(0,1fr) !important;
+  gap:clamp(20px,3vw,42px) !important;
+  align-items:start !important;
+  padding:clamp(22px,3vw,38px) !important;
+}
+
+.master-card-modal-image{
+  min-height:0 !important;
+  height:min(52dvh,590px) !important;
+  display:flex !important;
+  align-items:flex-start !important;
+  justify-content:center !important;
+}
+
+.master-card-modal-image img{
+  width:100% !important;
+  height:100% !important;
+  max-width:430px !important;
+  object-fit:contain !important;
+}
+
+.master-card-modal-main h2{
+  font-size:clamp(26px,2.4vw,40px) !important;
+  line-height:1.08 !important;
+  margin:.35rem 0 .65rem !important;
+}
+
+.master-card-details{
+  display:grid !important;
+  grid-template-columns:repeat(2,minmax(0,1fr)) !important;
+  gap:12px !important;
+  margin-top:22px !important;
+}
+
+.master-card-details>div{
+  padding:14px !important;
+  border:1px solid #eaecf0 !important;
+  border-radius:12px !important;
+  background:#f9fafb !important;
+}
+
+.master-price-admin-only{
+  margin:0 clamp(22px,3vw,38px) clamp(22px,3vw,38px) !important;
+  padding-top:18px !important;
+  border-top:1px solid #eaecf0 !important;
+}
+
+.master-card-close{
+  position:absolute !important;
+  top:14px !important;
+  right:14px !important;
+  z-index:10 !important;
+  float:none !important;
+  margin:0 !important;
+  width:42px !important;
+  height:42px !important;
+}
+
+@media(max-width:900px){
+  .master-card-modal{
+    width:calc(100vw - 24px) !important;
+    height:calc(100dvh - 24px) !important;
+  }
+  .master-card-modal-main{
+    grid-template-columns:1fr !important;
+  }
+  .master-card-modal-image{
+    height:min(42dvh,460px) !important;
+  }
+  .master-card-details{
+    grid-template-columns:1fr !important;
+  }
+}

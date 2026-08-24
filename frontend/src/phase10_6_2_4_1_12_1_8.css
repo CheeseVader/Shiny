@@ -1,0 +1,9 @@
+/* GMX 10.6.2.4.1.12.1.8 */
+.rbac-tabs{display:flex;gap:7px;flex-wrap:wrap;margin:14px 0}.rbac-tabs button{padding:8px 12px;border:1px solid #d0d5dd;border-radius:9px;background:#fff;font-weight:800}.rbac-tabs button.active{background:#101828;color:#fff}
+.role-pill{display:inline-flex;padding:4px 7px;border-radius:999px;background:#f2f4f7;font-size:9px;font-weight:900}
+.branch-scope-box{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px 10px;padding:10px;border:1px solid #e4e7ec;border-radius:10px;background:#f9fafb}.branch-scope-box>b{grid-column:1/-1}.branch-scope-box label{display:flex!important;align-items:center;gap:6px}
+.rbac-info{padding:10px 12px;border:1px solid #b2ddff;border-radius:10px;background:#eff8ff;color:#175cd3;font-size:10px}
+.rbac-user-grid{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(300px,.8fr);gap:14px}.rbac-user-main,.rbac-security-panel{display:grid;gap:10px;padding:14px;border:1px solid #e4e7ec;border-radius:12px}
+.permission-editor{display:grid;gap:12px;margin-top:14px;padding-top:14px;border-top:1px solid #e4e7ec}.permission-head{display:flex;justify-content:space-between;gap:12px}
+.permission-table-wrap{overflow:auto;border:1px solid #e4e7ec;border-radius:10px}.permission-table{width:100%;border-collapse:collapse;min-width:790px}.permission-table th,.permission-table td{padding:8px 9px;border-bottom:1px solid #f2f4f7;text-align:center;font-size:10px}.permission-table th{background:#f9fafb}.permission-table td:first-child,.permission-table th:first-child{text-align:left}.permission-table td:first-child small{display:block;color:#98a2b3}
+@media(max-width:900px){.rbac-user-grid{grid-template-columns:1fr}}@media(max-width:650px){.branch-scope-box{grid-template-columns:1fr}}

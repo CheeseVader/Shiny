@@ -1,0 +1,14 @@
+/* GMX 10.6.2.4.1.12.1.5 — Gestión Comercial */
+.commercial-form-head,.commercial-head-actions{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.commercial-form-head h3{margin:0}.commercial-form-head small{color:#667085}
+.source-pill{display:inline-flex;padding:4px 7px;border-radius:999px;background:#f2f4f7;color:#475467;font-size:9px;font-weight:900}
+.source-pill.tcg{background:#eef4ff;color:#3538cd}
+.finance-rule-note{margin-top:12px;padding:10px 12px;border:1px solid #d0d5dd;border-radius:10px;background:#f9fafb;color:#475467;font-size:11px;line-height:1.45}
+.table-subline{display:block;color:#667085;font-size:10px;margin-top:2px}
+.commercial-payment-modal{width:min(680px,calc(100vw - 28px))!important}
+.payment-summary-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-bottom:14px}
+.payment-summary-grid>div{display:grid;gap:3px;padding:10px;border:1px solid #e4e7ec;border-radius:10px;background:#f9fafb}
+.payment-summary-grid span{font-size:9px;color:#667085;text-transform:uppercase;font-weight:900}
+.payment-history-mini{display:grid;gap:5px;margin-top:12px;padding:10px;border:1px solid #e4e7ec;border-radius:10px}
+.payment-history-mini span{font-size:10px;color:#475467}
+@media(max-width:700px){.payment-summary-grid{grid-template-columns:1fr}.commercial-head-actions{align-items:flex-start;flex-direction:column}}

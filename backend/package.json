@@ -1,0 +1,22 @@
+{
+  "name": "tcg-store-api",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node --watch src/server.js",
+    "start": "node src/server.js"
+  },
+  "dependencies": {
+    "cors": "latest",
+    "dotenv": "latest",
+    "express": "latest",
+    "helmet": "latest",
+    "mercadopago": "^3.4.0",
+    "nodemailer": "latest",
+    "pdfkit": "^0.17.2",
+    "pg": "latest",
+    "stripe": "latest",
+    "xlsx": "latest"
+  }
+}

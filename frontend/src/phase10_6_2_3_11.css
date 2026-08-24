@@ -1,0 +1,10 @@
+
+/* GMX 10.6.2.3.11 — Master Catalog load states */
+.master-catalog-loading{
+  padding:18px;margin:10px 0;border-radius:10px;background:#f9fafb;
+  color:#475467;font-weight:800;text-align:center
+}
+.master-catalog-error{
+  padding:14px;margin:10px 0;border:1px solid #fecdca;border-radius:10px;
+  background:#fef3f2;color:#b42318;font-weight:750;line-height:1.45
+}

@@ -1,0 +1,23 @@
+.tcgops-stack,.tcgops-body{display:grid;gap:16px}.tcgops-body{padding:18px 20px}
+.tcgops-toolbar{display:grid;grid-template-columns:260px 1fr;gap:10px;padding:14px 20px;border-bottom:1px solid #eaecf0}
+.tcgops-toolbar label,.ops-card label,.cart-box label{display:grid;gap:6px;font-size:12px;font-weight:700;color:#344054}
+.tcgops-tabs{overflow-x:auto}.tcg-pos-grid{display:grid;grid-template-columns:minmax(0,1.7fr) minmax(320px,.8fr);gap:14px}
+.tcg-pos-grid section,.ops-card,.cart-box,.count-box{border:1px solid #eaecf0;border-radius:14px;padding:14px;background:#fff}
+.tcg-pos-grid h3,.ops-card h3,.cart-box h3{margin-top:0}.cart-box{display:grid;gap:10px;align-content:start}
+.cart-row{display:grid;grid-template-columns:1fr 68px 100px 34px;gap:6px;align-items:center;border-bottom:1px solid #f2f4f7;padding-bottom:8px}
+.cart-row small,.block{display:block;color:#667085}.cart-total{display:flex;justify-content:space-between;align-items:end;border-top:1px solid #eaecf0;padding-top:10px}.cart-total strong{font-size:24px}
+.tcgops-two{grid-template-columns:1fr 1fr}.ops-card{display:grid;gap:10px}.ops-card p{margin:0;color:#667085}
+.label-controls,.count-actions,.count-footer{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.qty-small{width:76px!important}.file-btn{display:inline-flex;align-items:center;padding:9px 12px;border-radius:9px;background:#eef2f6;font-weight:700;cursor:pointer}.file-btn input{display:none}
+.label-print-area{display:none}.count-footer{justify-content:flex-end;margin-top:12px}
+@media print{
+ body *{visibility:hidden!important}.label-print-area,.label-print-area *{visibility:visible!important}
+ .label-print-area{display:grid!important;grid-template-columns:repeat(auto-fill,minmax(50mm,1fr));position:absolute;left:0;top:0;width:100%;gap:2mm}
+ .print-label{break-inside:avoid;border:1px solid #000;padding:2mm;display:grid;grid-template-columns:24mm 1fr;gap:2mm;overflow:hidden;background:#fff;color:#000}
+ .print-label.size-50x30{width:50mm;height:30mm}.print-label.size-60x40{width:60mm;height:40mm}
+ .print-label .qr{width:22mm;height:22mm;align-self:center}.label-info{display:grid;align-content:center;gap:1mm;font-size:7pt}
+ .label-info strong{font-size:8pt}.label-info small{font-size:5pt;word-break:break-all}
+}
+@media(max-width:1000px){.tcg-pos-grid,.tcgops-two{grid-template-columns:1fr}.tcgops-toolbar{grid-template-columns:1fr}}
+
+.scan-camera{width:min(520px,100%);border-radius:12px;background:#111;aspect-ratio:16/9;object-fit:cover}

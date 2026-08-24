@@ -1,0 +1,64 @@
+
+/* GMX 10.6.2.3.17 — render card modal through React Portal */
+body > .master-card-modal-backdrop{
+  position:fixed !important;
+  inset:0 !important;
+  z-index:2147483000 !important;
+  width:100vw !important;
+  height:100dvh !important;
+  min-height:100vh !important;
+  display:flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+  padding:24px !important;
+  margin:0 !important;
+  overflow:hidden !important;
+  opacity:1 !important;
+  visibility:visible !important;
+  pointer-events:auto !important;
+  background:rgba(15,23,42,.68) !important;
+  backdrop-filter:none !important;
+  -webkit-backdrop-filter:none !important;
+}
+
+body > .master-card-modal-backdrop > .master-card-modal{
+  position:relative !important;
+  z-index:2147483001 !important;
+  display:flex !important;
+  flex-direction:column !important;
+  width:min(78vw,1180px) !important;
+  max-width:1180px !important;
+  height:min(80dvh,820px) !important;
+  max-height:calc(100dvh - 48px) !important;
+  min-height:420px !important;
+  margin:0 !important;
+  padding:0 !important;
+  overflow-y:auto !important;
+  opacity:1 !important;
+  visibility:visible !important;
+  transform:none !important;
+  background:#fff !important;
+  color:#101828 !important;
+  border:1px solid #d0d5dd !important;
+  border-radius:18px !important;
+  box-shadow:0 30px 90px rgba(0,0,0,.38) !important;
+}
+
+body > .master-card-modal-backdrop .master-card-modal-main{
+  flex:0 0 auto !important;
+}
+
+body > .master-card-modal-backdrop .master-price-admin-only{
+  flex:0 0 auto !important;
+}
+
+@media(max-width:900px){
+  body > .master-card-modal-backdrop{
+    padding:10px !important;
+  }
+  body > .master-card-modal-backdrop > .master-card-modal{
+    width:calc(100vw - 20px) !important;
+    height:calc(100dvh - 20px) !important;
+    max-height:calc(100dvh - 20px) !important;
+  }
+}

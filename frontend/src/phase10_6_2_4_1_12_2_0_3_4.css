@@ -1,0 +1,22 @@
+/* GMX 10.6.2.4.1.12.2.0.3.4 — Slideshow responsive automático */
+.slideshow-auto-responsive-note{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  padding:9px 11px;
+  border:1px solid #d0d5dd;
+  border-radius:9px;
+  background:#f9fafb;
+  color:#475467;
+  font-size:9px;
+}
+.slideshow-auto-responsive-note b{
+  color:#101828;
+  white-space:nowrap;
+}
+@media(max-width:620px){
+  .slideshow-auto-responsive-note{
+    align-items:flex-start;
+    flex-direction:column;
+  }
+}

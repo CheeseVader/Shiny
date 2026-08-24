@@ -1,0 +1,37 @@
+
+/* GMX 10.5.5 — Slideshow image diagnostics + loyalty business rules */
+.slideshow-media-diagnostic,.slideshow-media-loading{
+  position:absolute;inset:0;z-index:1;display:grid;place-content:center;gap:7px;
+  padding:24px;text-align:center;background:linear-gradient(135deg,#3b1f3f,#6b3fa8);color:#fff
+}
+.slideshow-media-diagnostic{background:linear-gradient(135deg,#7a271a,#b42318)}
+.slideshow-media-diagnostic strong{font-size:16px}
+.slideshow-media-diagnostic span{max-width:620px;font-size:13px}
+.slideshow-media-diagnostic small{opacity:.82}
+.preview-carousel .hero-media{z-index:1}
+.preview-carousel .hero-dark{z-index:2}
+.preview-carousel .hero-copy,.preview-carousel .carousel-arrow,.preview-carousel .carousel-dots{z-index:3}
+
+.loyalty-admin-v2{display:grid;gap:14px}
+.loyalty-rules-card{gap:18px}
+.loyalty-rules-head{display:flex;justify-content:space-between;gap:16px;align-items:flex-start}
+.loyalty-rules-head h3{margin:0}
+.loyalty-rules-head p{margin:4px 0 0;color:#667085}
+.loyalty-rules-card .contentmk-fields small{color:#667085;font-weight:500;line-height:1.35}
+.loyalty-example{display:grid;grid-template-columns:minmax(220px,.42fr) minmax(0,1.58fr);gap:12px;padding:14px;border:1px solid #b2ddff;border-radius:12px;background:#eff8ff}
+.loyalty-example label{display:grid;gap:6px;font-size:12px;font-weight:800}
+.loyalty-example input{height:42px;border:1px solid #84adff;border-radius:9px;padding:0 10px}
+.loyalty-formula{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.loyalty-formula span{display:grid;gap:3px;padding:10px;border-radius:9px;background:#fff;color:#475467}
+.loyalty-formula strong{grid-column:1/-1;padding:12px;border-radius:9px;background:#101828;color:#fff;font-size:16px}
+.loyalty-account-grid{display:grid;grid-template-columns:minmax(340px,.7fr) minmax(0,1.3fr);gap:14px}
+.loyalty-account-grid .loyalty-balance{min-height:72px}
+
+@media(max-width:1000px){
+  .loyalty-account-grid,.loyalty-example{grid-template-columns:1fr}
+}
+@media(max-width:700px){
+  .loyalty-rules-head{flex-direction:column}
+  .loyalty-formula{grid-template-columns:1fr}
+  .loyalty-formula strong{grid-column:auto}
+}

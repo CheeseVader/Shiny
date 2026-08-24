@@ -1,0 +1,74 @@
+/* GMX 10.6.2.4.1.9.2.2 — Inventory Adjust Modal Fix */
+.inventory-adjust-modal{
+  width:min(620px,calc(100vw - 32px)) !important;
+  max-width:620px !important;
+  padding:28px 30px !important;
+  box-sizing:border-box !important;
+}
+.inventory-adjust-head{align-items:flex-start !important}
+.inventory-adjust-head .section-copy{margin:5px 0 0}
+.inventory-adjust-form{display:grid;gap:18px}
+.inventory-adjust-fields{
+  display:grid !important;
+  grid-template-columns:minmax(0,1fr) minmax(150px,.55fr) !important;
+  gap:14px !important;
+  width:100% !important;
+}
+.inventory-adjust-fields label{
+  display:grid !important;
+  grid-template-columns:1fr !important;
+  gap:7px !important;
+  min-width:0 !important;
+  width:auto !important;
+  margin:0 !important;
+}
+.inventory-adjust-fields label>span{
+  font-size:12px;
+  font-weight:800;
+  color:#344054;
+}
+.inventory-adjust-fields input,
+.inventory-adjust-fields select,
+.inventory-adjust-fields textarea{
+  display:block !important;
+  width:100% !important;
+  min-width:0 !important;
+  max-width:none !important;
+  box-sizing:border-box !important;
+  margin:0 !important;
+}
+.inventory-adjust-fields input,
+.inventory-adjust-fields select{
+  min-height:46px !important;
+}
+.inventory-adjust-reason{
+  grid-column:1/-1 !important;
+}
+.inventory-adjust-reason textarea{
+  min-height:86px !important;
+  resize:vertical;
+}
+.inventory-adjust-preview{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:12px;
+  padding:11px 14px;
+  border:1px solid #e4e7ec;
+  border-radius:11px;
+  background:#f9fafb;
+  color:#475467;
+  font-size:12px;
+}
+.inventory-adjust-preview strong{color:#101828;font-size:15px}
+.inventory-adjust-actions{
+  justify-content:flex-end !important;
+  margin-top:0 !important;
+}
+.inventory-adjust-actions button{min-height:44px}
+@media(max-width:600px){
+  .inventory-adjust-modal{padding:22px 18px !important}
+  .inventory-adjust-fields{grid-template-columns:1fr !important}
+  .inventory-adjust-reason{grid-column:1 !important}
+  .inventory-adjust-preview{flex-wrap:wrap}
+}

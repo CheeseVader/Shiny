@@ -1,0 +1,57 @@
+
+/* GMX 10.6.2.3.14 — always-visible viewport modal */
+.master-card-modal-backdrop{
+  position:fixed !important;
+  inset:0 !important;
+  z-index:100000 !important;
+  display:flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+  width:100vw !important;
+  height:100dvh !important;
+  min-height:100vh !important;
+  padding:18px !important;
+  overflow:hidden !important;
+  background:rgba(16,24,40,.58) !important;
+  backdrop-filter:blur(4px);
+}
+
+.master-card-modal{
+  position:relative !important;
+  inset:auto !important;
+  margin:0 !important;
+  width:min(920px,calc(100vw - 36px)) !important;
+  max-width:920px !important;
+  height:auto !important;
+  max-height:calc(100dvh - 36px) !important;
+  overflow-y:auto !important;
+  overscroll-behavior:contain;
+  border-radius:16px !important;
+  background:#fff !important;
+  box-shadow:0 28px 80px rgba(16,24,40,.35) !important;
+}
+
+.master-card-close{
+  position:sticky !important;
+  top:0 !important;
+  z-index:4 !important;
+  float:right;
+  margin:0 0 -36px auto;
+}
+
+@supports not (height:100dvh){
+  .master-card-modal-backdrop{height:100vh !important}
+  .master-card-modal{max-height:calc(100vh - 36px) !important}
+}
+
+@media(max-width:700px){
+  .master-card-modal-backdrop{
+    align-items:flex-start !important;
+    padding:10px !important;
+  }
+  .master-card-modal{
+    width:calc(100vw - 20px) !important;
+    max-height:calc(100dvh - 20px) !important;
+    margin-top:0 !important;
+  }
+}

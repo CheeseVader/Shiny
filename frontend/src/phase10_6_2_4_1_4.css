@@ -1,0 +1,33 @@
+/* GMX 10.6.2.4.1.4 — scalable inventory */
+.inventory-summary-smart article strong{font-variant-numeric:tabular-nums}
+.inventory-search-panel{
+  display:grid;
+  grid-template-columns:minmax(320px,2fr) repeat(3,minmax(150px,1fr));
+  gap:10px;
+  align-items:end;
+  padding:14px;
+  margin-bottom:12px;
+  border:1px solid #eaecf0;
+  border-radius:14px;
+  background:#f9fafb;
+}
+.inventory-search-panel label{display:grid;gap:5px;font-size:11px;font-weight:800;color:#344054;min-width:0}
+.inventory-search-panel input,.inventory-search-panel select{width:100%;min-height:42px}
+.inventory-search-main{grid-row:span 2}
+.inventory-search-main input{font-size:14px}
+.inventory-search-main small{color:#667085;font-weight:500}
+.inventory-clear{min-height:42px}
+.inventory-pagination{
+  display:flex;justify-content:space-between;align-items:center;gap:12px;
+  padding:12px 2px 0;color:#667085;font-size:12px;font-weight:700
+}
+.inventory-pagination>div{display:flex;gap:7px}
+.module-state.out{background:#fef3f2;color:#b42318}
+@media(max-width:1100px){
+  .inventory-search-panel{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .inventory-search-main{grid-column:1/-1;grid-row:auto}
+}
+@media(max-width:700px){
+  .inventory-search-panel{grid-template-columns:1fr}
+  .inventory-search-main{grid-column:auto}
+}

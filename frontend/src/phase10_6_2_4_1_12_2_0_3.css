@@ -1,0 +1,126 @@
+/* GMX 10.6.2.4.1.12.2.0.3 */
+.media-import-panel{display:grid;gap:10px;margin:0 0 14px;padding:14px;border:1px solid #d0d5dd;border-radius:12px;background:#fff}
+.media-import-panel h3{margin:0 0 4px}.media-import-panel p{margin:0;color:#667085;font-size:10px}
+.media-import-panel textarea{width:100%;resize:vertical;min-height:110px;font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:11px}
+.media-import-actions{display:flex;justify-content:space-between;align-items:center;gap:10px}.media-import-actions span{font-size:9px;color:#667085}
+@media(max-width:700px){.media-import-actions{align-items:flex-start;flex-direction:column}}
+
+
+/* GMX 10.6.2.4.1.12.2.0.3.2 — Miniaturas Multimedia */
+.media-card-preview{
+  display:grid;
+  grid-template-columns:150px minmax(0,1fr);
+  grid-template-areas:
+    "preview info"
+    "preview actions";
+  gap:10px 14px;
+  align-items:start;
+}
+.media-card-preview .media-thumbnail{
+  grid-area:preview;
+  position:relative;
+  width:150px;
+  aspect-ratio:4/3;
+  padding:0;
+  overflow:hidden;
+  border:1px solid #e4e7ec;
+  border-radius:12px;
+  background:#f2f4f7;
+  cursor:pointer;
+}
+.media-thumbnail-image{
+  display:block;
+  width:100%;
+  height:100%;
+  object-fit:cover;
+  object-position:center;
+}
+.media-thumbnail-fallback{
+  display:grid;
+  place-items:center;
+  width:100%;
+  height:100%;
+  font-size:30px;
+}
+.media-thumbnail-hover{
+  position:absolute;
+  inset:auto 7px 7px 7px;
+  padding:5px 7px;
+  border-radius:7px;
+  background:rgba(16,24,40,.78);
+  color:#fff;
+  font-size:8px;
+  font-weight:850;
+  opacity:0;
+  transform:translateY(4px);
+  transition:.16s ease;
+}
+.media-thumbnail:hover .media-thumbnail-hover,
+.media-thumbnail:focus-visible .media-thumbnail-hover{
+  opacity:1;
+  transform:translateY(0);
+}
+.media-card-preview .media-card-info{
+  grid-area:info;
+  min-width:0;
+  display:grid;
+  gap:3px;
+}
+.media-card-preview .media-card-info strong{
+  font-size:13px;
+  overflow-wrap:anywhere;
+}
+.media-card-preview .media-card-info>span,
+.media-card-preview .media-card-info>small{
+  color:#667085;
+}
+.media-card-preview .row-actions{
+  grid-area:actions;
+  align-self:end;
+}
+.media-origin-note{
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  color:#175cd3!important;
+}
+.media-card-preview.inactive .media-thumbnail-image{
+  filter:grayscale(1);
+  opacity:.55;
+}
+@media(max-width:720px){
+  .media-card-preview{
+    grid-template-columns:110px minmax(0,1fr);
+  }
+  .media-card-preview .media-thumbnail{
+    width:110px;
+  }
+}
+@media(max-width:480px){
+  .media-card-preview{
+    grid-template-columns:1fr;
+    grid-template-areas:"preview" "info" "actions";
+  }
+  .media-card-preview .media-thumbnail{
+    width:100%;
+    aspect-ratio:16/10;
+  }
+}
+
+
+/* GMX 10.6.2.4.1.12.2.0.3.3 — Slideshow single media */
+.slideshow-media-help{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  padding:9px 11px;
+  border:1px solid #b2ddff;
+  border-radius:9px;
+  background:#eff8ff;
+  color:#175cd3;
+  font-size:9px;
+}
+.slideshow-media-help b{white-space:nowrap}
+@media(max-width:620px){
+  .slideshow-media-help{align-items:flex-start;flex-direction:column}
+}

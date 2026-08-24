@@ -1,0 +1,14 @@
+
+/* GMX 10.6.2.1 — Admin account recovery */
+.admin-forgot-link{display:block;margin-top:10px;text-align:center;color:#175cd3!important;font-size:13px;font-weight:850;text-decoration:none}
+.admin-forgot-link:hover{text-decoration:underline}
+.admin-recovery-card{display:grid;gap:12px}
+.admin-recovery-form{display:grid;gap:12px}
+.admin-recovery-form label{display:grid;gap:6px;font-size:12px;font-weight:800}
+.admin-recovery-form input{height:44px;padding:0 11px;border:1px solid #d0d5dd;border-radius:9px;background:#fff;color:#101828}
+.admin-recovery-form small{color:#667085;font-weight:500}
+.admin-recovery-form button{height:44px;border:0;border-radius:9px;background:#101828;color:#fff;font-weight:900;cursor:pointer}
+.admin-recovery-form button:disabled{opacity:.55;cursor:wait}
+.admin-dev-reset{padding:12px;border:1px solid #fedf89;border-radius:10px;background:#fffaeb;color:#93370d;font-size:13px;line-height:1.45}
+.admin-dev-reset a{color:#93370d!important;font-weight:900;text-decoration:underline}
+.admin-recovery-card .alert.info{padding:11px 12px;border-radius:9px;background:#eff8ff;color:#175cd3}

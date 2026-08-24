@@ -1,0 +1,20 @@
+{
+  "name": "GMX",
+  "shortName": "GMX",
+  "legalName": "GMX",
+  "posName": "GMX POS",
+  "visionName": "GMX Vision",
+  "description": "Tienda especializada en TCG",
+  "emailFromName": "GMX",
+  "primaryColor": "#121620",
+  "secondaryColor": "#ffffff",
+  "accentColor": "#d4af37",
+  "logo": "/branding/logo.png",
+  "favicon": "/branding/favicon.png",
+  "pwaIcon192": "/pwa-192x192.png",
+  "pwaIcon512": "/pwa-512x512.png",
+  "maskableIcon512": "/maskable-icon-512x512.png",
+  "currency": "MXN",
+  "locale": "es-MX",
+  "timezone": "America/Tijuana"
+}

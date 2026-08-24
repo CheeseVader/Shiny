@@ -1,0 +1,88 @@
+/* GMX 10.6.2.4.1.10 — Buylist pricing engine */
+.buylist-pricing-note{
+  margin:12px 0;padding:11px 13px;border:1px solid #b2ddff;border-radius:12px;
+  background:#eff8ff;color:#175cd3;font-size:12px;line-height:1.5
+}
+.buylist-pricing-note strong{margin-right:4px}
+.buylist-price-table small.block{display:block;margin-top:2px;color:#667085;font-size:10px}
+.buylist-base-pill{
+  display:inline-flex;padding:4px 7px;border-radius:999px;background:#f2f4f7;
+  color:#344054;font-size:10px;font-weight:850;text-transform:uppercase
+}
+
+/* GMX 10.6.2.4.1.10.1 */
+.buylist-fx-card{
+  display:flex;justify-content:space-between;align-items:center;gap:16px;
+  margin:10px 0 14px;padding:12px 14px;border:1px solid #d0d5dd;border-radius:12px;background:#fcfcfd
+}
+.buylist-fx-card>div:first-child{display:grid;gap:3px}
+.buylist-fx-card>div:first-child>strong{font-size:18px}
+.buylist-fx-card small{color:#667085}
+.buylist-fx-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.buylist-fx-actions input{width:130px;min-height:38px}
+@media(max-width:850px){
+  .buylist-fx-card{align-items:stretch;flex-direction:column}
+  .buylist-fx-actions input{width:100%}
+}
+
+/* GMX 10.6.2.4.1.10.2 — Global FX configuration */
+.finance-effective-rate{display:grid;text-align:right;gap:2px}
+.finance-effective-rate>span{font-size:10px;color:#667085;text-transform:uppercase;font-weight:850}
+.finance-effective-rate>strong{font-size:20px}.finance-effective-rate>small{color:#667085}
+.finance-fx-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+.finance-fx-card{display:grid;align-content:start;gap:12px;padding:16px;border:1px solid #e4e7ec;border-radius:14px;background:#fbfcfe}
+.finance-fx-card h3{margin:0 0 4px}.finance-fx-card p{margin:0;color:#667085;font-size:12px;line-height:1.45}
+.finance-fx-card label{display:grid;gap:5px;font-size:11px;font-weight:800}
+.finance-fx-card .check-label{display:flex;align-items:center}
+.finance-inline{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.finance-token-status{padding:8px 10px;border-radius:9px;background:#f2f4f7;color:#475467;font-size:11px;font-weight:750}
+.finance-fx-history{margin-top:18px}.finance-fx-history h3{margin:0 0 10px}
+.buylist-fx-readonly{padding:10px 12px}
+.buylist-fx-readonly.is-ready{border-color:#abefc6;background:#ecfdf3}
+.buylist-fx-readonly.is-missing{border-color:#fedf89;background:#fffaeb}
+@media(max-width:1050px){.finance-fx-grid{grid-template-columns:1fr}}
+
+/* GMX 10.6.2.4.1.10.2.1 */
+.finance-banxico-actions{display:flex;gap:8px;flex-wrap:wrap}
+.finance-help{display:block;color:#667085;line-height:1.4}
+.buylist-price-table td strong{white-space:nowrap}
+
+/* GMX 10.6.2.4.1.11.4 — SMTP configuration */
+.smtp-status{display:grid;gap:2px;text-align:right;padding:9px 12px;border:1px solid #e4e7ec;border-radius:11px}
+.smtp-status>span{font-size:10px;text-transform:uppercase;font-weight:850;color:#667085}
+.smtp-status>strong{font-size:17px}
+.smtp-status>small{color:#667085}
+.smtp-status.is-ready{border-color:#abefc6;background:#ecfdf3}
+.smtp-status.is-missing{border-color:#fedf89;background:#fffaeb}
+.smtp-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.smtp-card{display:grid;align-content:start;gap:11px;padding:15px;border:1px solid #e4e7ec;border-radius:13px;background:#fcfcfd}
+.smtp-card h3,.smtp-test-box h3{margin:0}.smtp-card p,.smtp-test-box p{margin:0;color:#667085;font-size:12px}
+.smtp-card label{display:grid;gap:5px;font-size:11px;font-weight:800}
+.smtp-card .check-label{display:flex;align-items:center}
+.smtp-inline{display:grid;grid-template-columns:1fr 120px;gap:8px}
+.smtp-help{color:#667085;line-height:1.4}
+.smtp-secret-status{padding:8px 10px;border-radius:9px;background:#f2f4f7;color:#475467;font-size:11px;font-weight:750}
+.smtp-test-box{display:flex;justify-content:space-between;align-items:center;gap:16px;margin-top:16px;padding:15px;border:1px solid #d0d5dd;border-radius:13px;background:#f9fafb}
+.smtp-test-box>div:first-child{display:grid;gap:4px}
+.smtp-test-actions{display:flex;gap:8px;min-width:min(520px,100%)}
+.smtp-test-actions input{flex:1}
+@media(max-width:900px){
+  .smtp-grid{grid-template-columns:1fr}
+  .smtp-test-box{align-items:stretch;flex-direction:column}
+  .smtp-test-actions{min-width:0;flex-direction:column}
+  .smtp-status{text-align:left}
+}
+
+/* GMX 10.6.2.4.1.11.4.2 — SMTP test progress */
+.smtp-button-working{display:inline-flex;align-items:center;justify-content:center;gap:8px}
+.smtp-spinner{
+  display:inline-block;width:15px;height:15px;border:2px solid currentColor;
+  border-right-color:transparent;border-radius:999px;animation:gmx-smtp-spin .75s linear infinite
+}
+@keyframes gmx-smtp-spin{to{transform:rotate(360deg)}}
+.smtp-progress-wrap{display:grid;gap:7px;width:100%;margin-top:12px}
+.smtp-progress-head{display:flex;justify-content:space-between;gap:12px;color:#475467;font-size:11px;font-weight:750}
+.smtp-progress-track{height:8px;overflow:hidden;border-radius:999px;background:#e4e7ec}
+.smtp-progress-bar{height:100%;border-radius:999px;background:#101828;transition:width .25s ease}
+.smtp-test-box{flex-wrap:wrap}
+.smtp-test-box>.smtp-progress-wrap{flex-basis:100%}
