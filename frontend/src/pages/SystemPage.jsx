@@ -1,6 +1,8 @@
 import { brandText } from "../config/brand.js";import { useEffect, useState } from 'react';
 import { useOutletContext } from 'react-router';
 import { api } from '../services/api.js';
+import '../phase_gmx_exact_views_r23.css';
+import '../system_sys_h_r2.css';
 
 export default function SystemPage() {
   const { health, refreshHealth } = useOutletContext();
@@ -12,7 +14,7 @@ export default function SystemPage() {
     'public.payment.transfer.instructions': 'Usa tu número de comprobante como referencia.'
   });
   const [message, setMessage] = useState('');
-  const currentAdmin = (() => {try {return JSON.parse(localStorage.getItem('GMX_AUTH_USER') || '{}');} catch {return {};}})();
+  const currentAdmin = (() => {try {return JSON.parse(localStorage.getItem('TCG_STORE_TEMPLATE_AUTH_USER') || '{}');} catch {return {};}})();
   const isSuperadmin = String(currentAdmin.rol || '').toUpperCase() === 'SUPERADMIN';
   const [technical, setTechnical] = useState(null);
   const [technicalBusy, setTechnicalBusy] = useState(false);
@@ -32,13 +34,14 @@ export default function SystemPage() {
   const [fxBusy, setFxBusy] = useState(false);
   const [smtp, setSmtp] = useState({
     enabled: true, provider: 'GMAIL', host: 'smtp.gmail.com', port: 587, secure: false,
-    user: '', password: '', fromEmail: '', fromName: brandText("GMX")
+    user: '', password: '', fromEmail: '', fromName: brandText("TCG_STORE_TEMPLATE")
   });
   const [smtpStatus, setSmtpStatus] = useState({ configured: false, passwordConfigured: false });
   const [smtpTestEmail, setSmtpTestEmail] = useState('');
   const [smtpBusy, setSmtpBusy] = useState(false);
   const [smtpAction, setSmtpAction] = useState('');
   const [smtpProgress, setSmtpProgress] = useState(0);
+  const [systemSection, setSystemSection] = useState('general');
 
   useEffect(() => {
     api('/api/v1/content/settings').then((r) => {
@@ -124,7 +127,7 @@ export default function SystemPage() {
       user: d.user || '',
       password: '',
       fromEmail: d.fromEmail || '',
-      fromName: d.fromName || brandText("GMX")
+      fromName: d.fromName || brandText("TCG_STORE_TEMPLATE")
     }));
     if (!smtpTestEmail && d.fromEmail) setSmtpTestEmail(d.fromEmail);
   }
@@ -241,21 +244,71 @@ export default function SystemPage() {
     {setTechnicalBusy(false);}
   }
 
-  return <div className="system-admin-page">
+  const apiOk = health?.success === true;
+  const dbOk = Boolean(health?.database?.database);
+  const schemaOk = Boolean(health?.database?.schema);
+  const modeOk = Boolean(health?.mode);
+  const serviceChecks = [apiOk, dbOk, schemaOk, modeOk];
+  const serviceOkCount = serviceChecks.filter(Boolean).length;
+  const serviceWarnCount = serviceChecks.length - serviceOkCount;
+  const servicePct = Math.round(serviceOkCount / serviceChecks.length * 100);
+  const dbLatency = Number(health?.db_ms);
+  const latencyPct = Number.isFinite(dbLatency) ? Math.max(30, Math.min(100, Math.round(100 - Math.max(0, dbLatency - 5) * 1.5))) : 0;
+
+  return <div className="system-admin-page r23-view r23-system sysh-r2">
     {message ? <div className="message">{message}</div> : null}
-    <section className="content-card">
-      <div className="section-head"><div><div className="eyebrow">DIAGNÓSTICO LOCAL</div><h2>Estado del sistema</h2></div><button className="secondary" onClick={refreshHealth}>Actualizar</button></div>
-      <div className="system-grid">
-        <div><span>API</span><strong>{health?.success ? 'Disponible' : 'Sin conexión'}</strong></div>
-        <div><span>Base de datos</span><strong>{health?.database?.database || '—'}</strong></div>
-        <div><span>Usuario PostgreSQL</span><strong>{health?.database?.db_user || '—'}</strong></div>
-        <div><span>Schema</span><strong>{health?.database?.schema || '—'}</strong></div>
-        <div><span>Modo</span><strong>{health?.mode || '—'}</strong></div>
-        <div><span>Latencia DB</span><strong>{health?.db_ms != null ? `${health.db_ms} ms` : '—'}</strong></div>
+
+    <section className="sysh-overview">
+      <div className="sysh-kpi-grid">
+        <article className="sysh-kpi">
+          <div className="sysh-kpi-icon">⚙</div><div><span>API</span><strong className={apiOk ? 'is-ok' : 'is-bad'}>{apiOk ? 'Disponible' : 'Sin conexión'}</strong><small><i className={apiOk ? 'ok' : 'bad'} />{apiOk ? 'En funcionamiento' : 'Requiere atención'}</small></div>
+        </article>
+        <article className="sysh-kpi">
+          <div className="sysh-kpi-icon">▣</div><div><span>Base de datos</span><strong>{health?.database?.database || '—'}</strong><small><i className={dbOk ? 'ok' : 'bad'} />{dbOk ? 'Conectada' : 'Sin conexión'}</small></div>
+        </article>
+        <article className="sysh-kpi">
+          <div className="sysh-kpi-icon">⌁</div><div><span>Latencia DB</span><strong>{health?.db_ms != null ? `${health.db_ms} ms` : '—'}</strong><small><i className={latencyPct >= 70 ? 'ok' : 'warn'} />{latencyPct >= 90 ? 'Óptima' : latencyPct >= 70 ? 'Estable' : 'Revisar'}</small></div>
+        </article>
+        <article className="sysh-kpi">
+          <div className="sysh-kpi-icon">◇</div><div><span>Modo</span><strong>{health?.mode || '—'}</strong><small><i className={modeOk ? 'ok' : 'warn'} />{modeOk ? 'Activo' : 'No informado'}</small></div>
+        </article>
+      </div>
+
+      <div className="sysh-health-grid">
+        <section className="sysh-panel sysh-services">
+          <div className="sysh-panel-head"><div><span className="sysh-eyebrow">DIAGNÓSTICO LOCAL</span><h2>Estado de los servicios</h2></div><button className="secondary sysh-refresh" onClick={refreshHealth}>Actualizar</button></div>
+          <div className="sysh-services-body">
+            <div className="sysh-donut" style={{'--ok': `${servicePct * 3.6}deg`}}><div><strong>{serviceChecks.length}</strong><span>TOTAL</span></div></div>
+            <div className="sysh-legend">
+              <div><span><i className="ok" />Operativos</span><b>{serviceOkCount}</b><em>{servicePct}%</em></div>
+              <div><span><i className="warn" />Con advertencia</span><b>{serviceWarnCount}</b><em>{100 - servicePct}%</em></div>
+              <div><span><i className="bad" />Fuera de servicio</span><b>{apiOk ? 0 : 1}</b><em>{apiOk ? '0%' : '25%'}</em></div>
+            </div>
+          </div>
+        </section>
+
+        <section className="sysh-panel sysh-health">
+          <div className="sysh-panel-head"><div><span className="sysh-eyebrow">SALUD DEL SISTEMA</span><h2>Salud del sistema</h2></div></div>
+          <div className="sysh-bars">
+            <div><span>API</span><div><i style={{width: apiOk ? '100%' : '12%'}} /></div><b>{apiOk ? '100%' : '0%'}</b></div>
+            <div><span>Base de datos</span><div><i style={{width: dbOk ? '100%' : '12%'}} /></div><b>{dbOk ? '100%' : '0%'}</b></div>
+            <div><span>Conectividad</span><div><i style={{width: `${latencyPct}%`}} /></div><b>{latencyPct}%</b></div>
+          </div>
+          <div className={`sysh-health-note ${apiOk && dbOk ? 'good' : 'warn'}`}><span>{apiOk && dbOk ? '✓' : '!'}</span>{apiOk && dbOk ? 'Todos los sistemas principales están funcionando correctamente.' : 'Hay servicios que requieren atención.'}</div>
+          <div className="sysh-tech-strip"><span>PostgreSQL <b>{health?.database?.db_user || '—'}</b></span><span>Schema <b>{health?.database?.schema || '—'}</b></span></div>
+        </section>
       </div>
     </section>
 
-    <section className="content-card system-business-settings">
+    <nav className="system-section-tabs" aria-label="Secciones de configuración">
+      <button className={systemSection === 'general' ? 'active' : ''} onClick={() => setSystemSection('general')}>Operación general</button>
+      <button className={systemSection === 'payments' ? 'active' : ''} onClick={() => setSystemSection('payments')}>Pagos</button>
+      <button className={systemSection === 'email' ? 'active' : ''} onClick={() => setSystemSection('email')}>Correo</button>
+      <button className={systemSection === 'fx' ? 'active' : ''} onClick={() => setSystemSection('fx')}>Tipo de cambio</button>
+      {isSuperadmin ? <button className={systemSection === 'diagnostic' ? 'active' : ''} onClick={() => setSystemSection('diagnostic')}>Diagnóstico técnico</button> : null}
+    </nav>
+
+    {systemSection === 'general' ? <section className="content-card system-business-settings">
       <div className="section-head">
         <div>
           <div className="eyebrow">CONFIGURACIÓN GLOBAL</div>
@@ -284,9 +337,9 @@ export default function SystemPage() {
         </label>
       </div>
       <p className="system-settings-note">Las alertas se consultan y gestionan desde Notificaciones / Alertas; aquí únicamente se define su comportamiento global.</p>
-    </section>
+    </section> : null}
 
-    {isSuperadmin ? <section className="content-card technical-diagnostic-card">
+    {isSuperadmin && systemSection === 'diagnostic' ? <section className="content-card technical-diagnostic-card">
       <div className="section-head">
         <div>
           <div className="eyebrow">SUPERADMIN · DESARROLLO</div>
@@ -301,7 +354,7 @@ export default function SystemPage() {
       {!technical ? <div className="technical-empty">Los datos técnicos se cargan únicamente cuando SUPERADMIN los solicita.</div> : <>
         <div className="technical-kpis">
           <article><span>Base PostgreSQL</span><strong>{technical.database?.database || '—'}</strong><small>{technical.database?.size || '—'}</small></article>
-          <article><span>{brandText("Schema GMX")}</span><strong>{technical.schema?.size || '—'}</strong><small>tablas + índices</small></article>
+          <article><span>{brandText("Schema TCG_STORE_TEMPLATE")}</span><strong>{technical.schema?.size || '—'}</strong><small>tablas + índices</small></article>
           <article><span>Node</span><strong>{technical.runtime?.node || '—'}</strong><small>{technical.runtime?.platform || '—'}</small></article>
           <article><span>Uptime API</span><strong>{technical.runtime?.uptimeSeconds != null ? `${technical.runtime.uptimeSeconds}s` : '—'}</strong><small>PID {technical.runtime?.pid || '—'}</small></article>
         </div>
@@ -335,7 +388,7 @@ export default function SystemPage() {
       </>}
     </section> : null}
 
-    <section className="content-card payment-admin-config">
+    {systemSection === 'payments' ? <section className="content-card payment-admin-config">
       <div className="section-head"><div><div className="eyebrow">PORTAL CLIENTE · PAGOS</div><h2>Transferencia bancaria</h2><p className="section-copy">Estos datos son los que verá el cliente después de seleccionar Transferencia.</p></div><button onClick={savePayments}>Guardar</button></div>
       <div className="form-grid">
         <label>Banco<input value={settings['public.payment.transfer.bank_name'] || ''} onChange={(e) => setSettings((x) => ({ ...x, 'public.payment.transfer.bank_name': e.target.value }))} /></label>
@@ -345,9 +398,9 @@ export default function SystemPage() {
         <label className="wide">Instrucciones<textarea rows="3" value={settings['public.payment.transfer.instructions'] || ''} onChange={(e) => setSettings((x) => ({ ...x, 'public.payment.transfer.instructions': e.target.value }))} /></label>
       </div>
       <div className="architecture-note"><b>Tarjeta</b><p>Las llaves secretas de Stripe no se almacenan en PostgreSQL ni se muestran en el navegador. Se configuran únicamente en <code>backend/.env</code>.</p></div>
-    </section>
+    </section> : null}
 
-    <section className="content-card smtp-config">
+    {systemSection === 'email' ? <section className="content-card smtp-config">
       <div className="section-head">
         <div>
           <div className="eyebrow">SISTEMA · CORREO</div>
@@ -417,7 +470,7 @@ export default function SystemPage() {
         <article className="smtp-card">
           <h3>Remitente</h3>
           <label>Nombre visible
-            <input value={smtp.fromName} onChange={(e) => setSmtp((x) => ({ ...x, fromName: e.target.value }))} placeholder={brandText("GMX")} />
+            <input value={smtp.fromName} onChange={(e) => setSmtp((x) => ({ ...x, fromName: e.target.value }))} placeholder={brandText("TCG_STORE_TEMPLATE")} />
           </label>
           <label>Correo remitente
             <input type="email" value={smtp.fromEmail} onChange={(e) => setSmtp((x) => ({ ...x, fromEmail: e.target.value }))} placeholder="ventas@dominio.com" />
@@ -454,9 +507,9 @@ export default function SystemPage() {
           <div className="smtp-progress-track"><div className="smtp-progress-bar" style={{ width: `${smtpProgress}%` }} /></div>
         </div> : null}
       </div>
-    </section>
+    </section> : null}
 
-    <section className="content-card finance-fx-config">
+    {systemSection === 'fx' ? <section className="content-card finance-fx-config">
       <div className="section-head">
         <div>
           <div className="eyebrow">FINANZAS · TIPO DE CAMBIO</div>
@@ -523,6 +576,7 @@ export default function SystemPage() {
           </tr>)}</tbody>
         </table></div>
       </div>
-    </section>
+    </section> : null}
   </div>;
 }
+

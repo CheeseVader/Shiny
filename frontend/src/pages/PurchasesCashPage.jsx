@@ -2,8 +2,15 @@ import { brandText } from "../config/brand.js";import { useEffect, useMemo, useS
 import { createPortal } from 'react-dom';
 import { useLocation } from 'react-router';
 import { api } from '../services/api.js';
+import { R23DualBars, r23DayKey } from '../components/VisualKitR23.jsx';
+import '../phase_gmx_exact_views_r23.css';
+
+
+import '../cash_arqueo_option_b_r56.css';
+import '../purchase_reception_flow_r72.css';
 const money = (v) => Number(v || 0).toLocaleString('es-MX', { style: 'currency', currency: 'MXN' });
 const fiscalLabel = { FACTURADA: 'Facturada', PENDIENTE_FACTURA: 'Factura pendiente', NO_FACTURADA: 'No facturada', SIN_COMPROBANTE: 'Sin comprobante' };
+const emptyPurchaseDocument = () => ({ fiscalStatus: 'PENDIENTE_FACTURA', documentType: 'REMISION', reference: '', uuid: '', documentDate: '', currency: 'MXN', paymentMethod: 'TRANSFERENCIA', documentTotal: '', ieps: 0, retentions: 0, otherCharges: 0, notes: '', documentName: '', documentMime: '', documentBase64: '', xmlName: '', xmlText: '' });
 
 export default function PurchasesCashPage() {
   const location = useLocation();
@@ -13,10 +20,14 @@ export default function PurchasesCashPage() {
   const [productSearch, setProductSearch] = useState(''),[newProduct, setNewProduct] = useState(false);
   const [tcgInventory, setTcgInventory] = useState([]),[catalogType, setCatalogType] = useState('TODOS'),[catalogOpen, setCatalogOpen] = useState(false);
   const [purchaseView, setPurchaseView] = useState('info');
-  const [doc, setDoc] = useState({ fiscalStatus: 'PENDIENTE_FACTURA', documentType: 'REMISION', reference: '', uuid: '', documentDate: '', currency: 'MXN', paymentMethod: 'TRANSFERENCIA', documentTotal: '', ieps: 0, retentions: 0, otherCharges: 0, notes: '', documentName: '', documentMime: '', documentBase64: '', xmlName: '', xmlText: '' });
+  const [purchaseWizardOpen, setPurchaseWizardOpen] = useState(false);
+  const [purchaseHistoryPage, setPurchaseHistoryPage] = useState(1);
+  const [doc, setDoc] = useState(emptyPurchaseDocument);
   const [fiscalPurchase, setFiscalPurchase] = useState(null),[fiscalEdit, setFiscalEdit] = useState(null),[fiscalSaving, setFiscalSaving] = useState(false);
   const [receiveConfirm, setReceiveConfirm] = useState(null),[receiveSaving, setReceiveSaving] = useState(false);
   const [openCash, setOpenCash] = useState(null),[movements, setMovements] = useState([]),[sessions, setSessions] = useState([]),[openingFund, setOpeningFund] = useState(0),[movement, setMovement] = useState({ type: 'INGRESO', category: 'MANUAL', paymentMethod: 'EFECTIVO', amount: '', description: '' }),[counted, setCounted] = useState('');
+  const [cashView, setCashView] = useState('cash');
+  const [cashCloseNote, setCashCloseNote] = useState('');
 
   async function loadBase() {
     const [b, p, t, s, c] = await Promise.all([
@@ -29,16 +40,35 @@ export default function PurchasesCashPage() {
     setBranches(b.data || []);setProducts(p.data || []);setTcgInventory(t.data || []);setSuppliers(s.data || []);setPurchases(c.data || []);
     if (!branchId && b.data?.[0]) setBranchId(b.data[0].id_sucursal);if (!supplierId && s.data?.[0]) setSupplierId(s.data[0].id_proveedor);
   }
-  async function loadCash(id = branchId) {if (!id) return;const [o, m, s] = await Promise.all([api(`/api/v1/cash/open/${encodeURIComponent(id)}`), api(`/api/v1/cash/movements?branchId=${encodeURIComponent(id)}&limit=300`), api(`/api/v1/cash/sessions?branchId=${encodeURIComponent(id)}&limit=100`)]);setOpenCash(o.data);setMovements(m.data);setSessions(s.data);setCounted('');}
+  async function loadCash(id = branchId) {
+    if (!id) return;
+    const [o, m, s] = await Promise.all([
+      api(`/api/v1/cash/open/${encodeURIComponent(id)}`),
+      api(`/api/v1/cash/movements?branchId=${encodeURIComponent(id)}&limit=300`),
+      api(`/api/v1/cash/sessions?branchId=${encodeURIComponent(id)}&limit=100`)
+    ]);
+    setOpenCash(o?.data ?? null);
+    setMovements(Array.isArray(m?.data) ? m.data : []);
+    setSessions(Array.isArray(s?.data) ? s.data : []);
+    setCounted('');
+  }
   useEffect(() => {loadBase().catch((e) => setMessage(e.message));}, []);
   useEffect(() => setTab(routeTab), [routeTab]);
-  useEffect(() => {loadCash(branchId).catch((e) => setMessage(e.message));}, [branchId]);
+  useEffect(() => {
+    if (tab !== 'caja' || !branchId) return;
+    loadCash(branchId).catch((e) => setMessage(e.message));
+  }, [tab, branchId]);
 
   const subtotal = useMemo(() => items.reduce((a, x) => a + Number(x.quantity || 0) * Number(x.unitCost || 0), 0), [items]);
   const discounts = useMemo(() => items.reduce((a, x) => a + Number(x.discount || 0), 0), [items]);
   const iva = useMemo(() => items.reduce((a, x) => {const base = Math.max(0, Number(x.quantity || 0) * Number(x.unitCost || 0) - Number(x.discount || 0));const rate = x.taxType === 'IVA16' ? .16 : x.taxType === 'IVA8' ? .08 : 0;return a + base * rate;}, 0), [items]);
   const total = Number(subtotal) - Number(discounts) + Number(iva) + Number(doc.ieps || 0) - Number(doc.retentions || 0) + Number(doc.otherCharges || 0);
   const diff = doc.documentTotal === '' ? null : total - Number(doc.documentTotal || 0);
+  const receptionUnits = useMemo(() => items.reduce((sum, item) => sum + Number(item.quantity || 0), 0), [items]);
+  const informationReady = Boolean(supplierId && branchId);
+  const documentationAttached = Boolean(doc.xmlName || doc.xmlText || doc.documentName || doc.documentBase64);
+  const documentationReady = doc.fiscalStatus === 'FACTURADA' ? documentationAttached : doc.fiscalStatus !== 'PENDIENTE_FACTURA' || documentationAttached;
+  const receiveBlocker = !informationReady ? 'Completa proveedor y sucursal.' : !items.length ? 'Agrega al menos un artículo.' : doc.fiscalStatus === 'FACTURADA' && !documentationAttached ? 'Falta adjuntar documentación fiscal.' : '';
   const purchaseCatalog = useMemo(() => {
     const productRows = products.map((p) => ({
       key: `PRODUCT:${p.id}`, kind: 'PRODUCT', id: p.id, name: p.nombre || 'Producto',
@@ -128,7 +158,7 @@ export default function PurchasesCashPage() {
     } catch (e) {
       const msg = purchaseErrorMessage(e);
       setMessage(msg);
-      window.gmxNotify?.(msg, { type: 'warning' });
+      window.tcg_store_templateNotify?.(msg, { type: 'warning' });
     }
   }
 
@@ -172,7 +202,7 @@ export default function PurchasesCashPage() {
     } catch (e) {
       const msg = purchaseErrorMessage(e);
       setMessage(msg);
-      window.gmxNotify?.(msg, { type: 'warning' });
+      window.tcg_store_templateNotify?.(msg, { type: 'warning' });
       return false;
     }
   }
@@ -184,7 +214,7 @@ export default function PurchasesCashPage() {
     } catch (e) {
       const msg = purchaseErrorMessage(e);
       setMessage(msg);
-      window.gmxNotify?.(msg, { type: 'warning' });
+      window.tcg_store_templateNotify?.(msg, { type: 'warning' });
     }
   }
 
@@ -195,12 +225,17 @@ export default function PurchasesCashPage() {
       validatePurchaseBeforeSave(status);
       setReceiveSaving(true);
       const ok = await save(true, status);
-      if (ok) setReceiveConfirm(null);
+      if (ok) {
+        setReceiveConfirm(null);
+        setPurchaseWizardOpen(false);
+        setPurchaseView('info');
+        setPurchaseHistoryPage(1);
+      }
     } finally {
       setReceiveSaving(false);
     }
   }
-  async function receive(p) {if (!(await window.gmxConfirm(`¿Recibir ${p.id_compra} en ${branches.find((b) => b.id_sucursal === branchId)?.nombre_sucursal || 'la sucursal'}?`, { title: 'Confirmar recepción', confirmText: 'Recibir' }))) return;try {await api(`/api/v1/purchases/${p.row_id}/receive`, { method: 'POST', body: JSON.stringify({ branchId }) });setMessage('Compra recibida; inventario actualizado.');const r = await api('/api/v1/purchases?limit=200');setPurchases(r.data);} catch (e) {setMessage(e.message);}}
+  async function receive(p) {if (!(await window.tcg_store_templateConfirm(`¿Recibir ${p.id_compra} en ${branches.find((b) => b.id_sucursal === branchId)?.nombre_sucursal || 'la sucursal'}?`, { title: 'Confirmar recepción', confirmText: 'Recibir' }))) return;try {await api(`/api/v1/purchases/${p.row_id}/receive`, { method: 'POST', body: JSON.stringify({ branchId }) });setMessage('Compra recibida; inventario actualizado.');const r = await api('/api/v1/purchases?limit=200');setPurchases(r.data);} catch (e) {setMessage(e.message);}}
   async function manageFiscal(p) {
     try {
       const response = await api(`/api/v1/purchases/${p.row_id}`);
@@ -220,7 +255,7 @@ export default function PurchasesCashPage() {
       });
     } catch (e) {
       setMessage(e.message);
-      window.gmxNotify?.(e.message, { type: 'warning' });
+      window.tcg_store_templateNotify?.(e.message, { type: 'warning' });
     }
   }
 
@@ -255,7 +290,7 @@ export default function PurchasesCashPage() {
       setTimeout(() => URL.revokeObjectURL(url), 60000);
     } catch (e) {
       setMessage(e.message);
-      window.gmxNotify?.(e.message, { type: 'warning' });
+      window.tcg_store_templateNotify?.(e.message, { type: 'warning' });
     }
   }
 
@@ -276,7 +311,7 @@ export default function PurchasesCashPage() {
       setTimeout(() => URL.revokeObjectURL(url), 1000);
     } catch (e) {
       setMessage(e.message);
-      window.gmxNotify?.(e.message, { type: 'warning' });
+      window.tcg_store_templateNotify?.(e.message, { type: 'warning' });
     }
   }
   function parseCfdiXml(xmlText) {
@@ -338,7 +373,7 @@ export default function PurchasesCashPage() {
         'XML CFDI leído. No se encontró UUID de timbrado; revisa el estado fiscal.');
       } catch (e) {
         setMessage(e.message);
-        window.gmxNotify?.(e.message, { type: 'warning' });
+        window.tcg_store_templateNotify?.(e.message, { type: 'warning' });
       }
       return;
     }
@@ -366,118 +401,345 @@ export default function PurchasesCashPage() {
     } catch (e) {
       const msg = purchaseErrorMessage(e);
       setMessage(msg);
-      window.gmxNotify?.(msg, { type: 'warning' });
+      window.tcg_store_templateNotify?.(msg, { type: 'warning' });
     }
   }
-  async function close() {if (!(await window.gmxConfirm('¿Cerrar la caja? Después no aceptará movimientos.', { title: 'Cerrar caja', confirmText: 'Cerrar caja' }))) return;try {await api('/api/v1/cash/close', { method: 'POST', body: JSON.stringify({ branchId, countedCash: Number(counted) }) });setMessage('Caja cerrada correctamente.');await loadCash();} catch (e) {setMessage(e.message);}}
+  async function close() {if (!(await window.tcg_store_templateConfirm('¿Cerrar la caja? Después no aceptará movimientos.', { title: 'Cerrar caja', confirmText: 'Cerrar caja' }))) return;try {await api('/api/v1/cash/close', { method: 'POST', body: JSON.stringify({ branchId, countedCash: Number(counted) }) });setMessage('Caja cerrada correctamente.');await loadCash();} catch (e) {setMessage(e.message);}}
 
-  return <div className="ops-stack"><section className="content-card">
-    <div className="section-head"><div><div className="eyebrow">OPERACIÓN LOCAL</div><h2>{tab === 'compras' ? 'Compras / Recepción' : 'Caja / Arqueo'}</h2></div><span className="phase-pill">10.6.2.4.1.6</span></div>
+  function selectPurchaseView(view) {
+    setPurchaseView(view);
+    setCatalogOpen(false);
+  }
+
+  function closePurchaseWizard() {
+    setCatalogOpen(false);
+    setPurchaseWizardOpen(false);
+    setPurchaseView('info');
+  }
+
+  function purchaseNextStep() {
+    if (purchaseView === 'info') {
+      if (!supplierId || !branchId) {
+        setMessage('Selecciona proveedor y sucursal antes de continuar.');
+        return;
+      }
+      setMessage('');
+      selectPurchaseView('items');
+      return;
+    }
+    if (purchaseView === 'items') {
+      if (!items.length) {
+        setMessage('Agrega al menos un artículo antes de continuar.');
+        return;
+      }
+      setMessage('');
+      selectPurchaseView('docs');
+      return;
+    }
+    if (purchaseView === 'docs') {
+      if (doc.fiscalStatus === 'FACTURADA' && !documentationAttached) {
+        setMessage('Adjunta XML o PDF para continuar como compra facturada.');
+        return;
+      }
+      setMessage('');
+      selectPurchaseView('summary');
+    }
+  }
+
+  function purchasePreviousStep() {
+    if (purchaseView === 'summary') return selectPurchaseView('docs');
+    if (purchaseView === 'docs') return selectPurchaseView('items');
+    if (purchaseView === 'items') return selectPurchaseView('info');
+  }
+
+  async function savePurchaseDraftAndClose() {
+    const ok = await save(false);
+    if (ok) {
+      setPurchaseWizardOpen(false);
+      setPurchaseView('info');
+      setPurchaseHistoryPage(1);
+    }
+  }
+
+  async function startNewReception() {
+    const hasCapture = items.length || doc.reference || doc.uuid || documentationAttached || doc.documentTotal !== '' || doc.notes;
+    if (hasCapture && !(await window.tcg_store_templateConfirm('Se limpiará la recepción que está en captura. ¿Deseas continuar?', { title: 'Nueva recepción', confirmText: 'Iniciar nueva' }))) return;
+    setItems([]);
+    setDoc(emptyPurchaseDocument());
+    setProductSearch('');
+    setCatalogType('TODOS');
+    setCatalogOpen(false);
+    setMessage('');
+    setPurchaseView('info');
+    setPurchaseWizardOpen(true);
+  }
+
+  const cashChartRows = (() => {
+    const days = Array.from({ length: 7 }, (_, index) => { const date = new Date(); date.setDate(date.getDate() - (6 - index)); const key = date.toISOString().slice(0, 10); return { key, label: date.toLocaleDateString('es-MX', { day: '2-digit', month: '2-digit' }), positive: 0, negative: 0 }; });
+    const byDay = new Map(days.map((day) => [day.key, day]));
+    (Array.isArray(movements) ? movements : []).forEach((row) => { const day = byDay.get(r23DayKey(row.fecha)); if (!day) return; const amount = Math.abs(Number(row.impacto_efectivo ?? row.importe ?? 0)); if (String(row.tipo || '').toUpperCase().includes('EGRES')) day.negative += amount; else day.positive += amount; });
+    return days;
+  })();
+
+  return <div className={`ops-stack r23-view ${tab === 'compras' ? 'r23-purchases' : 'r23-cash'}`}><section className="content-card">
+    <div className="section-head"><div><div className="eyebrow">OPERACIÓN LOCAL</div><h2>{tab === 'compras' ? 'Compras / Recepción' : 'Caja / Arqueo'}</h2></div>{tab === 'compras' ? <div className="purchase-head-actions"><span className="phase-pill">10.6.2.4.1.6</span><button type="button" onClick={startNewReception}>+ Nueva recepción</button></div> : <span className="phase-pill">10.6.2.4.1.6</span>}</div>
     {message ? <div className="message">{message}</div> : null}
     <div className="purchase-context-note">{tab === 'compras' ?
         'Recepción de mercancía, documentación fiscal e impacto de inventario.' :
         'Control exclusivo del efectivo físico de la sucursal: apertura, retiros, depósitos y arqueo.'}</div>
 
-    {tab === 'compras' ? <div className="purchase-v16 purchase-option3">
-      <div className="purchase-overview">
-        <div className="purchase-metric"><span>{brandText("Total (GMX)")}</span><strong>{money(total)}</strong><small>Total calculado de la recepción</small></div>
-        <div className="purchase-metric"><span>Unidades</span><strong>{items.reduce((a, x) => a + Number(x.quantity || 0), 0)}</strong><small>{items.length} artículo{items.length === 1 ? '' : 's'} en captura</small></div>
-        <div className="purchase-metric fiscal"><span>Estado fiscal</span><strong>{fiscalLabel[doc.fiscalStatus]}</strong><small>Comprobación de la compra</small></div>
-        <div className="purchase-metric"><span>Documento</span><strong>{doc.documentType || '—'}</strong><small>{doc.reference || 'Sin referencia'}</small></div>
+    {tab === 'compras' ? <div className="purchase-v16 purchase-option3 purchase-r72">
+      <div className="purchase-r72-overview">
+        <div className="purchase-r72-metric">
+          <span>Compras registradas</span>
+          <strong>{purchases.length}</strong>
+          <small>Historial de compras y recepciones</small>
+        </div>
+        <div className="purchase-r72-metric">
+          <span>Borradores</span>
+          <strong>{purchases.filter((p) => String(p.estado || '').toUpperCase() === 'BORRADOR').length}</strong>
+          <small>Pendientes de completar o recibir</small>
+        </div>
+        <div className="purchase-r72-metric">
+          <span>Recibidas</span>
+          <strong>{purchases.filter((p) => String(p.estado || '').toUpperCase() === 'RECIBIDA').length}</strong>
+          <small>Recepciones aplicadas a inventario</small>
+        </div>
+        <div className="purchase-r72-metric">
+          <span>Total registrado</span>
+          <strong>{money(purchases.reduce((sum, p) => sum + Number(p.total || 0), 0))}</strong>
+          <small>Importe acumulado del historial</small>
+        </div>
+        <div className="purchase-r72-metric purchase-r73-history-card">
+          <span>Historial</span>
+          <strong>▣</strong>
+          <small>Consulta compras recientes, recibe borradores y administra su documentación fiscal.</small>
+        </div>
       </div>
-      <div className="purchase-v16-main">
-        {purchaseView === 'info' ? <section id="purchase-info" className="purchase-panel purchase-info-card"><div className="purchase-card-title"><span>01</span><div><h3>Información general</h3><p>Datos del proveedor, recepción y comprobación.</p></div></div>
-          <div className="purchase-v16-grid">
-            <label>Proveedor<select value={supplierId} onChange={(e) => setSupplierId(e.target.value)}><option value="">Selecciona</option>{suppliers.map((x) => <option key={x.row_id} value={x.id_proveedor}>{x.nombre_comercial || x.razon_social || x.id_proveedor}</option>)}</select></label>
-            <label>Sucursal receptora<select value={branchId} onChange={(e) => setBranchId(e.target.value)}>{branches.map((x) => <option key={x.row_id} value={x.id_sucursal}>{x.nombre_sucursal}</option>)}</select></label>
-            <label>Comprobación<select value={doc.fiscalStatus} onChange={(e) => {const fiscalStatus = e.target.value;setDoc((d) => ({ ...d, fiscalStatus, documentType: fiscalStatus === 'FACTURADA' ? 'CFDI' : fiscalStatus === 'SIN_COMPROBANTE' ? 'SIN_DOCUMENTO' : d.documentType }));}}><option value="FACTURADA">CFDI / Facturada</option><option value="PENDIENTE_FACTURA">Pendiente de factura</option><option value="NO_FACTURADA">Remisión / Ticket no fiscal</option><option value="SIN_COMPROBANTE">Sin comprobante</option></select></label>
-            <label>Tipo documento<select value={doc.documentType} onChange={(e) => setDoc((d) => ({ ...d, documentType: e.target.value }))}><option>CFDI</option><option>REMISION</option><option>TICKET</option><option>SIN_DOCUMENTO</option></select></label>
-            <label>Folio / referencia<input value={doc.reference} onChange={(e) => setDoc((d) => ({ ...d, reference: e.target.value }))} /></label>
-            <label>UUID CFDI<input disabled={doc.fiscalStatus !== 'FACTURADA'} value={doc.uuid} onChange={(e) => setDoc((d) => ({ ...d, uuid: e.target.value }))} /></label>
-            <label>Moneda<select value={doc.currency} onChange={(e) => setDoc((d) => ({ ...d, currency: e.target.value }))}><option>MXN</option><option>USD</option></select></label>
-            <label>Método de pago<select value={doc.paymentMethod} onChange={(e) => setDoc((d) => ({ ...d, paymentMethod: e.target.value }))}><option>TRANSFERENCIA</option><option>EFECTIVO</option><option>TARJETA</option><option>CREDITO</option><option>OTRO</option></select></label>
+
+      <section className="purchase-r72-history">
+        <div className="purchase-r72-history-head">
+          <div>
+            <h3>Historial de compras / recepciones</h3>
           </div>
-          <div className="purchase-page-actions"><span /><button type="button" onClick={() => setPurchaseView('items')}>Siguiente: Artículos →</button></div>
-        </section> : null}
+        </div>
 
-        {purchaseView === 'items' ? <section id="purchase-items" className="purchase-panel purchase-items-card"><div className="purchase-panel-head"><div><h3>Artículos de la compra</h3><p className="purchase-panel-copy">Selecciona productos del catálogo general o variantes físicas TCG existentes.</p></div><button className="secondary compact" onClick={() => setNewProduct(true)}>+ Alta de producto</button></div>
+        <div className="table-wrap purchase-r72-table">
+          <table>
+            <thead>
+              <tr>
+                <th>Fecha</th>
+                <th>Compra</th>
+                <th>Proveedor</th>
+                <th>Sucursal</th>
+                <th>Fiscal</th>
+                <th>Unidades</th>
+                <th>Total</th>
+                <th>Estado</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              {purchases.slice((purchaseHistoryPage - 1) * 10, purchaseHistoryPage * 10).map((p) => <tr key={p.row_id}>
+                <td>{p.fecha ? new Date(p.fecha).toLocaleString('es-MX') : '—'}</td>
+                <td><strong>{p.id_compra}</strong></td>
+                <td>{p.proveedor || '—'}</td>
+                <td>{p.sucursal_recepcion || '—'}</td>
+                <td><span className={`fiscal-mini fiscal-${String(p.estatus_fiscal || 'SIN_COMPROBANTE').toLowerCase()}`}>{fiscalLabel[p.estatus_fiscal] || p.estatus_fiscal}</span></td>
+                <td>{p.unidades_recibidas || 0}/{p.unidades_solicitadas || 0}</td>
+                <td><strong>{money(p.total)}</strong></td>
+                <td>{p.estado}</td>
+                <td>
+                  <div className="purchase-r72-row-actions">
+                    {!['RECIBIDA', 'CANCELADA'].includes(String(p.estado).toUpperCase()) ? <button className="secondary compact" onClick={() => receive(p)}>Recibir</button> : null}
+                    <button className="secondary compact" onClick={() => manageFiscal(p)}>{String(p.estatus_fiscal || '').toUpperCase() === 'PENDIENTE_FACTURA' ? 'Adjuntar factura' : 'Gestionar'}</button>
+                  </div>
+                </td>
+              </tr>)}
+              {!purchases.length ? <tr><td colSpan="9"><div className="purchase-r72-empty">No hay compras registradas.</div></td></tr> : null}
+            </tbody>
+          </table>
+        </div>
 
-          <div className="purchase-catalog-tabs">
-            <button className={catalogType === 'TODOS' ? 'active' : ''} onClick={() => {setCatalogType('TODOS');setCatalogOpen(true);}}>Todos <span>{purchaseCatalog.length}</span></button>
-            <button className={catalogType === 'PRODUCT' ? 'active' : ''} onClick={() => {setCatalogType('PRODUCT');setCatalogOpen(true);}}>Productos <span>{products.length}</span></button>
-            <button className={catalogType === 'TCG' ? 'active' : ''} onClick={() => {setCatalogType('TCG');setCatalogOpen(true);}}>Cartas TCG <span>{tcgInventory.length}</span></button>
-          </div>
+        <PurchasePager page={purchaseHistoryPage} setPage={setPurchaseHistoryPage} total={purchases.length} pageSize={10} />
+      </section>
 
-          <div className={`purchase-catalog-picker ${catalogOpen ? 'is-open' : ''}`}>
-            <label className="purchase-search">Buscar / seleccionar artículo
-              <div className="purchase-picker-input">
-                <input value={productSearch}
-                  onFocus={() => setCatalogOpen(true)}
-                  onChange={(e) => {setProductSearch(e.target.value);setCatalogOpen(true);}}
-                  placeholder="Nombre, SKU, ID, código de barras, carta, rareza, condición…"
-                  autoComplete="off" />
-                <button type="button" onClick={() => setCatalogOpen((v) => !v)} aria-label="Mostrar catálogo">⌄</button>
+      {purchaseWizardOpen ? createPortal(
+        <div className="purchase-r72-backdrop" role="dialog" aria-modal="true" aria-labelledby="purchase-r72-title" onMouseDown={(e) => {if (e.target === e.currentTarget) closePurchaseWizard();}}>
+          <div className="purchase-r72-wizard" onMouseDown={(e) => e.stopPropagation()}>
+            <div className="purchase-r72-wizard-head">
+              <div>
+                <div className="eyebrow">COMPRAS / RECEPCIÓN</div>
+                <h2 id="purchase-r72-title">Nueva recepción</h2>
               </div>
-            </label>
-
-            {catalogOpen ? <div className="purchase-search-results purchase-search-results-v2">
-              <div className="purchase-results-head">
-                <span>{productSearch.trim() ? 'Resultados' : 'Catálogo disponible'}</span>
-                <strong>{shownProducts.length}{purchaseCatalog.length > shownProducts.length ? ' mostrados' : ''}</strong>
-              </div>
-              {shownProducts.length ? shownProducts.map((p) => <button key={p.key} type="button" onMouseDown={(e) => e.preventDefault()} onClick={() => addProduct(p)}>
-                <span className="purchase-result-main">
-                  <span className={`purchase-kind ${p.kind === 'TCG' ? 'tcg' : 'product'}`}>{p.kind === 'TCG' ? 'CARTA TCG' : 'PRODUCTO'}</span>
-                  <strong>{p.name}{p.kind === 'TCG' && p.rarity ? ` (${p.rarity})` : ''}</strong>
-                  <small>{p.meta || `ID ${p.id}`}</small>
-                </span>
-                <span className="purchase-result-side">
-                  <strong>{p.cost > 0 ? `Costo ${money(p.cost)}` : 'Costo por capturar'}</strong>
-                  <small>{p.kind === 'TCG' ? `Stock actual ${p.stock} · ${p.sku || p.id}` : `ID ${p.id} · Stock ${p.stock}`}</small>
-                </span>
-              </button>) : <div className="purchase-no-results">No hay artículos que coincidan con la búsqueda.</div>}
-            </div> : null}
-          </div>
-
-          <div className="purchase-lines-v16">{items.map((x, i) => <div className="purchase-line-v16" key={`${x.productId || 'new'}-${i}`}>
-            <div className="purchase-product">
-              <span className={`purchase-kind ${x.itemType === 'TCG' ? 'tcg' : 'product'}`}>{x.itemType === 'TCG' ? 'CARTA TCG' : x.newProduct ? 'PRODUCTO NUEVO' : 'PRODUCTO'}</span>
-              <strong>{x.name}</strong>
-              <span>{[x.sku, x.variantMeta].filter(Boolean).join(' · ') || 'Sin identificadores adicionales'}</span>
+              <button type="button" className="icon-btn" onClick={closePurchaseWizard}>×</button>
             </div>
-            <label>Cant.<input type="number" min="1" value={x.quantity} onChange={(e) => setItems((a) => a.map((y, j) => j === i ? { ...y, quantity: Number(e.target.value) } : y))} /></label>
-            <label>Costo<input type="number" min="0" step=".01" value={x.unitCost} onChange={(e) => setItems((a) => a.map((y, j) => j === i ? { ...y, unitCost: Number(e.target.value) } : y))} /></label>
-            <label>Descuento<input type="number" min="0" step=".01" value={x.discount} onChange={(e) => setItems((a) => a.map((y, j) => j === i ? { ...y, discount: Number(e.target.value) } : y))} /></label>
-            <label>Impuesto<select value={x.taxType} onChange={(e) => setItems((a) => a.map((y, j) => j === i ? { ...y, taxType: e.target.value } : y))}><option value="IVA16">IVA 16%</option><option value="IVA8">IVA 8%</option><option value="IVA0">IVA 0%</option><option value="EXENTO">Exento</option><option value="NO_OBJETO">No objeto</option><option value="SIN_COMPROBANTE">Sin comprobante</option></select></label>
-            <strong>{money(Math.max(0, x.quantity * x.unitCost - x.discount) * (x.taxType === 'IVA16' ? 1.16 : x.taxType === 'IVA8' ? 1.08 : 1))}</strong>
-            <button className="danger compact" onClick={() => setItems((a) => a.filter((_, j) => j !== i))}>×</button>
-          </div>)}</div>
-          <div className="purchase-page-actions"><button type="button" className="secondary" onClick={() => setPurchaseView('info')}>← Anterior: Información</button><button type="button" onClick={() => setPurchaseView('docs')}>Siguiente: Documentación →</button></div>
-        </section> : null}
 
-        {purchaseView === 'docs' ? <section id="purchase-docs" className="purchase-panel purchase-docs-card"><div className="purchase-card-title"><span>03</span><div><h3>Documentación</h3><p>Comprobantes fiscales, cargos y notas de la recepción.</p></div></div><div className="purchase-v16-grid">
-          <label>XML CFDI<input type="file" accept=".xml,text/xml,application/xml" onChange={(e) => fileData(e.target.files?.[0], 'xml')} /><span>{doc.xmlName || 'Sin XML'}</span></label>
-          <label>PDF / remisión / ticket<input type="file" accept=".pdf,image/*" onChange={(e) => fileData(e.target.files?.[0], 'doc')} /><span>{doc.documentName || 'Sin archivo'}</span></label>
-          <label>IEPS<input type="number" min="0" step=".01" value={doc.ieps} onChange={(e) => setDoc((d) => ({ ...d, ieps: e.target.value }))} /></label>
-          <label>Retenciones<input type="number" min="0" step=".01" value={doc.retentions} onChange={(e) => setDoc((d) => ({ ...d, retentions: e.target.value }))} /></label>
-          <label>Otros cargos<input type="number" min="0" step=".01" value={doc.otherCharges} onChange={(e) => setDoc((d) => ({ ...d, otherCharges: e.target.value }))} /></label>
-          <label>Total del documento<input type="number" min="0" step=".01" value={doc.documentTotal} onChange={(e) => setDoc((d) => ({ ...d, documentTotal: e.target.value }))} /></label>
-          <label className="wide">Notas<textarea value={doc.notes} onChange={(e) => setDoc((d) => ({ ...d, notes: e.target.value }))} /></label>
-        </div><div className="purchase-page-actions"><button type="button" className="secondary" onClick={() => setPurchaseView('items')}>← Anterior: Artículos</button><button type="button" onClick={() => setPurchaseView('history')}>Siguiente: Historial →</button></div></section> : null}
-      </div>
+            <div className="purchase-r72-stepper">
+              {[
+                ['info', '1', 'Información'],
+                ['items', '2', 'Artículos'],
+                ['docs', '3', 'Documentación'],
+                ['summary', '4', 'Resumen']
+              ].map(([id, number, label]) => {
+                const order = { info: 1, items: 2, docs: 3, summary: 4 };
+                const current = order[purchaseView] || 1;
+                const step = order[id];
+                return <div key={id} className={`purchase-r72-step ${purchaseView === id ? 'active' : ''} ${current > step ? 'done' : ''}`}>
+                  <span>{current > step ? '✓' : number}</span>
+                  <strong>{label}</strong>
+                </div>;
+              })}
+            </div>
 
-      {purchaseView !== 'history' ? <aside className="purchase-summary-v16"><div className="purchase-summary-head"><span>RESUMEN</span><h3>Resumen del documento</h3></div><div><span>Subtotal</span><strong>{money(subtotal)}</strong></div><div><span>Descuentos</span><strong>- {money(discounts)}</strong></div><div><span>IVA calculado</span><strong>{money(iva)}</strong></div><div><span>IEPS</span><strong>{money(doc.ieps)}</strong></div><div><span>Retenciones</span><strong>- {money(doc.retentions)}</strong></div><div><span>Otros cargos</span><strong>{money(doc.otherCharges)}</strong></div><div className="purchase-grand"><span>{brandText("Total GMX")}</span><strong>{money(total)}</strong></div><div><span>Total documento</span><strong>{doc.documentTotal === '' ? '—' : money(doc.documentTotal)}</strong></div><div className={diff == null ? '' : Math.abs(diff) < .01 ? 'purchase-ok' : 'purchase-warn'}><span>Diferencia</span><strong>{diff == null ? '—' : money(diff)}</strong></div>
-        <div className={`fiscal-badge fiscal-${doc.fiscalStatus.toLowerCase()}`}>{fiscalLabel[doc.fiscalStatus]}</div>
-        {doc.fiscalStatus !== 'FACTURADA' ? <p className="purchase-fiscal-note">{brandText("La mercancía puede recibirse, pero GMX no la presenta como compra fiscalmente comprobada.")}</p> : null}
-        <div className="purchase-quick-actions"><span>ACCIONES RÁPIDAS</span><button className="secondary" onClick={() => save(false)}>Guardar borrador</button><button onClick={openReceiveConfirmation}>Recibir compra</button></div>
-      </aside> : null}
+            <div className="purchase-r72-body">
+              {purchaseView === 'info' ? <section className="purchase-r72-step-panel">
+                <div className="purchase-r72-step-title">
+                  <h3>Información general</h3>
+                  <p>Define proveedor, sucursal y la situación fiscal de la recepción.</p>
+                </div>
+                <div className="purchase-v16-grid purchase-r72-form-grid">
+                  <label>Proveedor<select value={supplierId} onChange={(e) => setSupplierId(e.target.value)}><option value="">Selecciona</option>{suppliers.map((x) => <option key={x.row_id} value={x.id_proveedor}>{x.nombre_comercial || x.razon_social || x.id_proveedor}</option>)}</select></label>
+                  <label>Sucursal receptora<select value={branchId} onChange={(e) => setBranchId(e.target.value)}>{branches.map((x) => <option key={x.row_id} value={x.id_sucursal}>{x.nombre_sucursal}</option>)}</select></label>
+                  <label>Comprobación<select value={doc.fiscalStatus} onChange={(e) => {const fiscalStatus = e.target.value;setDoc((d) => ({ ...d, fiscalStatus, documentType: fiscalStatus === 'FACTURADA' ? 'CFDI' : fiscalStatus === 'SIN_COMPROBANTE' ? 'SIN_DOCUMENTO' : d.documentType }));}}><option value="FACTURADA">CFDI / Facturada</option><option value="PENDIENTE_FACTURA">Pendiente de factura</option><option value="NO_FACTURADA">Remisión / Ticket no fiscal</option><option value="SIN_COMPROBANTE">Sin comprobante</option></select></label>
+                  <label>Tipo documento<select value={doc.documentType} onChange={(e) => setDoc((d) => ({ ...d, documentType: e.target.value }))}><option>CFDI</option><option>REMISION</option><option>TICKET</option><option>SIN_DOCUMENTO</option></select></label>
+                  <label>Folio / referencia<input value={doc.reference} onChange={(e) => setDoc((d) => ({ ...d, reference: e.target.value }))} /></label>
+                  <label>UUID CFDI<input disabled={doc.fiscalStatus !== 'FACTURADA'} value={doc.uuid} onChange={(e) => setDoc((d) => ({ ...d, uuid: e.target.value }))} /></label>
+                  <label>Moneda<select value={doc.currency} onChange={(e) => setDoc((d) => ({ ...d, currency: e.target.value }))}><option>MXN</option><option>USD</option></select></label>
+                  <label>Método de pago<select value={doc.paymentMethod} onChange={(e) => setDoc((d) => ({ ...d, paymentMethod: e.target.value }))}><option>TRANSFERENCIA</option><option>EFECTIVO</option><option>TARJETA</option><option>CREDITO</option><option>OTRO</option></select></label>
+                </div>
+              </section> : null}
 
-      {purchaseView === 'history' ? <section id="purchase-history" className="purchase-history-v16"><div className="purchase-history-head"><div><span>04</span><div><h3>Historial</h3><p>Compras y recepciones recientes.</p></div></div></div><div className="table-wrap"><table><thead><tr><th>Fecha</th><th>Compra</th><th>Proveedor</th><th>Sucursal</th><th>Fiscal</th><th>Unidades</th><th>Total</th><th>Estado</th><th></th></tr></thead><tbody>{purchases.map((p) => <tr key={p.row_id}><td>{p.fecha ? new Date(p.fecha).toLocaleString('es-MX') : '—'}</td><td>{p.id_compra}</td><td>{p.proveedor || '—'}</td><td>{p.sucursal_recepcion || '—'}</td><td><span className={`fiscal-mini fiscal-${String(p.estatus_fiscal || 'SIN_COMPROBANTE').toLowerCase()}`}>{fiscalLabel[p.estatus_fiscal] || p.estatus_fiscal}</span></td><td>{p.unidades_recibidas || 0}/{p.unidades_solicitadas || 0}</td><td>{money(p.total)}</td><td>{p.estado}</td><td><div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>{!['RECIBIDA', 'CANCELADA'].includes(String(p.estado).toUpperCase()) ? <button className="secondary compact" onClick={() => receive(p)}>Recibir</button> : null}<button className="secondary compact" onClick={() => manageFiscal(p)}>{String(p.estatus_fiscal || '').toUpperCase() === 'PENDIENTE_FACTURA' ? 'Adjuntar factura' : 'Gestionar'}</button></div></td></tr>)}</tbody></table></div><div className="purchase-page-actions"><button type="button" className="secondary" onClick={() => setPurchaseView('docs')}>← Anterior: Documentación</button><span /></div></section> : null}
+              {purchaseView === 'items' ? <section className="purchase-r72-step-panel purchase-r72-items">
+                <div className="purchase-r72-step-title purchase-r72-step-title-actions">
+                  <div><h3>Artículos de la compra</h3><p>Busca productos del catálogo general o variantes TCG y captura cantidades/costos.</p></div>
+                  <button className="secondary compact" onClick={() => setNewProduct(true)}>+ Alta de producto</button>
+                </div>
+
+                <div className="purchase-catalog-tabs">
+                  <button className={catalogType === 'TODOS' ? 'active' : ''} onClick={() => {setCatalogType('TODOS');setCatalogOpen(true);}}>Todos <span>{purchaseCatalog.length}</span></button>
+                  <button className={catalogType === 'PRODUCT' ? 'active' : ''} onClick={() => {setCatalogType('PRODUCT');setCatalogOpen(true);}}>Productos <span>{products.length}</span></button>
+                  <button className={catalogType === 'TCG' ? 'active' : ''} onClick={() => {setCatalogType('TCG');setCatalogOpen(true);}}>Cartas TCG <span>{tcgInventory.length}</span></button>
+                </div>
+
+                <div className={`purchase-catalog-picker ${catalogOpen ? 'is-open' : ''}`}>
+                  <label className="purchase-search">Buscar / seleccionar artículo
+                    <div className="purchase-picker-input">
+                      <input value={productSearch}
+                        onFocus={() => setCatalogOpen(true)}
+                        onChange={(e) => {setProductSearch(e.target.value);setCatalogOpen(true);}}
+                        placeholder="Nombre, SKU, ID, código de barras, carta, rareza, condición…"
+                        autoComplete="off" />
+                      <button type="button" onClick={() => setCatalogOpen((v) => !v)} aria-label="Mostrar catálogo">⌄</button>
+                    </div>
+                  </label>
+
+                  {catalogOpen ? <div className="purchase-search-results purchase-search-results-v2 purchase-r72-search-results">
+                    <div className="purchase-results-head">
+                      <span>{productSearch.trim() ? 'Resultados' : 'Catálogo disponible'}</span>
+                      <strong>{shownProducts.length}{purchaseCatalog.length > shownProducts.length ? ' mostrados' : ''}</strong>
+                    </div>
+                    {shownProducts.length ? shownProducts.map((p) => <button key={p.key} type="button" onMouseDown={(e) => e.preventDefault()} onClick={() => addProduct(p)}>
+                      <span className="purchase-result-main">
+                        <span className={`purchase-kind ${p.kind === 'TCG' ? 'tcg' : 'product'}`}>{p.kind === 'TCG' ? 'CARTA TCG' : 'PRODUCTO'}</span>
+                        <strong>{p.name}{p.kind === 'TCG' && p.rarity ? ` (${p.rarity})` : ''}</strong>
+                        <small>{p.meta || `ID ${p.id}`}</small>
+                      </span>
+                      <span className="purchase-result-side">
+                        <strong>{p.cost > 0 ? `Costo ${money(p.cost)}` : 'Costo por capturar'}</strong>
+                        <small>{p.kind === 'TCG' ? `Stock actual ${p.stock} · ${p.sku || p.id}` : `ID ${p.id} · Stock ${p.stock}`}</small>
+                      </span>
+                    </button>) : <div className="purchase-no-results">No hay artículos que coincidan con la búsqueda.</div>}
+                  </div> : null}
+                </div>
+
+                <div className="purchase-r72-line-list">
+                  {items.map((x, i) => <div className="purchase-r72-line" key={`${x.productId || 'new'}-${i}`}>
+                    <div className="purchase-product">
+                      <span className={`purchase-kind ${x.itemType === 'TCG' ? 'tcg' : 'product'}`}>{x.itemType === 'TCG' ? 'CARTA TCG' : x.newProduct ? 'PRODUCTO NUEVO' : 'PRODUCTO'}</span>
+                      <strong>{x.name}</strong>
+                      <span>{[x.sku, x.variantMeta].filter(Boolean).join(' · ') || 'Sin identificadores adicionales'}</span>
+                    </div>
+                    <label>Cant.<input type="number" min="1" value={x.quantity} onChange={(e) => setItems((a) => a.map((y, j) => j === i ? { ...y, quantity: Number(e.target.value) } : y))} /></label>
+                    <label>Costo<input type="number" min="0" step=".01" value={x.unitCost} onChange={(e) => setItems((a) => a.map((y, j) => j === i ? { ...y, unitCost: Number(e.target.value) } : y))} /></label>
+                    <label>Descuento<input type="number" min="0" step=".01" value={x.discount} onChange={(e) => setItems((a) => a.map((y, j) => j === i ? { ...y, discount: Number(e.target.value) } : y))} /></label>
+                    <label>Impuesto<select value={x.taxType} onChange={(e) => setItems((a) => a.map((y, j) => j === i ? { ...y, taxType: e.target.value } : y))}><option value="IVA16">IVA 16%</option><option value="IVA8">IVA 8%</option><option value="IVA0">IVA 0%</option><option value="EXENTO">Exento</option><option value="NO_OBJETO">No objeto</option><option value="SIN_COMPROBANTE">Sin comprobante</option></select></label>
+                    <strong className="purchase-r72-line-total">{money(Math.max(0, x.quantity * x.unitCost - x.discount) * (x.taxType === 'IVA16' ? 1.16 : x.taxType === 'IVA8' ? 1.08 : 1))}</strong>
+                    <button type="button" className="danger compact" aria-label={`Eliminar ${x.name}`} onClick={() => setItems((a) => a.filter((_, j) => j !== i))}>×</button>
+                  </div>)}
+                  {!items.length ? <div className="purchase-items-empty"><span aria-hidden="true">＋</span><strong>Busca y agrega artículos a la recepción</strong><small>Las cantidades, costos e impuestos aparecerán aquí.</small></div> : null}
+                </div>
+              </section> : null}
+
+              {purchaseView === 'docs' ? <section className="purchase-r72-step-panel">
+                <div className="purchase-r72-step-title">
+                  <h3>Documentación</h3>
+                  <p>Adjunta comprobantes fiscales, cargos adicionales y notas.</p>
+                </div>
+                <div className="purchase-v16-grid purchase-r72-form-grid">
+                  <label>XML CFDI<input type="file" accept=".xml,text/xml,application/xml" onChange={(e) => fileData(e.target.files?.[0], 'xml')} /><span>{doc.xmlName || 'Sin XML'}</span></label>
+                  <label>PDF / remisión / ticket<input type="file" accept=".pdf,image/*" onChange={(e) => fileData(e.target.files?.[0], 'doc')} /><span>{doc.documentName || 'Sin archivo'}</span></label>
+                  <label>IEPS<input type="number" min="0" step=".01" value={doc.ieps} onChange={(e) => setDoc((d) => ({ ...d, ieps: e.target.value }))} /></label>
+                  <label>Retenciones<input type="number" min="0" step=".01" value={doc.retentions} onChange={(e) => setDoc((d) => ({ ...d, retentions: e.target.value }))} /></label>
+                  <label>Otros cargos<input type="number" min="0" step=".01" value={doc.otherCharges} onChange={(e) => setDoc((d) => ({ ...d, otherCharges: e.target.value }))} /></label>
+                  <label>Total del documento<input type="number" min="0" step=".01" value={doc.documentTotal} onChange={(e) => setDoc((d) => ({ ...d, documentTotal: e.target.value }))} /></label>
+                  <label className="wide">Notas<textarea value={doc.notes} onChange={(e) => setDoc((d) => ({ ...d, notes: e.target.value }))} /></label>
+                </div>
+              </section> : null}
+
+              {purchaseView === 'summary' ? <section className="purchase-r72-step-panel">
+                <div className="purchase-r72-step-title">
+                  <h3>Resumen de la recepción</h3>
+                  <p>Verifica los datos antes de guardar o recibir la mercancía.</p>
+                </div>
+
+                <div className="purchase-r72-summary-grid">
+                  <article><span>Proveedor</span><strong>{suppliers.find((x) => x.id_proveedor === supplierId)?.nombre_comercial || suppliers.find((x) => x.id_proveedor === supplierId)?.razon_social || supplierId || '—'}</strong></article>
+                  <article><span>Sucursal</span><strong>{branches.find((x) => x.id_sucursal === branchId)?.nombre_sucursal || branchId || '—'}</strong></article>
+                  <article><span>Artículos</span><strong>{items.length}</strong><small>{receptionUnits} unidades</small></article>
+                  <article><span>Estado fiscal</span><strong>{fiscalLabel[doc.fiscalStatus]}</strong><small>{doc.documentType || '—'}</small></article>
+                  <article className="total"><span>Total</span><strong>{money(total)}</strong></article>
+                </div>
+
+                <div className="purchase-r72-finance">
+                  <div><span>Subtotal</span><strong>{money(subtotal)}</strong></div>
+                  <div><span>Descuentos</span><strong>- {money(discounts)}</strong></div>
+                  <div><span>IVA calculado</span><strong>{money(iva)}</strong></div>
+                  <div><span>IEPS</span><strong>{money(doc.ieps)}</strong></div>
+                  <div><span>Retenciones</span><strong>- {money(doc.retentions)}</strong></div>
+                  <div><span>Otros cargos</span><strong>{money(doc.otherCharges)}</strong></div>
+                  <div><span>Total documento</span><strong>{doc.documentTotal === '' ? '—' : money(doc.documentTotal)}</strong></div>
+                  <div><span>Diferencia</span><strong>{diff == null ? '—' : money(diff)}</strong></div>
+                </div>
+
+                <div className={`purchase-validation-note purchase-r72-validation ${receiveBlocker ? 'warning' : 'ready'}`}>
+                  <span aria-hidden="true">{receiveBlocker ? '!' : '✓'}</span>
+                  <p>{receiveBlocker || 'Recepción lista para confirmar.'}</p>
+                </div>
+              </section> : null}
+            </div>
+
+            <div className="purchase-r72-wizard-actions">
+              <button type="button" className="secondary" onClick={closePurchaseWizard}>Cancelar</button>
+              <div>
+                {purchaseView !== 'info' ? <button type="button" className="secondary" onClick={purchasePreviousStep}>← Anterior</button> : null}
+                {purchaseView !== 'summary' ? <button type="button" className="purchase-r72-primary" onClick={purchaseNextStep}>Siguiente →</button> :
+                  <>
+                    <button type="button" className="secondary" onClick={savePurchaseDraftAndClose}>Guardar borrador</button>
+                    <button type="button" className="purchase-r72-primary" disabled={Boolean(receiveBlocker)} onClick={openReceiveConfirmation}>Recibir compra</button>
+                  </>}
+              </div>
+            </div>
+          </div>
+        </div>,
+        document.body
+      ) : null}
+
       {receiveConfirm ? createPortal(
           <div
             role="dialog"
             aria-modal="true"
-            aria-labelledby="gmx-receive-title"
+            aria-labelledby="tcg_store_template-receive-title"
             style={{
               position: 'fixed', inset: 0, zIndex: 100000, display: 'flex', alignItems: 'center', justifyContent: 'center',
               padding: 24, background: 'rgba(15,23,42,.62)', backdropFilter: 'blur(3px)', overflow: 'auto'
@@ -488,7 +750,7 @@ export default function PurchasesCashPage() {
             <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16, alignItems: 'flex-start' }}>
               <div>
                 <div className="eyebrow">CONFIRMACIÓN DE RECEPCIÓN</div>
-                <h3 id="gmx-receive-title" style={{ margin: '4px 0 6px' }}>Recibir mercancía</h3>
+                <h3 id="tcg_store_template-receive-title" style={{ margin: '4px 0 6px' }}>Recibir mercancía</h3>
                 <p style={{ margin: 0, opacity: .75 }}>La recepción aumentará el inventario una sola vez. La documentación fiscal podrá completarse después.</p>
               </div>
               <button type="button" className="secondary compact" disabled={receiveSaving} onClick={() => setReceiveConfirm(null)}>×</button>
@@ -498,7 +760,7 @@ export default function PurchasesCashPage() {
               <div style={{ padding: 12, border: '1px solid #e5e7eb', borderRadius: 12 }}><small>Proveedor</small><br /><strong>{suppliers.find((x) => x.id_proveedor === supplierId)?.nombre_comercial || suppliers.find((x) => x.id_proveedor === supplierId)?.razon_social || supplierId}</strong></div>
               <div style={{ padding: 12, border: '1px solid #e5e7eb', borderRadius: 12 }}><small>Sucursal</small><br /><strong>{branches.find((x) => x.id_sucursal === branchId)?.nombre_sucursal || branchId}</strong></div>
               <div style={{ padding: 12, border: '1px solid #e5e7eb', borderRadius: 12 }}><small>Unidades</small><br /><strong>{items.reduce((a, x) => a + Number(x.quantity || 0), 0)}</strong></div>
-              <div style={{ padding: 12, border: '1px solid #e5e7eb', borderRadius: 12 }}><small>{brandText("Total GMX")}</small><br /><strong>{money(total)}</strong></div>
+              <div style={{ padding: 12, border: '1px solid #e5e7eb', borderRadius: 12 }}><small>{brandText("Total TCG_STORE_TEMPLATE")}</small><br /><strong>{money(total)}</strong></div>
             </div>
 
             <label style={{ display: 'grid', gap: 6, marginTop: 20 }}>
@@ -518,7 +780,7 @@ export default function PurchasesCashPage() {
                   <div style={{ marginTop: 6, fontSize: 13 }}>XML: {doc.xmlName || 'No adjunto'} · PDF: {doc.documentName || 'No adjunto'}</div>
                 </div> :
               <div style={{ marginTop: 14, padding: 14, borderRadius: 12, background: '#f0fdf4', border: '1px solid #bbf7d0' }}>
-                  <strong>Recepción permitida sin XML/PDF</strong><br />{brandText("\n                  GMX recibirá la mercancía y conservará el estado fiscal seleccionado. Más adelante podrás usar Historial → Gestionar / Adjuntar factura sin volver a modificar inventario.\n                ")}
+                  <strong>Recepción permitida sin XML/PDF</strong><br />{brandText("\n                  TCG_STORE_TEMPLATE recibirá la mercancía y conservará el estado fiscal seleccionado. Más adelante podrás usar Historial → Gestionar / Adjuntar factura sin volver a modificar inventario.\n                ")}
 
               </div>}
 
@@ -538,7 +800,7 @@ export default function PurchasesCashPage() {
             className="modal-backdrop"
             role="dialog"
             aria-modal="true"
-            aria-labelledby="gmx-fiscal-modal-title"
+            aria-labelledby="tcg_store_template-fiscal-modal-title"
             style={{
               position: 'fixed',
               inset: 0,
@@ -591,7 +853,7 @@ export default function PurchasesCashPage() {
                 
               <div>
                 <div className="eyebrow">COMPRAS · DOCUMENTACIÓN FISCAL</div>
-                <h3 id="gmx-fiscal-modal-title" style={{ margin: '4px 0 5px' }}>Adjuntar / actualizar factura</h3>
+                <h3 id="tcg_store_template-fiscal-modal-title" style={{ margin: '4px 0 5px' }}>Adjuntar / actualizar factura</h3>
                 <small>{fiscalPurchase.id_compra} · {fiscalPurchase.proveedor || 'Proveedor'}</small>
               </div>
               <button
@@ -610,7 +872,7 @@ export default function PurchasesCashPage() {
             </div>
 
             <div style={{ padding: '22px 24px', overflowY: 'auto', flex: '1 1 auto' }}>
-              <div className="gmx-fiscal-grid" style={{
+              <div className="tcg_store_template-fiscal-grid" style={{
                   display: 'grid',
                   gridTemplateColumns: 'repeat(2,minmax(0,1fr))',
                   gap: '16px 18px'
@@ -637,7 +899,7 @@ export default function PurchasesCashPage() {
                 </label>
               </div>
 
-              <div className="gmx-fiscal-files" style={{
+              <div className="tcg_store_template-fiscal-files" style={{
                   display: 'grid',
                   gridTemplateColumns: 'repeat(2,minmax(0,1fr))',
                   gap: 18,
@@ -725,8 +987,8 @@ export default function PurchasesCashPage() {
 
           <style>{`
             @media (max-width: 760px){
-              .gmx-fiscal-grid,
-              .gmx-fiscal-files{
+              .tcg_store_template-fiscal-grid,
+              .tcg_store_template-fiscal-files{
                 grid-template-columns:1fr !important;
               }
             }
@@ -736,34 +998,181 @@ export default function PurchasesCashPage() {
         ) : null}
     </div> : null}
 
-    {tab === 'caja' ? <div className="phase6-body"><div className="cash-branch"><label>Sucursal<select value={branchId} onChange={(e) => setBranchId(e.target.value)}>{branches.map((x) => <option key={x.row_id} value={x.id_sucursal}>{x.nombre_sucursal}</option>)}</select></label></div>
-      {!openCash ? <div className="cash-open-card"><h3>Abrir caja</h3><label>Fondo inicial<input type="number" min="0" step=".01" value={openingFund} onChange={(e) => setOpeningFund(e.target.value)} /></label><button onClick={open}>Abrir caja</button></div> : <><div className="cash-summary"><article><span>Fondo inicial</span><strong>{money(openCash.fondo_inicial)}</strong></article><article><span>Ingresos efectivo</span><strong>{money(openCash.ingresos_efectivo)}</strong></article><article><span>Egresos efectivo</span><strong>{money(openCash.egresos_efectivo)}</strong></article><article><span>Saldo esperado</span><strong>{money(openCash.saldo_esperado)}</strong></article></div><div className="cash-actions"><div><h3>Movimiento</h3><div className="form-grid"><label>Tipo<select value={movement.type} onChange={(e) => {
-                    const type = e.target.value;
-                    setMovement((x) => {
-                      let category = x.category;
-                      if (type === 'INGRESO' && category === 'RETIRO') category = 'DEPOSITO';
-                      if (type === 'EGRESO' && category === 'DEPOSITO') category = 'RETIRO';
-                      return { ...x, type, category };
-                    });
-                  }}>
-  <option value="INGRESO">Entrada de efectivo</option>
-  <option value="EGRESO">Salida de efectivo</option>
-</select></label>
-<label>Motivo<select value={movement.category} onChange={(e) => setMovement((x) => ({ ...x, category: e.target.value }))}>
-  {movement.type === 'INGRESO' ? <>
-    <option value="DEPOSITO">Depósito / ingreso a caja</option>
-    <option value="MANUAL">Ajuste manual justificado</option>
-    <option value="AJUSTE">Ajuste de arqueo</option>
-  </> : <>
-    <option value="RETIRO">Retiro de efectivo</option>
-    <option value="MANUAL">Ajuste manual justificado</option>
-    <option value="AJUSTE">Ajuste de arqueo</option>
-  </>}
-</select></label><label>Método<input value="EFECTIVO" readOnly /></label><label>Importe<input type="number" min=".01" step=".01" value={movement.amount} onChange={(e) => setMovement((x) => ({ ...x, amount: e.target.value }))} /></label><label className="wide">Descripción<input value={movement.description} onChange={(e) => setMovement((x) => ({ ...x, description: e.target.value }))} /></label></div><button onClick={addMovement}>Registrar movimiento</button></div><div><h3>Cierre / arqueo</h3><label>Efectivo contado<input type="number" min="0" step=".01" value={counted} onChange={(e) => setCounted(e.target.value)} /></label><div className="cash-diff">Diferencia: <strong>{counted === '' ? '—' : money(Number(counted) - Number(openCash.saldo_esperado || 0))}</strong></div><button className="danger" onClick={close}>Cerrar caja</button></div></div></>}
-      <h3>Movimientos</h3><div className="table-wrap"><table><thead><tr><th>Fecha</th><th>Tipo</th><th>Categoría</th><th>Método</th><th>Importe</th><th>Impacto efectivo</th><th>Descripción</th></tr></thead><tbody>{movements.map((m) => <tr key={m.row_id}><td>{m.fecha ? new Date(m.fecha).toLocaleString('es-MX') : '—'}</td><td>{m.tipo}</td><td>{m.categoria}</td><td>{m.metodo_pago}</td><td>{money(m.importe)}</td><td>{money(m.impacto_efectivo)}</td><td>{m.descripcion || '—'}</td></tr>)}</tbody></table></div>
-      <h3>Historial de cajas</h3><div className="table-wrap"><table><thead><tr><th>Apertura</th><th>Cierre</th><th>Caja</th><th>Esperado</th><th>Contado</th><th>Diferencia</th><th>Estado</th></tr></thead><tbody>{sessions.map((s) => <tr key={s.row_id}><td>{s.fecha_apertura ? new Date(s.fecha_apertura).toLocaleString('es-MX') : '—'}</td><td>{s.fecha_cierre ? new Date(s.fecha_cierre).toLocaleString('es-MX') : '—'}</td><td>{s.id_caja}</td><td>{money(s.saldo_esperado)}</td><td>{s.efectivo_contado ?? '—'}</td><td>{money(s.diferencia)}</td><td>{s.estado}</td></tr>)}</tbody></table></div>
-    </div> : null}
+    {tab === 'caja' ? <div className="cash-ob">
+
+  <aside className="cash-ob-nav">
+    <button type="button" className={cashView==='cash'?'active':''} onClick={()=>setCashView('cash')}>
+      <svg viewBox="0 0 24 24"><path d="M4 8h16v11H4zM7 8V5h10v3M8 12h8M8 15h5"/></svg>
+      <span>Caja / Arqueo</span>
+    </button>
+    <button type="button" className={cashView==='movements'?'active':''} onClick={()=>setCashView('movements')}>
+      <svg viewBox="0 0 24 24"><path d="M5 6h14M5 12h14M5 18h14"/><circle cx="8" cy="6" r="1"/><circle cx="8" cy="12" r="1"/><circle cx="8" cy="18" r="1"/></svg>
+      <span>Movimientos</span>
+    </button>
+    <button type="button" className={cashView==='history'?'active':''} onClick={()=>setCashView('history')}>
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 7v5l3 2M5 5l2 2"/></svg>
+      <span>Historial de cajas</span>
+    </button>
+  </aside>
+
+  <main className="cash-ob-content">
+    <header className="cash-ob-head">
+      <div>
+        <small>EFECTIVO</small>
+        <h2>Caja / Arqueo</h2>
+      </div>
+      <div className="cash-ob-head-actions">
+        <label><span>Sucursal:</span><select value={branchId} onChange={(e)=>setBranchId(e.target.value)}>{branches.map(x=><option key={x.row_id} value={x.id_sucursal}>{x.nombre_sucursal}</option>)}</select></label>
+        <button type="button" onClick={()=>loadCash(branchId).catch(e=>setMessage(e.message))}>
+          <svg viewBox="0 0 24 24"><path d="M20 7v5h-5M4 17v-5h5"/><path d="M18.5 9A7 7 0 0 0 6 6.5L4 9m2 6a7 7 0 0 0 12.5 2.5L20 15"/></svg>
+          Actualizar
+        </button>
+      </div>
+    </header>
+
+    {message ? <div className="cash-ob-message">{message}</div> : null}
+
+    {cashView==='cash' ? <>
+      <section className="cash-ob-controlrow">
+        <article className="cash-ob-card cash-ob-status">
+          <div className="cash-ob-label">Estado de caja</div>
+          <div className={`cash-ob-lock ${openCash?'open':'closed'}`}>
+            <svg viewBox="0 0 24 24"><rect x="5" y="10" width="14" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>
+          </div>
+          <strong>{openCash?'Abierta':'Cerrada'}</strong>
+          <small>{openCash?.id_caja || 'CAJA'}</small>
+        </article>
+
+        <article className="cash-ob-card">
+          <div className="cash-ob-title green">
+            <span><svg viewBox="0 0 24 24"><path d="M7 10V7a5 5 0 0 1 9.5-2M5 10h14v10H5z"/></svg></span>
+            <b>Apertura</b>
+          </div>
+          <label><span>Efectivo inicial</span><input type="number" min="0" step=".01" value={openingFund} onChange={(e)=>setOpeningFund(e.target.value)} disabled={Boolean(openCash)} placeholder="$ 0.00"/></label>
+          <button type="button" className="green-btn" disabled={Boolean(openCash)} onClick={open}>▢&nbsp; Abrir caja</button>
+        </article>
+
+        <article className="cash-ob-card cash-ob-adjust">
+          <div className="cash-ob-title purple">
+            <span><svg viewBox="0 0 24 24"><path d="M12 3v18M7 8l5-5 5 5M7 16l5 5 5-5"/></svg></span>
+            <b>Ajustes</b>
+          </div>
+          <div className="cash-ob-types">
+            <button type="button" className={movement.type==='INGRESO'?'in active':'in'} disabled={!openCash} onClick={()=>setMovement(x=>({...x,type:'INGRESO',category:x.category==='RETIRO'?'DEPOSITO':x.category}))}>↑ Entrada</button>
+            <button type="button" className={movement.type==='EGRESO'?'out active':'out'} disabled={!openCash} onClick={()=>setMovement(x=>({...x,type:'EGRESO',category:x.category==='DEPOSITO'?'RETIRO':x.category}))}>↑ Salida</button>
+          </div>
+          <div className="cash-ob-adjustfields">
+            <label><span>Monto</span><input type="number" min=".01" step=".01" value={movement.amount} onChange={(e)=>setMovement(x=>({...x,amount:e.target.value}))} disabled={!openCash} placeholder="$ 0.00"/></label>
+            <label><span>Motivo</span><select value={movement.category} onChange={(e)=>setMovement(x=>({...x,category:e.target.value}))} disabled={!openCash}>
+              {movement.type==='INGRESO'?<>
+                <option value="DEPOSITO">Depósito / ingreso a caja</option>
+                <option value="MANUAL">Ajuste manual justificado</option>
+                <option value="AJUSTE">Ajuste de arqueo</option>
+              </>:<>
+                <option value="RETIRO">Retiro de efectivo</option>
+                <option value="MANUAL">Ajuste manual justificado</option>
+                <option value="AJUSTE">Ajuste de arqueo</option>
+              </>}
+            </select></label>
+          </div>
+          <label><span>Nota (opcional)</span><input value={movement.description} onChange={(e)=>setMovement(x=>({...x,description:e.target.value}))} disabled={!openCash} placeholder="Escribe una nota..."/></label>
+          <button type="button" className="purple-btn" disabled={!openCash} onClick={addMovement}>▣&nbsp; Registrar ajuste</button>
+        </article>
+
+        <article className="cash-ob-card">
+          <div className="cash-ob-title blue">
+            <span><svg viewBox="0 0 24 24"><rect x="5" y="10" width="14" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg></span>
+            <b>Cierre</b>
+          </div>
+          <label><span>Efectivo contado</span><input type="number" min="0" step=".01" value={counted} onChange={(e)=>setCounted(e.target.value)} disabled={!openCash} placeholder="$ 0.00"/></label>
+          <button type="button" className="blue-btn" disabled={!openCash} onClick={close}>▢&nbsp; Cerrar caja</button>
+        </article>
+      </section>
+
+      <section className="cash-ob-lower">
+        <article className="cash-ob-tablecard">
+          <div className="cash-ob-tablehead"><span className="purple-icon">▣</span><h3>Movimientos recientes</h3></div>
+          <div className="cash-ob-tablewrap">
+            <table>
+              <thead><tr><th>FECHA</th><th>DESCRIPCIÓN</th><th>MOTIVO</th><th>MONTO</th></tr></thead>
+              <tbody>
+                {(Array.isArray(movements)?movements:[]).slice(0,7).map(m=>{
+                  const isOut=String(m.tipo||'').toUpperCase().includes('EGRES');
+                  return <tr key={m.row_id}>
+                    <td>{m.fecha?new Date(m.fecha).toLocaleString('es-MX'):'—'}</td>
+                    <td>{m.descripcion||'—'}</td>
+                    <td>{m.categoria||'—'}</td>
+                    <td className={isOut?'out-money':'in-money'}>{isOut?'- ':'+ '}{money(Math.abs(Number(m.impacto_efectivo??m.importe??0)))}</td>
+                  </tr>
+                })}
+                {!movements.length?<tr><td colSpan="4" className="empty">No hay movimientos registrados.</td></tr>:null}
+              </tbody>
+            </table>
+          </div>
+          <button type="button" className="cash-ob-more" onClick={()=>setCashView('movements')}>Ver todos los movimientos ›</button>
+        </article>
+
+        <article className="cash-ob-tablecard">
+          <div className="cash-ob-tablehead"><span className="blue-icon">◷</span><h3>Historial de cajas</h3></div>
+          <div className="cash-ob-tablewrap">
+            <table>
+              <thead><tr><th>APERTURA</th><th>CIERRE</th><th>CAJA</th><th>DIF.</th><th>ESTADO</th></tr></thead>
+              <tbody>{sessions.slice(0,7).map(s=><tr key={s.row_id}>
+                <td>{s.fecha_apertura?new Date(s.fecha_apertura).toLocaleString('es-MX'):'—'}</td>
+                <td>{s.fecha_cierre?new Date(s.fecha_cierre).toLocaleString('es-MX'):'—'}</td>
+                <td>{s.id_caja}</td>
+                <td>{money(s.diferencia)}</td>
+                <td>{s.estado}</td>
+              </tr>)}</tbody>
+            </table>
+          </div>
+        </article>
+      </section>
+    </> : null}
+
+    {cashView==='movements' ? <section className="cash-ob-full">
+      <div className="cash-ob-fullhead"><div><span className="purple-icon">▣</span><h3>Movimientos</h3></div><span>{movements.length} registros</span></div>
+      <div className="cash-ob-tablewrap full">
+        <table>
+          <thead><tr><th>FECHA</th><th>TIPO</th><th>DESCRIPCIÓN</th><th>MOTIVO</th><th>MONTO</th></tr></thead>
+          <tbody>{(Array.isArray(movements)?movements:[]).map(m=>{
+            const isOut=String(m.tipo||'').toUpperCase().includes('EGRES');
+            return <tr key={m.row_id}><td>{m.fecha?new Date(m.fecha).toLocaleString('es-MX'):'—'}</td><td>{m.tipo||'—'}</td><td>{m.descripcion||'—'}</td><td>{m.categoria||'—'}</td><td className={isOut?'out-money':'in-money'}>{isOut?'- ':'+ '}{money(Math.abs(Number(m.impacto_efectivo??m.importe??0)))}</td></tr>
+          })}</tbody>
+        </table>
+      </div>
+    </section> : null}
+
+    {cashView==='history' ? <section className="cash-ob-full">
+      <div className="cash-ob-fullhead"><div><span className="blue-icon">◷</span><h3>Historial de cajas</h3></div><span>{sessions.length} registros</span></div>
+      <div className="cash-ob-tablewrap full">
+        <table>
+          <thead><tr><th>APERTURA</th><th>CIERRE</th><th>CAJA</th><th>ESPERADO</th><th>CONTADO</th><th>DIFERENCIA</th><th>ESTADO</th></tr></thead>
+          <tbody>{sessions.map(s=><tr key={s.row_id}><td>{s.fecha_apertura?new Date(s.fecha_apertura).toLocaleString('es-MX'):'—'}</td><td>{s.fecha_cierre?new Date(s.fecha_cierre).toLocaleString('es-MX'):'—'}</td><td>{s.id_caja}</td><td>{money(s.saldo_esperado)}</td><td>{s.efectivo_contado??'—'}</td><td>{money(s.diferencia)}</td><td>{s.estado}</td></tr>)}</tbody>
+        </table>
+      </div>
+    </section> : null}
+  </main>
+
+</div> : null}
   </section></div>;
+}
+
+function PurchasePager({ page, setPage, total, pageSize = 5 }) {
+  const pages = Math.max(1, Math.ceil(Number(total || 0) / pageSize));
+  const current = Math.min(Math.max(1, Number(page || 1)), pages);
+  const first = Math.max(1, Math.min(current - 2, Math.max(1, pages - 4)));
+  const visible = Array.from({ length: Math.min(5, pages) }, (_, index) => first + index);
+  return <div className="purchase-r72-pager">
+    <span>Mostrando {total ? (current - 1) * pageSize + 1 : 0} a {Math.min(current * pageSize, total)} de {total}</span>
+    <div>
+      <button type="button" disabled={current <= 1} onClick={() => setPage(1)}>«</button>
+      <button type="button" disabled={current <= 1} onClick={() => setPage(Math.max(1, current - 1))}>‹</button>
+      {visible.map((number) => <button type="button" key={number} className={number === current ? 'active' : ''} onClick={() => setPage(number)}>{number}</button>)}
+      <button type="button" disabled={current >= pages} onClick={() => setPage(Math.min(pages, current + 1))}>›</button>
+      <button type="button" disabled={current >= pages} onClick={() => setPage(pages)}>»</button>
+    </div>
+  </div>;
 }
 
 function NewProductDialog({ onClose, onAdd }) {
@@ -772,3 +1181,4 @@ function NewProductDialog({ onClose, onAdd }) {
     <label>Nombre *<input value={x.name} onChange={(e) => setX((v) => ({ ...v, name: e.target.value }))} /></label><label>SKU<input value={x.sku} onChange={(e) => setX((v) => ({ ...v, sku: e.target.value }))} /></label><label>Código de barras<input value={x.barcode} onChange={(e) => setX((v) => ({ ...v, barcode: e.target.value }))} /></label><label>Categoría<input value={x.category} onChange={(e) => setX((v) => ({ ...v, category: e.target.value }))} /></label><label>Cantidad<input type="number" min="1" value={x.quantity} onChange={(e) => setX((v) => ({ ...v, quantity: e.target.value }))} /></label><label>Costo unitario<input type="number" min="0" step=".01" value={x.unitCost} onChange={(e) => setX((v) => ({ ...v, unitCost: e.target.value }))} /></label><label>Precio venta<input type="number" min="0" step=".01" value={x.price} onChange={(e) => setX((v) => ({ ...v, price: e.target.value }))} /></label><label>Stock mínimo<input type="number" min="0" value={x.minimumStock} onChange={(e) => setX((v) => ({ ...v, minimumStock: e.target.value }))} /></label>
   </div><div className="modal-actions"><button className="secondary" onClick={onClose}>Cancelar</button><button onClick={() => onAdd(x)}>Agregar a compra</button></div></div></div>;
 }
+

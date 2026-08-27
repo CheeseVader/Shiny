@@ -1,6 +1,7 @@
 import { brandText } from "../../config/brand.js";import { useEffect, useMemo, useState } from 'react';
 import { api } from '../../services/api.js';
-
+import SecureMedia from '../SecureMedia.jsx';
+import '../../tcg_autosync_approved_r41.css';
 function when(value) {
   if (!value) return 'Nunca';
   try {return new Date(value).toLocaleString('es-MX');} catch {return String(value);}
@@ -28,6 +29,143 @@ export default function TCGAutoSyncPanel() {
   const [priceData, setPriceData] = useState(null);
   const [priceProvider, setPriceProvider] = useState('');
   const [lastCardSyncResult, setLastCardSyncResult] = useState(null);
+  const [wizardStep, setWizardStep] = useState(1);
+  const [tcgIcons, setTcgIcons] = useState({});
+  const [iconBusy, setIconBusy] = useState('');
+  const [setSort, setSetSort] = useState('AZ');
+  const [selectedGames, setSelectedGames] = useState(()=>{
+    try{return JSON.parse(localStorage.getItem('GMX_AUTO_SYNC_SELECTED_GAMES')||'[]');}
+    catch{return [];}
+  });
+
+  const tcgIconSettingKey=(code)=>`tcg.icon.${String(code||'').replace(/[^a-zA-Z0-9_.-]/g,'_')}`;
+
+  async function loadTcgIcons() {
+    try {
+      const r=await api('/api/v1/content/settings?prefix=tcg.icon.');
+      const next={};
+      for(const row of (r.data||[])){
+        const key=String(row.parametro||'');
+        if(!key.startsWith('tcg.icon.'))continue;
+        next[key.slice('tcg.icon.'.length)]=String(row.valor||'');
+      }
+      setTcgIcons(next);
+      try{localStorage.setItem('GMX_TCG_ICONS_CACHE',JSON.stringify(next));}catch{}
+    } catch {
+      try{
+        setTcgIcons(JSON.parse(localStorage.getItem('GMX_TCG_ICONS_CACHE')||'{}'));
+      }catch{setTcgIcons({});}
+    }
+  }
+
+  function iconIdFor(code){
+    const safe=String(code||'').replace(/[^a-zA-Z0-9_.-]/g,'_');
+    return tcgIcons[safe]||'';
+  }
+
+  async function uploadTcgIcon(game,file){
+    if(!game?.game_code||!file)return;
+    if(!String(file.type||'').startsWith('image/')){
+      setMessage('Selecciona un archivo de imagen válido.');
+      return;
+    }
+    if(file.size>6*1024*1024){
+      setMessage('El icono debe pesar máximo 6 MB.');
+      return;
+    }
+
+    setIconBusy(game.game_code);
+    setMessage('');
+    try{
+      const token=localStorage.getItem('GMX_AUTH_TOKEN')||'';
+      const resp=await fetch('/api/v1/content/media/upload',{
+        method:'POST',
+        headers:{
+          'Content-Type':'application/octet-stream',
+          Authorization:`Bearer ${token}`,
+          'X-GMX-File-Name':encodeURIComponent(file.name),
+          'X-GMX-File-Type':file.type||'application/octet-stream',
+          'X-GMX-Category':'TCG_ICON'
+        },
+        body:file
+      });
+      const body=await resp.json().catch(()=>({}));
+      if(!resp.ok||body.success===false)throw new Error(body.message||body.error||`HTTP ${resp.status}`);
+
+      const mediaId=
+        body.data?.id_media||
+        body.data?.media?.id_media||
+        body.data?.row?.id_media||
+        body.id_media;
+
+      if(!mediaId)throw new Error('La Biblioteca multimedia no devolvió id_media.');
+
+      const settingKey=tcgIconSettingKey(game.game_code);
+      await api('/api/v1/content/settings',{
+        method:'PUT',
+        body:JSON.stringify({[settingKey]:String(mediaId)})
+      });
+
+      const safe=String(game.game_code).replace(/[^a-zA-Z0-9_.-]/g,'_');
+      setTcgIcons((old)=>{
+        const next={...old,[safe]:String(mediaId)};
+        try{localStorage.setItem('GMX_TCG_ICONS_CACHE',JSON.stringify(next));}catch{}
+        return next;
+      });
+      setMessage(`Icono actualizado para ${game.game_name||game.game_code}.`);
+    }catch(e){
+      setMessage(`No fue posible guardar el icono: ${e.message}`);
+    }finally{
+      setIconBusy('');
+    }
+  }
+
+  function persistSelectedGames(next){
+    setSelectedGames(next);
+    try{localStorage.setItem('GMX_AUTO_SYNC_SELECTED_GAMES',JSON.stringify(next));}catch{}
+  }
+
+  function toggleGame(code){
+    const exists=selectedGames.includes(code);
+    let next=exists?selectedGames.filter((x)=>x!==code):[...selectedGames,code];
+    persistSelectedGames(next);
+
+    if(!exists){
+      setGameCode(code);
+      return;
+    }
+
+    if(gameCode===code){
+      const fallback=next[0]||'';
+      setGameCode(fallback);
+    }
+  }
+
+  const selectedProviderRows=providers.filter((p)=>selectedGames.includes(p.game_code));
+
+  const sortedSets=useMemo(()=>{
+    const list=[...sets];
+    const text=(v)=>String(v||'').localeCompare;
+    if(setSort==='ZA'){
+      return list.sort((a,b)=>String(b.nombre||b.codigo||'').localeCompare(String(a.nombre||a.codigo||''),'es',{sensitivity:'base'}));
+    }
+    if(setSort==='NEW'){
+      return list.sort((a,b)=>{
+        const da=Date.parse(a.fecha_lanzamiento||0)||0;
+        const db=Date.parse(b.fecha_lanzamiento||0)||0;
+        return db-da;
+      });
+    }
+    if(setSort==='OLD'){
+      return list.sort((a,b)=>{
+        const da=Date.parse(a.fecha_lanzamiento||0)||0;
+        const db=Date.parse(b.fecha_lanzamiento||0)||0;
+        return da-db;
+      });
+    }
+    return list.sort((a,b)=>String(a.nombre||a.codigo||'').localeCompare(String(b.nombre||b.codigo||''),'es',{sensitivity:'base'}));
+  },[sets,setSort]);
+
 
   const current = providers.find((x) => x.game_code === gameCode) || null;
 
@@ -35,8 +173,19 @@ export default function TCGAutoSyncPanel() {
     const r = await api('/api/v1/tcg-sync/providers');
     const list = r.data || [];
     setProviders(list);
-    const next = preferred || gameCode || list[0]?.game_code || '';
-    if (next) setGameCode(next);
+    const stored=(()=>{
+      try{return JSON.parse(localStorage.getItem('GMX_AUTO_SYNC_SELECTED_GAMES')||'[]');}
+      catch{return [];}
+    })().filter((code)=>list.some((p)=>p.game_code===code));
+
+    if(stored.length){
+      setSelectedGames(stored);
+      const next=preferred || (stored.includes(gameCode)?gameCode:stored[0]);
+      if(next)setGameCode(next);
+    }else{
+      const next=preferred || gameCode || '';
+      if(next)setGameCode(next);
+    }
     return list;
   }
 
@@ -50,7 +199,12 @@ export default function TCGAutoSyncPanel() {
     if (configured.length) setSelected(configured.filter((x) => list.some((s) => s.codigo === x)));
   }
 
-  useEffect(() => {loadProviders().catch((e) => setMessage(e.message));}, []);
+  /* GMX_AUTO_SYNC_STEP2_AUTOLOAD_R44 */
+  useEffect(()=>{
+    if(wizardStep!==2||!gameCode)return;
+    loadSets(gameCode).catch((e)=>setMessage(e.message));
+  },[wizardStep,gameCode]);
+  useEffect(() => {loadProviders().catch((e) => setMessage(e.message));loadTcgIcons();}, []);
 
   useEffect(() => {
     if (!gameCode) return;
@@ -264,131 +418,301 @@ export default function TCGAutoSyncPanel() {
 
   const priceProviders = useMemo(() => [...new Set((priceData?.prices || []).map((x) => x.price_provider))], [priceData]);
 
-  return <div className="tcg-autosync-page">
-    <section className="tcg-sync-explainer">
-      <div><span>SYNC SELECTIVO</span><h3>Catálogo automático por TCG</h3><p>{brandText("GMX solo consulta el TCG seleccionado. Después eliges exactamente qué expansiones descargar.")}</p></div>
-      <div className="tcg-sync-flow"><b>TCG</b><i>→</i><b>Expansiones</b><i>→</i><b>Cartas</b><i>→</i><b>Imágenes / precios</b></div>
-    </section>
+  return (
+    <div className="gmx-approved-sync">
+      <div className="gas-top">
+        <div className="gas-title">
+          <span className="gas-refresh">↻</span>
+          <div>
+            <h2>Auto Sync</h2>
+            <p>Sincronización automática de catálogos TCG</p>
+          </div>
+        </div>
+        <span className="gas-ok"><i /> Sincronizado</span>
+      </div>
 
-    {message ? <div className="message">{message}</div> : null}
+      <div className="gas-steps">
+        {[
+          ['1','Configuración','Selecciona los TCG a sincronizar'],
+          ['2','Expansiones','Elige las expansiones'],
+          ['3','Cartas','Selecciona el tipo de cartas'],
+          ['4','Precios','Imágenes y precios']
+        ].map(([n,title,sub]) => {
+          const step = Number(n);
+          return (
+            <div
+              key={n}
+              className={`gas-step-link ${wizardStep===step?'active':wizardStep>step?'done':''}`}
+              tabIndex={0}
+              onClick={()=>setWizardStep(step)}
+              onKeyDown={(e)=>{
+                if(e.key==='Enter'||e.key===' '){
+                  e.preventDefault();
+                  setWizardStep(step);
+                }
+              }}
+            >
+              <span>{wizardStep>step?'✓':n}</span>
+              <div><b>{title}</b><small>{sub}</small></div>
+            </div>
+          );
+        })}
+      </div>
 
-    <div className="tcg-sync-layout">
-      <aside className="tcg-provider-list">
-        <div className="tcg-provider-head"><h3>TCG disponibles</h3><small>{providers.length} proveedores</small></div>
-        {providers.map((p) => <button key={p.game_code} className={gameCode === p.game_code ? 'active' : ''} onClick={() => setGameCode(p.game_code)}>
-          <div><b>{p.game_name || p.game_code}</b><small>{p.provider_name}</small></div>
-          <span className={`provider-status ${String(p.status || '').toLowerCase()}`}>{p.supports_cards ? 'API completa' : 'Catálogo'}</span>
-        </button>)}
-      </aside>
+      {message ? <div className="gas-message">{message}</div> : null}
 
-      <main className="tcg-sync-main">
-        {current ? <>
-          <section className="tcg-sync-provider-card">
-            <div className="tcg-sync-provider-title">
-              <div><span>{current.provider_name}</span><h2>{current.game_name || current.game_code}</h2><p>{current.publisher || ''}</p></div>
-              <div className="tcg-provider-capabilities">
-                <span className={current.supports_sets ? 'yes' : 'no'}>Expansiones</span>
-                <span className={current.supports_cards ? 'yes' : 'no'}>Cartas</span>
-                <span className={current.supports_images ? 'yes' : 'no'}>Imágenes</span>
-                <span className={current.supports_prices ? 'yes' : 'no'}>Precios</span>
+      <section className="gas-panel">
+        {wizardStep>1 && selectedProviderRows.length ? (
+          <div className="gas-game-tabs">
+            {selectedProviderRows.map((p)=>(
+              <button
+                type="button"
+                key={p.game_code}
+                className={gameCode===p.game_code?'active':''}
+                onClick={()=>setGameCode(p.game_code)}
+              >
+                {p.game_name||p.game_code}
+              </button>
+            ))}
+          </div>
+        ) : null}
+
+        {wizardStep===1 ? (
+          <>
+            <div className="gas-head">
+              <div>
+                <h3>TCG a sincronizar</h3>
+                <p>Selecciona qué catálogos deseas mantener actualizados automáticamente.</p>
               </div>
             </div>
 
-            <div className="tcg-sync-stats">
-              <div><span>Expansiones maestro</span><strong>{Number(current.master_sets || 0).toLocaleString('es-MX')}</strong></div>
-              <div><span>Cartas sincronizadas</span><strong>{Number(current.master_cards || 0).toLocaleString('es-MX')}</strong></div>
-              <div><span>Última sync sets</span><strong>{when(current.last_sets_sync_at)}</strong></div>
-              <div><span>Última sync cartas</span><strong>{when(current.last_cards_sync_at)}</strong></div>
-            </div>
-            {current.last_error ? <div className="tcg-provider-error">{current.last_error}</div> : null}
+            <div className="gas-games">
+              {providers.map((p) => {
+                const active = selectedGames.includes(p.game_code);
+                const text = `${p.game_name||''} ${p.game_code||''}`.toLowerCase();
+                const visual =
+                  text.includes('pokemon') || text.includes('pokémon') ? 'pokemon' :
+                  text.includes('magic') || text.includes('mtg') ? 'magic' :
+                  text.includes('yugi') || text.includes('yu-gi') ? 'yugioh' :
+                  text.includes('one piece') ? 'onepiece' :
+                  text.includes('rift') ? 'riftbound' :
+                  text.includes('lorcana') ? 'lorcana' : 'generic';
+                const abbr =
+                  visual==='pokemon' ? 'PK' :
+                  visual==='magic' ? 'M' :
+                  visual==='yugioh' ? 'YG' :
+                  visual==='onepiece' ? 'OP' :
+                  visual==='riftbound' ? 'RB' :
+                  visual==='lorcana' ? 'DL' : 'TCG';
 
-            <div className="tcg-sync-actions">
-              <button onClick={syncSets} disabled={!!busy}>{busy === 'sets' ? 'Actualizando…' : '1. Actualizar expansiones'}</button>
-              <button className="secondary" onClick={saveConfig} disabled={!!busy}>{busy === 'config' ? 'Guardando…' : 'Guardar configuración'}</button>
+                return (
+                  <div
+                    key={p.game_code}
+                    className={`gas-game ${active?'selected':''}`}
+                    role="button"
+                    tabIndex={0}
+                    onClick={()=>toggleGame(p.game_code)}
+                    onKeyDown={(e)=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();toggleGame(p.game_code);}}}
+                  >
+                    <span className={`gas-check ${active?'on':''}`}>{active?'✓':''}</span>
+                    {iconIdFor(p.game_code) ? (
+                      <span className="gas-logo uploaded">
+                        <SecureMedia mediaId={iconIdFor(p.game_code)} alt={p.game_name||p.game_code} />
+                      </span>
+                    ) : (
+                      <span className={`gas-logo ${visual}`}>{abbr}</span>
+                    )}
+                    <span className="gas-game-text">
+                      <b>{p.game_name||p.game_code}</b>
+                      <small>{p.provider_name||'Proveedor configurado'}</small>
+                      <em className={p.supports_cards?'full':'catalog'}>
+                        {p.supports_cards?'API completa':'Catálogo'}
+                      </em>
+                    </span>
+                    <span className="gas-info">i</span>
+                    <label className="gas-icon-upload" onClick={(e)=>e.stopPropagation()}>
+                      {iconBusy===p.game_code?'Subiendo…':'Cambiar icono'}
+                      <input
+                        type="file"
+                        accept="image/png,image/jpeg,image/webp,image/gif"
+                        disabled={iconBusy===p.game_code}
+                        onChange={(e)=>{
+                          const file=e.target.files?.[0];
+                          if(file)uploadTcgIcon(p,file);
+                          e.target.value='';
+                        }}
+                      />
+                    </label>
+                  </div>
+                );
+              })}
             </div>
-          </section>
 
-          <section className="tcg-select-sets-card">
-            <div className="section-head compact">
-              <div><h3>2. Selecciona expansiones</h3><p>Solo las marcadas serán consideradas para cartas, imágenes, precios e instalación.</p></div>
-              <div className="tcg-set-select-actions">
-                <button className="secondary compact" onClick={() => setSelected(sets.map((x) => x.codigo))}>Todas</button>
-                <button className="secondary compact" onClick={() => setSelected([])}>Ninguna</button>
+            <div className="gas-bottom gas-bottom-config">
+              <div className="gas-counter">
+                <span>♧</span>
+                <span>{providers.length} catálogos disponibles</span>
+                <i />
+                <b>{selectedGames.length} seleccionados</b>
+              </div>
+            </div>
+          </>
+        ) : null}
+
+        {wizardStep===2 && !selectedGames.length ? (<div className="gas-empty gas-empty-selection">Selecciona al menos un TCG en Configuración.</div>) : wizardStep===2 ? (
+          <>
+            <div className="gas-head">
+              <div>
+                <h3>Seleccionar expansiones</h3>
+                <p>Elige las expansiones que deseas sincronizar para {current?.game_name||gameCode}.</p>
               </div>
             </div>
 
-            <div className="tcg-select-sets-grid">
-              {sets.map((set) => <label key={set.row_id} className={selected.includes(set.codigo) ? 'selected' : ''}>
-                <input type="checkbox" checked={selected.includes(set.codigo)} onChange={() => toggleSet(set.codigo)} />
-                <div><b>{set.codigo} · {set.nombre}</b><small>{set.fecha_lanzamiento ? String(set.fecha_lanzamiento).slice(0, 10) : 'Fecha no registrada'} · {Number(set.total_cartas || 0)} cartas</small></div>
-                <span>{Number(set.synced_cards || 0) > 0 ? `${set.synced_cards} sync` : 'No sync'}</span>
-              </label>)}
-              {!sets.length ? <div className="public-empty small">Primero actualiza las expansiones de este TCG.</div> : null}
+            <div className="gas-set-tools">
+              <label className="gas-sort">
+                <span>Ordenar por</span>
+                <select value={setSort} onChange={(e)=>setSetSort(e.target.value)}>
+                  <option value="AZ">A → Z</option>
+                  <option value="ZA">Z → A</option>
+                  <option value="NEW">Más recientes</option>
+                  <option value="OLD">Más antiguas</option>
+                </select>
+              </label>
+              <label className="gas-all">
+                Seleccionar todas
+                <input
+                  type="checkbox"
+                  checked={sets.length>0 && selected.length===sets.length}
+                  onChange={(e)=>setSelected(e.target.checked?sets.map((x)=>x.codigo):[])}
+                />
+              </label>
             </div>
-          </section>
 
-          <section className="tcg-sync-options-card">
-            <h3>3. Opciones</h3>
-            <div className="tcg-sync-options">
-              <label><input type="checkbox" checked={syncPrices} disabled={!current.supports_prices} onChange={(e) => setSyncPrices(e.target.checked)} /> Incluir precios de mercado</label>
-              <label><input type="checkbox" checked={downloadImages} disabled={!current.supports_images} onChange={(e) => setDownloadImages(e.target.checked)} />{brandText(" Guardar imágenes en GMX")}</label>
-              <label><input type="checkbox" checked={autoSync} onChange={(e) => setAutoSync(e.target.checked)} /> Mantener actualizado automáticamente</label>
-              <label>Frecuencia<select value={frequency} disabled={!autoSync} onChange={(e) => setFrequency(e.target.value)}><option value="DAILY">Diaria</option><option value="WEEKLY">Semanal</option><option value="MONTHLY">Mensual</option></select></label>
+            <div className="gas-set-list">
+              {sortedSets.map((set) => (
+                <label key={set.row_id} className={selected.includes(set.codigo)?'selected':''}>
+                  <input
+                    type="checkbox"
+                    checked={selected.includes(set.codigo)}
+                    onChange={()=>toggleSet(set.codigo)}
+                  />
+                  <span className="gas-set-icon">{String(set.codigo||'?').slice(0,3).toUpperCase()}</span>
+                  <span className="gas-set-name">
+                    <b>{set.nombre}</b>
+                    <small>{set.codigo} · {Number(set.total_cartas||0)} cartas</small>
+                  </span>
+                  <span className="gas-date">
+                    {set.fecha_lanzamiento?String(set.fecha_lanzamiento).slice(0,10):'Sin fecha'}
+                  </span>
+                  <em className={Number(set.synced_cards||0)>0?'synced':'new'}>
+                    {Number(set.synced_cards||0)>0?'Actualizada':'Nueva'}
+                  </em>
+                </label>
+              ))}
+              {!sets.length ? <div className="gas-empty">Actualiza primero las expansiones del TCG seleccionado.</div> : null}
             </div>
-            <div className="tcg-sync-actions">
-              {current.supports_cards ?
-              <button onClick={addSelectedToStore} disabled={!!busy || !selected.length}>
-                  {busy === 'add' ? brandText("Agregando a GMX…") : `4. Agregar ${selected.length} expansión(es) a mi tienda`}
-                </button> :
-              <div className="tcg-catalog-only-note">
-                  Este proveedor está en modo Catálogo. Las expansiones maestras pueden instalarse, pero la descarga automática de cartas se habilitará cuando exista un adaptador estructurado seguro.
-                </div>}
-              {!current.supports_cards ? <button className="secondary" onClick={install} disabled={!!busy || !selected.length}>{busy === 'install' ? 'Agregando…' : 'Agregar seleccionadas a mi tienda'}</button> : null}
-            </div>
-          </section>
 
-          {lastCardSyncResult ? <section className="tcg-sync-result-card">
-            <div className="section-head compact"><div><h3>Resultado de la última sincronización</h3><p>Detalle por expansión y fuente utilizada.</p></div></div>
-            <div className="tcg-sync-result-list">
-              {(lastCardSyncResult.sets || []).map((x) => <article key={`ok-${x.setCode}`} className={x.warning ? 'warning' : 'success'}>
-                <div><b>{x.setCode}</b><small>{x.sourceUsed || 'Proveedor configurado'}</small></div>
-                <span>{x.cards} cartas · {x.prices} precios</span>
-                {x.warning ? <p>{x.warning}</p> : null}
-              </article>)}
-              {(lastCardSyncResult.errors || []).map((x, i) => <article key={`err-${x.setCode}-${i}`} className="error">
-                <div><b>{x.setCode}</b><small>Error</small></div>
-                <span>0 cartas</span>
-                <p>{x.error}</p>
-              </article>)}
-            </div>
-          </section> : null}
-
-          <section className="tcg-price-compare-card">
-            <div className="section-head compact"><div><h3>Comparar precios</h3><p>{brandText("Busca una carta ya sincronizada. GMX mantiene cada fuente y moneda por separado.")}</p></div></div>
-            <form className="tcg-price-search" onSubmit={findCards}>
-              <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Nombre o número de carta" />
-              <button>{busy === 'search' ? 'Buscando…' : 'Buscar'}</button>
-            </form>
-
-            {cards.length ? <div className="tcg-price-card-grid">{cards.slice(0, 24).map((card) => <button key={card.row_id} onClick={() => compare(card)}>
-              <div className="tcg-sync-card-image">{card.image_local_url || card.image_small_url || card.image_large_url ? <img src={card.image_local_url || card.image_small_url || card.image_large_url} alt="" /> : <span>{brandText("GMX")}</span>}</div>
-              <div><b>{card.name}</b><small>{card.set_code} · {card.collector_number || card.number || '—'} · {card.rarity || '—'}</small><span>{card.price_sources} fuentes/precios</span></div>
-            </button>)}</div> : null}
-
-            {priceData ? <div className="tcg-price-comparison">
-              <div className="tcg-price-selected">
-                <div className="tcg-price-large-image">{priceData.card.image_local_url || priceData.card.image_large_url || priceData.card.image_small_url ? <img src={priceData.card.image_local_url || priceData.card.image_large_url || priceData.card.image_small_url} alt="" /> : <span>Sin imagen</span>}</div>
-                <div><small>{priceData.card.game_code} · {priceData.card.set_code}</small><h3>{priceData.card.name}</h3><p>{priceData.card.collector_number || priceData.card.number} · {priceData.card.rarity || 'Sin rareza'}</p></div>
+            <div className="gas-bottom">
+              <div className="gas-counter">
+                <b>{selected.length}</b>
+                <span> de {sets.length} expansiones seleccionadas</span>
               </div>
-              <label className="tcg-price-provider-select">Comparar desde<select value={priceProvider} onChange={(e) => setPriceProvider(e.target.value)}><option value="">Todas las fuentes</option>{priceProviders.map((x) => <option key={x}>{x}</option>)}</select></label>
-              <div className="table-wrap"><table><thead><tr><th>Fuente</th><th>Variante</th><th>Moneda</th><th>Low</th><th>Mid</th><th>High</th><th>Market</th><th>Trend</th><th></th></tr></thead>
-                <tbody>{filteredPrices.map((p) => <tr key={`${p.row_id}-${p.price_provider}-${p.variant}`}><td><b>{p.price_provider}</b></td><td>{p.variant}</td><td>{p.currency}</td><td>{money(p.low, p.currency)}</td><td>{money(p.mid, p.currency)}</td><td>{money(p.high, p.currency)}</td><td><strong>{money(p.market, p.currency)}</strong></td><td>{money(p.trend, p.currency)}</td><td>{p.source_url ? <a href={p.source_url} target="_blank" rel="noreferrer">Abrir mercado</a> : '—'}</td></tr>)}</tbody>
-              </table></div>
-              {!filteredPrices.length ? <div className="public-empty small">Esta impresión todavía no tiene precios disponibles en el proveedor seleccionado.</div> : null}
-            </div> : null}
-          </section>
-        </> : <div className="public-empty">Selecciona un TCG.</div>}
-      </main>
+              <div className="gas-actions">
+                <button type="button" className="gas-outline" onClick={()=>setWizardStep(1)}>← Volver</button>
+                <button type="button" className="gas-next" disabled={!selected.length} onClick={()=>setWizardStep(3)}>Continuar →</button>
+              </div>
+            </div>
+          </>
+        ) : null}
+
+        {wizardStep===3 && !selectedGames.length ? (<div className="gas-empty gas-empty-selection">Selecciona al menos un TCG en Configuración.</div>) : wizardStep===3 ? (
+          <>
+            <div className="gas-head">
+              <div>
+                <h3>Cartas</h3>
+                <p>Define qué información se descargará.</p>
+              </div>
+            </div>
+
+            <div className="gas-option-grid">
+              <label className={!current?.supports_prices?'disabled':''}>
+                <input type="checkbox" checked={syncPrices} disabled={!current?.supports_prices} onChange={(e)=>setSyncPrices(e.target.checked)} />
+                <span><b>Precios de mercado</b><small>Sincronizar referencias disponibles.</small></span>
+              </label>
+
+              <label className={!current?.supports_images?'disabled':''}>
+                <input type="checkbox" checked={downloadImages} disabled={!current?.supports_images} onChange={(e)=>setDownloadImages(e.target.checked)} />
+                <span><b>Imágenes</b><small>Guardar imágenes localmente.</small></span>
+              </label>
+
+              <label>
+                <input type="checkbox" checked={autoSync} onChange={(e)=>setAutoSync(e.target.checked)} />
+                <span><b>Actualización automática</b><small>Mantener el catálogo actualizado.</small></span>
+              </label>
+
+              <label className="gas-frequency">
+                <span><b>Frecuencia</b><small>Periodicidad de actualización.</small></span>
+                <select value={frequency} disabled={!autoSync} onChange={(e)=>setFrequency(e.target.value)}>
+                  <option value="DAILY">Diaria</option>
+                  <option value="WEEKLY">Semanal</option>
+                  <option value="MONTHLY">Mensual</option>
+                </select>
+              </label>
+            </div>
+
+            <div className="gas-bottom">
+              <button type="button" className="gas-outline" onClick={()=>setWizardStep(2)}>← Volver</button>
+              <div className="gas-actions">
+                <button type="button" className="gas-outline" onClick={saveConfig} disabled={!!busy}>
+                  {busy==='config'?'Guardando…':'Guardar configuración'}
+                </button>
+                <button type="button" className="gas-next" onClick={()=>setWizardStep(4)}>Continuar →</button>
+              </div>
+            </div>
+          </>
+        ) : null}
+
+        {wizardStep===4 && !selectedGames.length ? (<div className="gas-empty gas-empty-selection">Selecciona al menos un TCG en Configuración.</div>) : wizardStep===4 ? (
+          <>
+            <div className="gas-head">
+              <div>
+                <h3>Imágenes y precios</h3>
+                <p>Revisa la selección antes de sincronizar.</p>
+              </div>
+            </div>
+
+            <div className="gas-review">
+              <div><span>TCG</span><b>{current?.game_name||'—'}</b></div>
+              <div><span>Expansiones</span><b>{selected.length}</b></div>
+              <div><span>Precios</span><b>{syncPrices?'Sí':'No'}</b></div>
+              <div><span>Imágenes</span><b>{downloadImages?'Sí':'No'}</b></div>
+            </div>
+
+            {lastCardSyncResult ? (
+              <div className="gas-results">
+                {(lastCardSyncResult.sets||[]).map((x)=>(
+                  <div key={x.setCode}>
+                    <b>{x.setCode}</b>
+                    <span>{x.cards} cartas · {x.prices} precios</span>
+                  </div>
+                ))}
+              </div>
+            ) : null}
+
+            <div className="gas-bottom">
+              <button type="button" className="gas-outline" onClick={()=>setWizardStep(3)}>← Volver</button>
+              <button
+                type="button"
+                className="gas-next"
+                onClick={addSelectedToStore}
+                disabled={!!busy||!selected.length}
+              >
+                {busy==='add'?'Sincronizando…':'Sincronizar ahora'}
+              </button>
+            </div>
+          </>
+        ) : null}
+      </section>
     </div>
-  </div>;
+  );
 }

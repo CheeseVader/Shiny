@@ -3,15 +3,19 @@ import { useEffect,useState } from 'react';
 
 const routeModules=[
   ['/admin/dashboard','DASHBOARD'],['/admin/productos','PRODUCTOS'],['/admin/alta-externa-beta','PRODUCTOS'],['/admin/busqueda-visual-beta','PRODUCTOS'],['/admin/categorias','PRODUCTOS'],['/admin/clientes','CLIENTES'],
-  ['/admin/inventario','INVENTARIO'],['/admin/sucursales','SUCURSALES'],['/admin/pos','PEDIDOS'],['/admin/pedidos','PEDIDOS'],
+  ['/admin/inventario','INVENTARIO'],['/admin/sucursales','SUCURSALES'],['/admin/pedidos','PEDIDOS'],
   ['/admin/compras','COMPRAS'],['/admin/caja','CAJA'],['/admin/comercial','COMERCIAL'],
   ['/admin/tcg-operacion','TCG'],['/admin/tcg','TCG'],['/admin/buylist','BUYLIST'],
   ['/admin/promociones','CONTENIDO'],['/admin/contenido','CONTENIDO'],['/admin/notificaciones','NOTIFICACIONES'],['/admin/reportes','REPORTES'],
   ['/admin/administracion','ADMIN'],['/admin/sistema','SISTEMA']
 ];
 
+const ACCESS_UPDATED_EVENT='gmx-auth-access-updated';
+function notifyAccessUpdated(){window.dispatchEvent(new Event(ACCESS_UPDATED_EVENT));}
+
 function clearSession(){
   localStorage.removeItem('GMX_AUTH_TOKEN');localStorage.removeItem('GMX_AUTH_USER');localStorage.removeItem('GMX_AUTH_ACCESS');
+  notifyAccessUpdated();
 }
 function moduleFor(path){return routeModules.find(([prefix])=>path===prefix||path.startsWith(`${prefix}/`))?.[1]||null;}
 
@@ -29,6 +33,7 @@ export default function ProtectedRoute(){
         const body=await r.json(),a=body.data?.access||null;
         localStorage.setItem('GMX_AUTH_ACCESS',JSON.stringify(a||{}));
         localStorage.setItem('GMX_AUTH_USER',JSON.stringify(body.data?.user||{}));
+        notifyAccessUpdated();
         setAccess(a);setState('allowed');
       })
       .catch(()=>{if(!cancelled){clearSession();setState('denied');}});

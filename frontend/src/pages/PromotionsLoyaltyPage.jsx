@@ -1,6 +1,8 @@
 import { useEffect,useMemo,useState } from 'react';
 import { api } from '../services/api.js';
 import LoyaltyManager from '../components/LoyaltyManager.jsx';
+import { R23BarList, R23Donut, R23LineChart, r23DayKey } from '../components/VisualKitR23.jsx';
+import '../phase_gmx_exact_views_r23.css';
 
 const money=v=>Number(v||0).toLocaleString('es-MX',{style:'currency',currency:'MXN'});
 const emptyPromotion=()=>({
@@ -17,6 +19,7 @@ export default function PromotionsLoyaltyPage(){
   const [clients,setClients]=useState([]);
   const [form,setForm]=useState(emptyPromotion());
   const [editRowId,setEditRowId]=useState(null);
+  const [editorOpen,setEditorOpen]=useState(false);
   const [message,setMessage]=useState('');
   const [search,setSearch]=useState('');
   const [status,setStatus]=useState('');
@@ -35,6 +38,14 @@ export default function PromotionsLoyaltyPage(){
     setClients(c.data||[]);
   }
   useEffect(()=>{load().catch(e=>setMessage(e.message));},[]);
+  useEffect(()=>{
+    if(!editorOpen)return;
+    const onKey=e=>{if(e.key==='Escape'&&!busy)reset();};
+    document.addEventListener('keydown',onKey);
+    const prev=document.body.style.overflow;
+    document.body.style.overflow='hidden';
+    return()=>{document.removeEventListener('keydown',onKey);document.body.style.overflow=prev;};
+  },[editorOpen,busy]);
 
   const filtered=useMemo(()=>promotions.filter(p=>{
     const q=search.trim().toLowerCase();
@@ -59,9 +70,11 @@ export default function PromotionsLoyaltyPage(){
       fin:p.fin?String(p.fin).slice(0,16):'',
       id_sucursal:p.id_sucursal||''
     });
+    setEditorOpen(true);
     window.scrollTo({top:0,behavior:'smooth'});
   }
-  function reset(){setEditRowId(null);setForm(emptyPromotion());}
+  function openNewPromotion(){setEditRowId(null);setForm(emptyPromotion());setEditorOpen(true);window.scrollTo({top:0,behavior:'smooth'});}
+  function reset(){setEditRowId(null);setForm(emptyPromotion());setEditorOpen(false);}
 
   async function save(){
     setBusy(true);
@@ -82,7 +95,12 @@ export default function PromotionsLoyaltyPage(){
     }catch(e){setMessage(e.message);}
   }
 
-  return <div className="benefits-admin-page">
+  const redemptionDays=Array.from({length:14},(_,index)=>{const date=new Date();date.setDate(date.getDate()-(13-index));return{key:date.toISOString().slice(0,10),label:date.toLocaleDateString('es-MX',{day:'2-digit',month:'short'}),value:0};});
+  const redemptionMap=new Map(redemptionDays.map(day=>[day.key,day]));
+  redemptions.forEach(row=>{const day=redemptionMap.get(r23DayKey(row.fecha));if(day)day.value+=1;});
+  const channelSegments=Object.entries(redemptions.reduce((result,row)=>{const key=String(row.canal||'Sin canal');result[key]=(result[key]||0)+1;return result;},{})).map(([label,value])=>({label,value}));
+
+  return <div className="benefits-admin-page r23-view r23-benefits">
     <header className="benefits-hero">
       <div><div className="eyebrow">GESTIÓN · BENEFICIOS</div><h1>Promociones / Fidelidad</h1><p>Motor maestro utilizado por POS y tienda pública. Las ventas solo consumen estas reglas.</p></div>
       <div className="benefit-kpis">
@@ -100,9 +118,12 @@ export default function PromotionsLoyaltyPage(){
       <button className={tab==='loyalty'?'active':''} onClick={()=>setTab('loyalty')}>Fidelidad / Puntos</button>
     </nav>
 
-    {tab==='promotions'?<div className="benefits-grid">
-      <section className="benefits-card promo-editor">
-        <div className="benefits-card-head"><div><h2>{editRowId?'Editar promoción':'Nueva promoción'}</h2><p>{editRowId?'Modifica la regla maestra seleccionada.':'Crea una regla reutilizable por los canales autorizados.'}</p></div>{editRowId?<button className="secondary compact" onClick={reset}>Cancelar edición</button>:null}</div>
+    {tab==='promotions'?<><section className="r23-visual-grid r23-benefits-overview">
+      <article className="r23-visual-card"><div className="r23-card-heading"><div><span>RENDIMIENTO</span><h3>Uso de promociones</h3></div></div><R23BarList color="#12a866" items={promotions.map(row=>({key:row.row_id||row.codigo,label:row.nombre||row.codigo,value:Number(row.usos_reales??row.usos??0),detail:row.limite_usos?`de ${row.limite_usos}`:'sin límite'}))}/></article>
+      <article className="r23-visual-card"><div className="r23-card-heading"><div><span>DESCUENTOS</span><h3>Actividad del período</h3></div></div><R23LineChart labels={redemptionDays.map(day=>day.label)} series={[{label:'Redenciones',color:'#12a866',values:redemptionDays.map(day=>day.value)}]}/></article>
+    </section><div className="benefits-grid list-only">
+      {editorOpen?<div className="promo-modal-backdrop" onMouseDown={e=>{if(e.target===e.currentTarget&&!busy)reset();}}><section className="benefits-card promo-editor promo-modal" role="dialog" aria-modal="true" aria-labelledby="promo-modal-title">
+        <div className="benefits-card-head"><div><h2 id="promo-modal-title">{editRowId?'Editar promoción':'Nueva promoción'}</h2><p>{editRowId?'Modifica la regla maestra seleccionada.':'Crea una regla reutilizable por los canales autorizados.'}</p></div><button type="button" className="promo-modal-close" onClick={reset} disabled={busy} aria-label="Cerrar">×</button></div>
         <div className="benefits-fields cols2">
           <label className="span2">Nombre<input value={form.nombre} onChange={e=>setForm(x=>({...x,nombre:e.target.value}))} placeholder="Ej. Fin de semana Pokémon"/></label>
           <label>Código<input value={form.codigo} onChange={e=>setForm(x=>({...x,codigo:e.target.value.toUpperCase().replace(/[^A-Z0-9_-]/g,'')}))} placeholder="POKEMON15"/></label>
@@ -124,11 +145,11 @@ export default function PromotionsLoyaltyPage(){
           <label className="span2">Notas<textarea rows="2" value={form.notas||''} onChange={e=>setForm(x=>({...x,notas:e.target.value}))}/></label>
         </div>
         <div className="benefits-rule-note">El código se valida en el backend al momento de cobrar. Cambiar una promoción no altera ventas ni redenciones anteriores.</div>
-        <button disabled={busy||!form.nombre.trim()||!form.codigo.trim()||(form.tipo!=='ENVIO'&&Number(form.valor)<=0)} onClick={save}>{busy?'Guardando...':editRowId?'Guardar cambios':'Crear promoción'}</button>
-      </section>
+        <div className="promo-modal-actions"><button type="button" className="secondary" onClick={reset} disabled={busy}>Cancelar</button><button disabled={busy||!form.nombre.trim()||!form.codigo.trim()||(form.tipo!=='ENVIO'&&Number(form.valor)<=0)} onClick={save}>{busy?'Guardando...':editRowId?'Guardar cambios':'Crear promoción'}</button></div>
+      </section></div>:null}
 
       <section className="benefits-card promo-list">
-        <div className="benefits-card-head"><div><h2>Promociones registradas</h2><p>Estado y consumo real del motor comercial.</p></div></div>
+        <div className="benefits-card-head"><div><h2>Promociones registradas</h2><p>Estado y consumo real del motor comercial.</p></div><button type="button" onClick={openNewPromotion}>+ Nueva promoción</button></div>
         <div className="promo-filterbar"><input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Buscar nombre, código, tipo…"/><select value={status} onChange={e=>setStatus(e.target.value)}><option value="">Todos los estados</option><option>ACTIVA</option><option>INACTIVA</option></select></div>
         <div className="benefits-table"><table><thead><tr><th>Promoción</th><th>Regla</th><th>Alcance</th><th>Usos</th><th>Vigencia</th><th>Estado</th><th>Acciones</th></tr></thead><tbody>
           {filtered.map(p=><tr key={p.row_id}>
@@ -143,15 +164,29 @@ export default function PromotionsLoyaltyPage(){
           {!filtered.length?<tr><td colSpan="7"><div className="empty-box">No hay promociones con esos filtros.</div></td></tr>:null}
         </tbody></table></div>
       </section>
-    </div>:null}
+    </div></>:null}
 
-    {tab==='redemptions'?<section className="benefits-card">
+    {tab==='redemptions'?<><section className="r23-visual-grid r23-redemptions-overview">
+      <article className="r23-visual-card"><div className="r23-card-heading"><div><span>TENDENCIA</span><h3>Redenciones por día</h3></div></div><R23LineChart labels={redemptionDays.map(day=>day.label)} series={[{label:'Redenciones',values:redemptionDays.map(day=>day.value)}]}/></article>
+      <article className="r23-visual-card"><div className="r23-card-heading"><div><span>ORIGEN</span><h3>Canales</h3></div></div><R23Donut segments={channelSegments} center={redemptions.length} caption="redenciones"/></article>
+    </section><section className="benefits-card">
       <div className="benefits-card-head"><div><h2>Historial de redenciones</h2><p>Auditoría de promociones realmente aplicadas o revertidas.</p></div><span>{redemptions.length} movimientos</span></div>
       <div className="benefits-table"><table><thead><tr><th>Fecha</th><th>Promoción</th><th>Código</th><th>Pedido</th><th>Cliente</th><th>Canal</th><th>Subtotal</th><th>Descuento</th><th>Estado</th></tr></thead><tbody>
         {redemptions.map(r=><tr key={r.row_id}><td>{new Date(r.fecha).toLocaleString('es-MX')}</td><td><b>{r.promocion||r.id_promocion}</b></td><td>{r.codigo||'—'}</td><td>{r.id_pedido}</td><td>{r.cliente||r.id_cliente||'Público general'}</td><td>{r.canal}</td><td>{money(r.subtotal)}</td><td><b>-{money(r.descuento)}</b></td><td><span className={`promo-state ${String(r.estado).toLowerCase()}`}>{r.estado}</span></td></tr>)}
         {!redemptions.length?<tr><td colSpan="9"><div className="empty-box">Aún no hay redenciones.</div></td></tr>:null}
       </tbody></table></div>
-    </section>:null}
+    </section></>:null}
+
+    <style>{`
+      .promo-modal-backdrop{position:fixed;inset:0;z-index:10000;background:rgba(15,23,42,.46);backdrop-filter:blur(2px);display:flex;align-items:center;justify-content:center;padding:24px}
+      .promo-modal{width:min(920px,calc(100vw - 48px));max-height:calc(100vh - 48px);overflow:auto;margin:0;box-shadow:0 24px 70px rgba(15,23,42,.28);border-radius:16px;background:#fff}
+      .promo-modal .benefits-card-head{position:sticky;top:0;z-index:2;background:#fff;padding-bottom:14px;border-bottom:1px solid #e5e7eb}
+      .promo-modal-close{width:38px;height:38px;border:1px solid #dbe3ee;border-radius:10px;background:#fff;color:#0f172a;font-size:26px;line-height:1;cursor:pointer}
+      .promo-modal-close:hover{background:#f3f6fa}
+      .promo-modal-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:16px}
+      .benefits-grid.list-only{grid-template-columns:1fr!important}
+      @media(max-width:700px){.promo-modal-backdrop{padding:10px}.promo-modal{width:100%;max-height:calc(100vh - 20px)}.promo-modal .benefits-fields.cols2{grid-template-columns:1fr}.promo-modal .span2{grid-column:auto}}
+    `}</style>
 
     {tab==='loyalty'?<section className="benefits-loyalty">
       <div className="benefits-card-head"><div><h2>Fidelidad / Puntos</h2><p>Reglas globales, saldo por cliente y ledger auditable.</p></div></div>

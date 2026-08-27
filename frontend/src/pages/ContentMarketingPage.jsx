@@ -1,14 +1,50 @@
-import { brandText } from "../config/brand.js";import { useEffect, useMemo, useState } from 'react';
+import { brandText } from "../config/brand.js";import { useEffect, useMemo, useRef, useState } from 'react';
 import { api } from '../services/api.js';
 import { authenticatedDownload } from '../utils/download.js';
 import DualAppearanceDesigner from '../components/DualAppearanceDesigner.jsx';
 import SecureMedia from '../components/SecureMedia.jsx';
+import '../phase_gmx_exact_views_r23.css';
+import '../content_marketing_option3.css';
 
 const DEFAULT_APPEARANCE = {
-  'appearance.brand_name': brandText("GMX"), 'appearance.logo_text': 'G', 'appearance.primary': '#101828',
+  'appearance.brand_name': brandText("TCG_STORE_TEMPLATE"), 'appearance.logo_text': 'G', 'appearance.primary': '#101828',
   'appearance.surface': '#ffffff', 'appearance.background': '#f2f4f7', 'appearance.radius': '14',
   'appearance.density': 'comfortable', 'appearance.sidebar_compact': 'false'
 };
+
+function AuthenticatedMediaImage({ mediaId, className = '', alt = '' }) {
+  const [src, setSrc] = useState('');
+  const [failed, setFailed] = useState(false);
+
+  useEffect(() => {
+    let alive = true;
+    let objectUrl = '';
+    setSrc('');
+    setFailed(false);
+    if (!mediaId) return undefined;
+
+    const token = localStorage.getItem('GMX_AUTH_TOKEN') || localStorage.getItem('TCG_STORE_TEMPLATE_AUTH_TOKEN') || '';
+    fetch(`/api/v1/content/media/${encodeURIComponent(mediaId)}/file`, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {}
+    })
+      .then(async (r) => {
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        const blob = await r.blob();
+        objectUrl = URL.createObjectURL(blob);
+        if (alive) setSrc(objectUrl);
+      })
+      .catch(() => { if (alive) setFailed(true); });
+
+    return () => {
+      alive = false;
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+    };
+  }, [mediaId]);
+
+  if (failed) return <div className={`${className} authenticated-media-error`} aria-label={alt}>Vista no disponible</div>;
+  if (!src) return <div className={`${className} authenticated-media-loading`} aria-label={alt}><span /></div>;
+  return <img src={src} className={className} alt={alt} />;
+}
 
 export default function ContentMarketingPage() {
   const [tab, setTab] = useState('appearance');
@@ -22,6 +58,7 @@ export default function ContentMarketingPage() {
   const [deleting, setDeleting] = useState(false);
   const [urlText, setUrlText] = useState('');
   const [importingUrls, setImportingUrls] = useState(false);
+  const uploadInputRef = useRef(null);
 
   async function load() {
     const settled = await Promise.allSettled([
@@ -41,35 +78,35 @@ export default function ContentMarketingPage() {
 
   function applyAppearance(v) {
     const root = document.documentElement;
-    root.style.setProperty('--gmx-primary', v['appearance.primary'] || '#101828');
-    root.style.setProperty('--gmx-surface', v['appearance.surface'] || '#ffffff');
-    root.style.setProperty('--gmx-background', v['appearance.background'] || '#f2f4f7');
-    root.style.setProperty('--gmx-radius', `${Number(v['appearance.radius'] || 14)}px`);
-    document.body.dataset.gmxDensity = v['appearance.density'] || 'comfortable';
+    root.style.setProperty('--tcg_store_template-primary', v['appearance.primary'] || '#101828');
+    root.style.setProperty('--tcg_store_template-surface', v['appearance.surface'] || '#ffffff');
+    root.style.setProperty('--tcg_store_template-background', v['appearance.background'] || '#f2f4f7');
+    root.style.setProperty('--tcg_store_template-radius', `${Number(v['appearance.radius'] || 14)}px`);
+    document.body.dataset.tcg_store_templateDensity = v['appearance.density'] || 'comfortable';
   }
 
   async function uploadMedia(file, category = 'GENERAL') {
     if (!file) return;
     setUploading(true);
     try {
-      const token = localStorage.getItem('GMX_AUTH_TOKEN') || '';
+      const token = localStorage.getItem('GMX_AUTH_TOKEN') || localStorage.getItem('TCG_STORE_TEMPLATE_AUTH_TOKEN') || '';
       const r = await fetch('/api/v1/content/media/upload', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/octet-stream',
           'Authorization': `Bearer ${token}`,
-          'X-TCG-Store-Template-File-Name': encodeURIComponent(file.name),
-          'X-TCG-Store-Template-File-Type': file.type || 'application/octet-stream',
-          'X-TCG-Store-Template-Category': encodeURIComponent(category)
+          'X-GMX-File-Name': encodeURIComponent(file.name),
+          'X-GMX-File-Type': file.type || 'application/octet-stream',
+          'X-GMX-Category': encodeURIComponent(category)
         }, body: file
       });
       const b = await r.json();
       if (!r.ok || b.success === false) throw new Error(b.message || b.error || `HTTP ${r.status}`);
       setMessage(b.data?.duplicate ? brandText(
-        `"${file.name}" ya existía en Multimedia. GMX evitó crear un duplicado.`) :
+        `"${file.name}" ya existía en Multimedia. TCG_STORE_TEMPLATE evitó crear un duplicado.`) :
       `Multimedia cargada: ${file.name}`);
       await load();
-      window.dispatchEvent(new CustomEvent('gmx-media-library-updated', { detail: { id_media: b.data?.id_media } }));
+      window.dispatchEvent(new CustomEvent('tcg_store_template-media-library-updated', { detail: { id_media: b.data?.id_media } }));
     } catch (e) {setMessage(e.message);} finally {setUploading(false);}
   }
 
@@ -102,7 +139,7 @@ export default function ContentMarketingPage() {
       `Multimedia eliminada: ${label}.`);
       setDeleteTarget(null);setImpact(null);
       await load();
-      window.dispatchEvent(new Event('gmx-content-changed'));
+      window.dispatchEvent(new Event('tcg_store_template-content-changed'));
     } catch (e) {setMessage(e.message);} finally
     {setDeleting(false);}
   }
@@ -118,28 +155,35 @@ export default function ContentMarketingPage() {
     return count;
   }, [media]);
 
+  const contentOverview = useMemo(() => {
+    const active = media.filter((item) => item.activo !== false).length;
+    const images = media.filter((item) => item.tipo === 'IMAGE' || String(item.mime_type || '').startsWith('image/')).length;
+    const hero = media.filter((item) => ['HERO', 'SLIDESHOW'].includes(String(item.categoria || '').toUpperCase())).length;
+    return { active, images, hero };
+  }, [media]);
+
 
   async function uploadMany(files) {
     const list = [...(files || [])];if (!list.length) return;
-    setUploading(true);let ok = 0,failed = 0;
+    setUploading(true);let ok = 0,failed = 0;const errors = [];
     for (const file of list) {
       try {
-        const token = localStorage.getItem('GMX_AUTH_TOKEN') || '';
+        const token = localStorage.getItem('GMX_AUTH_TOKEN') || localStorage.getItem('TCG_STORE_TEMPLATE_AUTH_TOKEN') || '';
         const r = await fetch('/api/v1/content/media/upload', {
           method: 'POST',
           headers: { 'Content-Type': 'application/octet-stream', 'Authorization': `Bearer ${token}`,
-            'X-TCG-Store-Template-File-Name': encodeURIComponent(file.name),
-            'X-TCG-Store-Template-File-Type': file.type || 'application/octet-stream', 'X-TCG-Store-Template-Category': 'GENERAL' },
+            'X-GMX-File-Name': encodeURIComponent(file.name),
+            'X-GMX-File-Type': file.type || 'application/octet-stream', 'X-GMX-Category': 'GENERAL' },
           body: file
         });
-        const b = await r.json();
+        const b = await r.json().catch(() => ({}));
         if (!r.ok || b.success === false) throw new Error(b.message || b.error || `HTTP ${r.status}`);
         ok++;
-      } catch {failed++;}
+      } catch (e) {failed++;errors.push(`${file.name}: ${e.message}`);}
     }
     setUploading(false);await load();
-    setMessage(`${ok} archivo(s) cargado(s)${failed ? ` · ${failed} con error` : ''}.`);
-    window.dispatchEvent(new CustomEvent('gmx-media-library-updated'));
+    setMessage(failed ? `${ok} archivo(s) cargado(s) · ${failed} con error · ${errors[0] || 'Error de carga'}` : `${ok} archivo(s) cargado(s).`);
+    window.dispatchEvent(new CustomEvent('tcg_store_template-media-library-updated'));
   }
 
   async function importUrls() {
@@ -153,20 +197,27 @@ export default function ContentMarketingPage() {
       const rows = r.data || [],ok = rows.filter((x) => x.success).length,fail = rows.length - ok;
       setMessage(`${ok} imagen(es) descargada(s) y guardada(s) localmente${fail ? ` · ${fail} con error` : ''}.`);
       setUrlText('');await load();
-      window.dispatchEvent(new CustomEvent('gmx-media-library-updated'));
+      window.dispatchEvent(new CustomEvent('tcg_store_template-media-library-updated'));
     } catch (e) {setMessage(e.message);} finally
     {setImportingUrls(false);}
   }
 
-  return <div className="contentmk-page">
+  return <div className="contentmk-page r23-view r23-content">
     <header className="contentmk-hero">
       <div>
         <div className="eyebrow">CONTENIDO · MARKETING</div>
-        <h1>{settings['appearance.brand_name'] || brandText("GMX")} Content Center</h1>
+        <h1>{settings['appearance.brand_name'] || brandText("TCG_STORE_TEMPLATE")} Content Center</h1>
         <p>Apariencia de la tienda/backoffice y biblioteca multimedia. Hero y slideshow se administran dentro de Apariencia.</p>
       </div>
       <div className="contentmk-kpis"><span><b>{media.length}</b> multimedia</span></div>
     </header>
+
+    <section className="contentmk-overview-kpis" aria-label="Resumen de contenido y marca">
+      <article><span>Marca activa</span><strong>{settings['appearance.brand_name'] || brandText("TCG_STORE_TEMPLATE")}</strong><small>Identidad de tienda y administración</small></article>
+      <article><span>Recursos activos</span><strong>{contentOverview.active}</strong><small>de {media.length} archivos</small></article>
+      <article><span>Imágenes</span><strong>{contentOverview.images}</strong><small>Biblioteca visual disponible</small></article>
+      <article className={contentOverview.hero ? '' : 'attention'}><span>Hero / slideshow</span><strong>{contentOverview.hero}</strong><small>{contentOverview.hero ? 'Recursos listos' : 'Conviene agregar una portada'}</small></article>
+    </section>
 
     {message ? <div className="message">{message}</div> : null}
 
@@ -187,11 +238,23 @@ export default function ContentMarketingPage() {
     {tab === 'media' ? <section className="contentmk-section">
       <div className="section-title">
         <div><h2>Biblioteca multimedia</h2><p>Repositorio único de imágenes, videos y archivos utilizados por la apariencia del portal.</p></div>
-        <label className="upload-button">{uploading ? 'Subiendo...' : 'Subir imágenes'}<input type="file" accept="image/*" multiple disabled={uploading} onChange={(e) => uploadMany(e.target.files)} /></label>
+        <div className="media-upload-control">
+          <input ref={uploadInputRef} className="contentmk-file-input" type="file" accept="image/*" multiple disabled={uploading}
+            onChange={async (e) => { const files = e.target.files; await uploadMany(files); e.target.value = ''; }} />
+          <button className="upload-button" type="button" disabled={uploading} onClick={() => uploadInputRef.current?.click()}>
+            {uploading ? 'Subiendo...' : '＋ Subir imágenes'}
+          </button>
+        </div>
       </div>
-      <div className="media-import-panel">
+      <div className="media-library-toolbar">
+        <div><strong>Biblioteca</strong><span>{media.length} archivo(s)</span></div>
+        <div className="media-library-hint">Selecciona una miniatura para abrirla · administra estado y eliminación desde cada tarjeta.</div>
+      </div>
+      <details className="media-import-panel media-import-collapsible">
+        <summary><div><h3>Importar imágenes desde URL</h3><p>Descarga recursos externos y guárdalos localmente en la biblioteca.</p></div><span>＋ Importar URL</span></summary>
+        <div className="media-import-body">
         <div><h3>Importar imágenes desde URL</h3>
-          <p>{brandText("Pega una o varias URLs, una por línea. GMX las descarga y guarda localmente, por lo que el portal deja de depender del servidor externo.")}</p></div>
+          <p>{brandText("Pega una o varias URLs, una por línea. TCG_STORE_TEMPLATE las descarga y guarda localmente, por lo que el portal deja de depender del servidor externo.")}</p></div>
         <textarea rows="5" value={urlText} onChange={(e) => setUrlText(e.target.value)}
         placeholder={"https://sitio.com/imagen1.jpg\nhttps://sitio.com/imagen2.webp"} />
         <div className="media-import-actions">
@@ -200,13 +263,14 @@ export default function ContentMarketingPage() {
             {importingUrls ? 'Descargando…' : 'Descargar y guardar localmente'}
           </button>
         </div>
-      </div>
+        </div>
+      </details>
       <div className="media-grid">{media.map((m) => {
           const duplicate = !!m.hash && duplicateHashes[m.hash] > 1;
           return <article className={`media-card media-card-preview ${m.activo === false ? 'inactive' : ''}`} key={m.row_id}>
           <button className="media-thumbnail" type="button" onClick={() => openMedia(m)} title={`Abrir ${m.nombre || m.nombre_archivo}`}>
             {m.tipo === 'IMAGE' || String(m.mime_type || '').startsWith('image/') ?
-              <SecureMedia
+              <AuthenticatedMediaImage
                 mediaId={m.id_media}
                 className="media-thumbnail-image"
                 alt={m.nombre || m.nombre_archivo || 'Imagen multimedia'} /> :
@@ -231,9 +295,9 @@ export default function ContentMarketingPage() {
       {!media.length ? <div className="empty-box">La biblioteca está vacía.</div> : null}</div>
     </section> : null}
 
-    {deleteTarget ? <div className="gmx-confirm-backdrop" role="presentation">
-      <div className="gmx-confirm-modal" role="dialog" aria-modal="true" aria-labelledby="delete-media-title">
-        <div className="gmx-confirm-icon">!</div>
+    {deleteTarget ? <div className="tcg_store_template-confirm-backdrop" role="presentation">
+      <div className="tcg_store_template-confirm-modal" role="dialog" aria-modal="true" aria-labelledby="delete-media-title">
+        <div className="tcg_store_template-confirm-icon">!</div>
         <div>
           <div className="eyebrow danger-text">ELIMINACIÓN PERMANENTE</div>
           <h2 id="delete-media-title">¿Eliminar multimedia?</h2>
@@ -244,11 +308,11 @@ export default function ContentMarketingPage() {
           {!checkingImpact && !impact?.error && Number(impact?.totalReferences || 0) > 0 ? <div className="impact-warning">
             <strong>Actualmente está en uso en {impact.totalReferences} referencia(s):</strong>
             <ul>{(impact.references || []).map((x, i) => <li key={`${x.source}-${x.reference}-${i}`}>{x.label}</li>)}</ul>
-            <p>{brandText("Si continúas, GMX retirará automáticamente el archivo de estas configuraciones y después lo eliminará.")}</p>
+            <p>{brandText("Si continúas, TCG_STORE_TEMPLATE retirará automáticamente el archivo de estas configuraciones y después lo eliminará.")}</p>
           </div> : null}
           {!checkingImpact && !impact?.error && Number(impact?.totalReferences || 0) === 0 ? <div className="impact-safe">No hay configuraciones activas que dependan de este archivo.</div> : null}
 
-          <div className="gmx-confirm-actions">
+          <div className="tcg_store_template-confirm-actions">
             <button className="secondary" disabled={deleting} onClick={() => {setDeleteTarget(null);setImpact(null);}}>Cancelar</button>
             <button className="danger" disabled={checkingImpact || deleting || !!impact?.error} onClick={confirmDelete}>
               {deleting ? 'Eliminando…' : 'Eliminar definitivamente'}

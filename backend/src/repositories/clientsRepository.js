@@ -9,55 +9,80 @@ const CLIENT_COLUMNS = `
 `;
 
 export async function listClients({ search = '', limit = 50, offset = 0 }) {
-  const term=String(search||'').trim();
-  const values=[];
-  let where='';
-  let order=`COALESCE(nombre,''),row_id`;
+  const term = String(search || '').trim();
+  const values = [];
+  let where = '';
+  let order = `COALESCE(c.nombre,''),c.row_id`;
 
-  if(term){
+  if (term) {
     values.push(`%${term}%`);
-    const like='$1';
-    const digits=term.replace(/\D/g,'');
-    values.push(digits?`%${digits}%`:'__NO_PHONE_MATCH__');
-    const phoneLike='$2';
+    const like = '$1';
+    const digits = term.replace(/\D/g, '');
+    values.push(digits ? `%${digits}%` : '__NO_PHONE_MATCH__');
+    const phoneLike = '$2';
 
-    where=`
-      WHERE COALESCE(id_cliente,'') ILIKE ${like}
-         OR COALESCE(nombre,'') ILIKE ${like}
-         OR COALESCE(email,'') ILIKE ${like}
-         OR COALESCE(cp,'') ILIKE ${like}
-         OR COALESCE(ciudad,'') ILIKE ${like}
-         OR COALESCE(estado,'') ILIKE ${like}
-         OR COALESCE(telefono_normalizado,'') LIKE ${phoneLike}
+    where = `
+      WHERE COALESCE(c.id_cliente,'') ILIKE ${like}
+         OR COALESCE(c.nombre,'') ILIKE ${like}
+         OR COALESCE(c.email,'') ILIKE ${like}
+         OR COALESCE(c.cp,'') ILIKE ${like}
+         OR COALESCE(c.ciudad,'') ILIKE ${like}
+         OR COALESCE(c.estado,'') ILIKE ${like}
+         OR COALESCE(c.telefono_normalizado,'') LIKE ${phoneLike}
     `;
 
-    order=`
+    order = `
       CASE
-        WHEN LOWER(COALESCE(id_cliente,''))=LOWER($3) THEN 0
-        WHEN LOWER(COALESCE(email,''))=LOWER($3) THEN 1
-        WHEN LOWER(COALESCE(nombre,''))=LOWER($3) THEN 2
-        WHEN LOWER(COALESCE(nombre,'')) LIKE LOWER($4) THEN 3
+        WHEN LOWER(COALESCE(c.id_cliente,''))=LOWER($3) THEN 0
+        WHEN LOWER(COALESCE(c.email,''))=LOWER($3) THEN 1
+        WHEN LOWER(COALESCE(c.nombre,''))=LOWER($3) THEN 2
+        WHEN LOWER(COALESCE(c.nombre,'')) LIKE LOWER($4) THEN 3
         ELSE 4
       END,
-      COALESCE(nombre,''),row_id
+      COALESCE(c.nombre,''),c.row_id
     `;
-    values.push(term,`${term}%`);
+    values.push(term, `${term}%`);
   }
 
-  values.push(limit,offset);
-  const li=values.length-1;
-  const oi=values.length;
+  values.push(limit, offset);
+  const li = values.length - 1;
+  const oi = values.length;
 
   return query(`
-    SELECT ${CLIENT_COLUMNS}
-    FROM gmx.clientes
+    SELECT
+      c.row_id, c.id_cliente, c.nombre, c.telefono, c.email, c.direccion,
+      c.ciudad, c.estado, c.municipio, c.colonia, c.cp, c.pais,
+      c.rfc, c.razon_social, c.regimen_fiscal, c.cp_fiscal, c.uso_cfdi,
+      c.email_normalizado, c.telefono_normalizado, c.email_verificado, c.telefono_verificado,
+      c.fecha_registro, c.fecha_actualizacion,
+      COALESCE(v.pedidos,0)::bigint AS pedidos,
+      COALESCE(v.total_comprado,0)::numeric AS total_comprado,
+      v.ultima_compra
+    FROM gmx.clientes c
+    LEFT JOIN LATERAL (
+      SELECT
+        COUNT(*) FILTER (
+          WHERE COALESCE(p.venta_confirmada,false)=true
+             OR UPPER(COALESCE(p.estado_pedido,''))='PAGADO'
+        )::bigint AS pedidos,
+        COALESCE(SUM(COALESCE(p.total,0)) FILTER (
+          WHERE COALESCE(p.venta_confirmada,false)=true
+             OR UPPER(COALESCE(p.estado_pedido,''))='PAGADO'
+        ),0)::numeric AS total_comprado,
+        MAX(p.fecha) FILTER (
+          WHERE COALESCE(p.venta_confirmada,false)=true
+             OR UPPER(COALESCE(p.estado_pedido,''))='PAGADO'
+        ) AS ultima_compra
+      FROM gmx.pedidos p
+      WHERE p.id_cliente = c.id_cliente
+        AND UPPER(COALESCE(p.estado_pedido,'')) <> 'CANCELADO'
+    ) v ON true
     ${where}
     ORDER BY ${order}
     LIMIT $${li}
     OFFSET $${oi}
-  `,values);
+  `, values);
 }
-
 export async function getClient(rowId) {
   const result = await query(`
     SELECT ${CLIENT_COLUMNS}

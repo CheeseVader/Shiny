@@ -3,7 +3,7 @@ import { brandText, applyDocumentBrand } from "./config/brand.js";import { regis
 const updateSW = registerSW({
   immediate: true,
   onNeedRefresh() {
-    const acceptUpdate = window.confirm(brandText("Hay una nueva version de GMX disponible. ¿Deseas actualizar ahora?")
+    const acceptUpdate = window.confirm(brandText("Hay una nueva version de TCG_STORE_TEMPLATE disponible. ¿Deseas actualizar ahora?")
 
     );
     if (acceptUpdate) updateSW(true);
@@ -121,3 +121,7 @@ import './phase10_6_2_4_1_12_2_0_3.css';
 import './phase10_6_2_4_1_12_2_0_3_4.css';
 
 import './phase10_6_2_4_1_12_2_0_3_5.css';
+import './phase_gmx_visual_r20.css';
+import './phase_gmx_visual_r21.css';
+import './gmx_recommendations_dashboards_v4.css';
+import './gmx_work_exact_r25.css';

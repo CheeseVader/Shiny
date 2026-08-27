@@ -1,8 +1,14 @@
-import { useEffect, useMemo, useState } from 'react';
+import { brandText } from "../config/brand.js";import { useEffect, useMemo, useState } from 'react';
 import { api } from '../services/api.js';
+import VisionScannerModal from '../components/VisionScannerModal.jsx';
+import VisionCandidatePicker from '../components/VisionCandidatePicker.jsx';
+import { visionQueries, scoreVisionCandidate } from '../utils/vision.js';
 import InventoryAdjustModal from '../components/InventoryAdjustModal.jsx';
 import TransferModal from '../components/TransferModal.jsx';
-
+import { R23BarList } from '../components/VisualKitR23.jsx';
+import '../phase_gmx_exact_views_r23.css';
+import '../phase_inventory_inv_b_r31.css';
+import '../gmx_inventory_option_b_color_final.css';
 const PAGE_SIZE = 50;
 
 export default function InventoryPage() {
@@ -27,48 +33,13 @@ export default function InventoryPage() {
   const [message, setMessage] = useState('');
   const [adjustItem, setAdjustItem] = useState(null);
   const [transferOpen, setTransferOpen] = useState(false);
-  const [bulkBusy, setBulkBusy] = useState(false);
-  const [bulkResult, setBulkResult] = useState(null);
+  const [visionOpen, setVisionOpen] = useState(false);
+  const [visionCandidates, setVisionCandidates] = useState([]);
+  const [visionPickerOpen, setVisionPickerOpen] = useState(false);
+  const [gmxGameFilter,setGmxGameFilter] = useState('');
+  const [gmxSetFilter,setGmxSetFilter] = useState('');
+  const [gmxTypeFilter,setGmxTypeFilter] = useState('');
 
-  function filePayload(file) {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve({ name: file.name, mime: file.type, data: reader.result });
-      reader.onerror = reject;
-      reader.readAsDataURL(file);
-    });
-  }
-
-  async function downloadEntryTemplate() {
-    try {
-      const token = localStorage.getItem('GMX_AUTH_TOKEN') || '';
-      const response = await fetch('/api/v1/inventory/entry-template.xlsx', {
-        headers: { Authorization: `Bearer ${token}` }, cache: 'no-store'
-      });
-      if (!response.ok) throw new Error('No fue posible generar la plantilla de inventario.');
-      const blob = await response.blob(), url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url; a.download = 'Plantilla_Entradas_Inventario.xlsx';
-      document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
-    } catch (e) { setMessage(e.message); }
-  }
-
-  async function importInventoryEntries(file) {
-    if (!file) return;
-    setBulkBusy(true); setBulkResult(null); setMessage('');
-    try {
-      const payload = await filePayload(file);
-      const response = await api('/api/v1/inventory/import-entries', {
-        method: 'POST', body: JSON.stringify({ file: payload })
-      });
-      const result = response.data || {};
-      setBulkResult(result);
-      setMessage(`Entrada masiva: ${Number(result.updated || 0)} fila(s) aplicadas y ${(result.errors || []).length} rechazada(s).`);
-      await refresh();
-    } catch (e) {
-      setMessage(e.message === 'IMPORT_FILE_ALREADY_PROCESSED' ? 'Este mismo archivo ya fue procesado. No se volvió a sumar el inventario.' : e.message);
-    } finally { setBulkBusy(false); }
-  }
 
   // INVENTARIO-AUD-006A · filtros propios del historial.
   const [movementSearch, setMovementSearch] = useState('');
@@ -244,6 +215,50 @@ export default function InventoryPage() {
   transferStatus, transferDateFrom, transferDateTo]
   );
 
+  async function handleVisionInventoryResult(result) {
+      const activeBranch = branchId || branches[0]?.id_sucursal || '';
+      if (!activeBranch) throw new Error('Selecciona una sucursal antes de agregar existencia.');
+
+      const queries = visionQueries(result, { max: 6 });
+      const found = new Map();
+
+      for (const q of queries) {
+        try {
+          const r = await api(`/api/v1/products?limit=80&search=${encodeURIComponent(q)}`);
+          for (const p of r.data || []) {
+            const score = scoreVisionCandidate(p, result);
+            const key = String(p.id || p.row_id || p.sku);
+            const previous = found.get(key);
+            if (!previous || score > previous.score) found.set(key, { ...p, key, score });
+          }
+        } catch {}
+      }
+
+      const candidates = [...found.values()].
+      filter((x) => x.score >= 0.20).
+      sort((a, b) => b.score - a.score).
+      slice(0, 8);
+
+      setVisionCandidates(candidates);
+      setVisionOpen(false);
+      setVisionPickerOpen(true);
+  }
+
+  function pickVisionInventoryProduct(product) {
+      const activeBranch = branchId || branches[0]?.id_sucursal || '';
+      const branch = branches.find((x) => String(x.id_sucursal) === String(activeBranch));
+      setAdjustItem({
+        id_sucursal: activeBranch,
+        sucursal: branch?.nombre_sucursal || branch?.nombre || activeBranch,
+        id_producto: product.id,
+        producto: product.nombre,
+        sku: product.sku,
+        stock: 0,
+        stock_minimo: Number(product.stock_minimo || 0)
+      });
+      setVisionPickerOpen(false);
+  }
+
   async function openTransfer() {
     try {
       if (!products.length) {
@@ -280,359 +295,507 @@ export default function InventoryPage() {
     } catch (e) {setMessage(e.message);}
   }
 
-  return <div className="inventory-stack">
-    <section className="inventory-summary inventory-summary-smart">
-      <article><span>Registros encontrados</span><strong>{Number(summary.records || 0).toLocaleString('es-MX')}</strong></article>
-      <article><span>Unidades</span><strong>{Number(summary.units || 0).toLocaleString('es-MX')}</strong></article>
-      <article><span>Stock bajo</span><strong>{Number(summary.low_stock || 0).toLocaleString('es-MX')}</strong></article>
-      <article><span>Sin stock</span><strong>{Number(summary.out_of_stock || 0).toLocaleString('es-MX')}</strong></article>
-    </section>
+  const branchStock = Object.values(inventory.reduce((result, row) => {
+    const key = String(row.id_sucursal || row.sucursal || row.nombre_sucursal || 'Sin sucursal');
+    const label = row.nombre_sucursal || row.sucursal || branches.find((branch) => String(branch.id_sucursal) === key)?.nombre_sucursal || key;
+    result[key] = result[key] || { key, label, value: 0 };
+    result[key].value += Number(row.stock ?? row.existencia ?? row.cantidad ?? 0);
+    return result;
+  }, {}));
+  const availableUnits = Math.max(0, Number(summary.records || total || 0) - Number(summary.low_stock || 0) - Number(summary.out_of_stock || 0));
+  const gmxFinalDashboard = useMemo(() => {
+    const baseRows = (inventory || []).filter((item) => {
+      const game = String(item.juego || item.nombre_juego || item.tcg || '').trim();
+      const setName = String(item.expansion || item.set_nombre || item.edicion || '').trim();
+      const type = String(item.tipo || item.categoria || '').trim();
 
-    <section className="content-card">
-      <div className="section-head inventory-head">
+      if(gmxGameFilter && game !== gmxGameFilter) return false;
+      if(gmxSetFilter && setName !== gmxSetFilter) return false;
+      if(gmxTypeFilter && type !== gmxTypeFilter) return false;
+      return true;
+    });
+
+    const games=[...new Set((inventory||[])
+      .map(item=>String(item.juego||item.nombre_juego||item.tcg||'').trim())
+      .filter(Boolean))]
+      .sort((a,b)=>a.localeCompare(b,'es'));
+
+    const sets=[...new Set((inventory||[])
+      .filter(item=>{
+        if(!gmxGameFilter) return true;
+        return String(item.juego||item.nombre_juego||item.tcg||'').trim()===gmxGameFilter;
+      })
+      .map(item=>String(item.expansion||item.set_nombre||item.edicion||'').trim())
+      .filter(Boolean))]
+      .sort((a,b)=>a.localeCompare(b,'es'));
+
+    const types=[...new Set((inventory||[])
+      .map(item=>String(item.tipo||item.categoria||'').trim())
+      .filter(Boolean))]
+      .sort((a,b)=>a.localeCompare(b,'es'));
+
+    const totalValue=baseRows.reduce((sum,item)=>
+      sum + (Number(item.stock||0) * Number(item.precio||0)),0);
+
+    const skuCount=new Set(baseRows
+      .map(item=>String(item.sku||'').trim())
+      .filter(Boolean)).size;
+
+    const groups={};
+    baseRows.forEach(item=>{
+      const label=String(item.juego||item.nombre_juego||item.tcg||item.categoria||'Otros').trim()||'Otros';
+      if(!groups[label]) groups[label]={label,units:0,value:0};
+      const units=Number(item.stock||0);
+      const value=units*Number(item.precio||0);
+      groups[label].units+=units;
+      groups[label].value+=value;
+    });
+
+    const byGame=Object.values(groups)
+      .sort((a,b)=>b.value-a.value)
+      .slice(0,5);
+
+    const totalGroupValue=Math.max(1,byGame.reduce((sum,x)=>sum+x.value,0));
+    byGame.forEach(x=>x.percent=Math.round((x.value/totalGroupValue)*100));
+
+    const top=[...baseRows]
+      .map(item=>({...item,_value:Number(item.stock||0)*Number(item.precio||0)}))
+      .sort((a,b)=>b._value-a._value)
+      .slice(0,5);
+
+    const low=[...baseRows]
+      .filter(item=>{
+        const stock=Number(item.stock||0);
+        const min=Number(item.stock_minimo||0);
+        return stock>0 && stock<=min;
+      })
+      .sort((a,b)=>Number(a.stock||0)-Number(b.stock||0))
+      .slice(0,5);
+
+    return {rows:baseRows,games,sets,types,totalValue,skuCount,byGame,top,low};
+  }, [inventory,gmxGameFilter,gmxSetFilter,gmxTypeFilter]);
+
+  function gmxFinalMoney(value){
+    return Number(value||0).toLocaleString('es-MX',{
+      style:'currency',
+      currency:'MXN',
+      maximumFractionDigits:2
+    });
+  }
+
+  function gmxFinalExport(){
+    const rows=gmxFinalDashboard.rows||[];
+    const headers=['Producto','Expansion','Rareza','Condicion','Idioma','SKU','Unidades','Valor Unitario','Valor Total','Estado'];
+    const csv=[
+      headers.join(','),
+      ...rows.map(item=>{
+        const stock=Number(item.stock||0);
+        const min=Number(item.stock_minimo||0);
+        const state=stock===0?'Sin stock':stock<=min?'Stock bajo':'Disponible';
+        return [
+          item.producto||item.id_producto||'',
+          item.expansion||item.set_nombre||item.edicion||'',
+          item.rareza||'',
+          item.condicion||'',
+          item.idioma||'',
+          item.sku||'',
+          stock,
+          Number(item.precio||0),
+          stock*Number(item.precio||0),
+          state
+        ].map(v=>`"${String(v).replaceAll('"','""')}"`).join(',');
+      })
+    ].join('\n');
+
+    const blob=new Blob([csv],{type:'text/csv;charset=utf-8'});
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement('a');
+    a.href=url;
+    a.download=`inventario-${new Date().toISOString().slice(0,10)}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  }
+
+  const gmxLowStockItems = useMemo(() => {
+    return inventory
+      .filter((item) => {
+        const stock = Number(item.stock || 0);
+        const min = Number(item.stock_minimo || 0);
+        return stock > 0 && stock <= min;
+      })
+      .sort((a,b) => Number(a.stock || 0) - Number(b.stock || 0))
+      .slice(0,6);
+  }, [inventory]);
+  const gmxOptionBStats = useMemo(() => {
+    const rows = inventory || [];
+    const value = rows.reduce((sum,item) => sum + (Number(item.stock || 0) * Number(item.precio || 0)), 0);
+    const skuCount = new Set(rows.map(item => String(item.sku || '').trim()).filter(Boolean)).size;
+
+    const groups = {};
+    rows.forEach((item) => {
+      const label = String(
+        item.juego ||
+        item.nombre_juego ||
+        item.tcg ||
+        item.linea ||
+        item.categoria ||
+        'Otros'
+      ).trim() || 'Otros';
+      if(!groups[label]) groups[label] = { label, units:0, value:0 };
+      const units = Number(item.stock || 0);
+      const rowValue = units * Number(item.precio || 0);
+      groups[label].units += units;
+      groups[label].value += rowValue;
+    });
+
+    const byGame = Object.values(groups)
+      .sort((a,b) => b.value - a.value)
+      .slice(0,4);
+
+    const totalGameValue = Math.max(1, byGame.reduce((sum,x) => sum + x.value,0));
+    byGame.forEach((x) => { x.percent = Math.round((x.value / totalGameValue) * 100); });
+
+    const top = [...rows]
+      .map(item => ({
+        ...item,
+        _value: Number(item.stock || 0) * Number(item.precio || 0)
+      }))
+      .sort((a,b) => b._value - a._value)
+      .slice(0,5);
+
+    return {
+      value,
+      skuCount,
+      byGame,
+      top
+    };
+  }, [inventory]);
+
+  function gmxMoney(value){
+    return Number(value || 0).toLocaleString('es-MX',{
+      style:'currency',
+      currency:'MXN',
+      maximumFractionDigits:2
+    });
+  }
+
+  function gmxExportInventory(){
+    const rows = inventory || [];
+    const headers = ['Producto','SKU','Categoria','Sucursal','Stock','Precio','Estado'];
+    const csv = [
+      headers.join(','),
+      ...rows.map(item => [
+        item.producto || item.id_producto || '',
+        item.sku || '',
+        item.categoria || '',
+        item.sucursal || item.id_sucursal || '',
+        Number(item.stock || 0),
+        Number(item.precio || 0),
+        Number(item.stock || 0) === 0 ? 'Sin stock' :
+          Number(item.stock || 0) <= Number(item.stock_minimo || 0) ? 'Stock bajo' : 'Disponible'
+      ].map(value => `"${String(value).replaceAll('"','""')}"`).join(','))
+    ].join('\n');
+
+    const blob = new Blob([csv],{type:'text/csv;charset=utf-8'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `inventario-${new Date().toISOString().slice(0,10)}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  }
+
+
+
+  return <div className="inventory-stack gmx-inv-final-color">
+    <section className="gmx-inv-final-shell">
+
+      <header className="gmx-inv-final-head">
         <div>
-          <div className="eyebrow">INVENTARIO MULTISUCURSAL</div>
-          <h2>Control operativo</h2>
-          <p className="section-copy">{loading ? 'Buscando…' : `${total.toLocaleString('es-MX')} resultado(s)`}</p>
+          <h2>Inventario TCG</h2>
+          <p>Consulta y control de inventario</p>
         </div>
-        <div className="actions">
-          <button className="secondary" onClick={downloadEntryTemplate}>Descargar plantilla de entradas</button>
-          <label className="secondary file-inline">{bulkBusy ? 'Importando…' : 'Importar entradas'}
-            <input type="file" accept=".xlsx,.xls" disabled={bulkBusy} onChange={(e) => {
-              const file = e.target.files?.[0]; e.target.value = ''; importInventoryEntries(file);
-            }} />
-          </label>
-          <button className="secondary" onClick={openTransfer}>Nueva transferencia</button>
+        <div className="gmx-inv-final-head-actions">
+          <button type="button" onClick={gmxFinalExport}>
+            <svg viewBox="0 0 24 24"><path d="M12 3v12m0 0 4-4m-4 4-4-4M5 17v3h14v-3"/></svg>
+            Exportar
+          </button>
+          <button type="button" className="refresh" onClick={()=>refresh().catch((e)=>setMessage(e.message))}>
+            <svg viewBox="0 0 24 24"><path d="M20 7v5h-5M4 17v-5h5"/><path d="M18.5 9A7 7 0 0 0 6 6.5L4 9m2 6a7 7 0 0 0 12.5 2.5L20 15"/></svg>
+            Actualizar
+          </button>
         </div>
-      </div>
+      </header>
 
-      {tab === 'inventory' ? <div className="inventory-search-panel">
-        <label className="inventory-search-main">Buscar
-          <input
-            type="search"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Nombre, SKU, ID, código de barras o categoría…"
-            autoComplete="off"
-            aria-label="Buscar inventario" />
-          
-          <small>Búsqueda automática. No necesitas conocer el SKU exacto.</small>
+      <section className="gmx-inv-final-filters">
+        <label>
+          <span>Sucursal</span>
+          <div className="select-wrap purple">
+            <span className="field-icon">
+              <svg viewBox="0 0 24 24"><path d="M4 10h16v10H4zM3 10l2-6h14l2 6M8 10V7h8v3"/></svg>
+            </span>
+            <select value={branchId} onChange={(e)=>setBranchId(e.target.value)}>
+              <option value="">Todas las sucursales</option>
+              {branches.map(b=><option key={b.row_id} value={b.id_sucursal}>{b.nombre_sucursal}</option>)}
+            </select>
+          </div>
         </label>
 
-        <label>Sucursal
-          <select value={branchId} onChange={(e) => setBranchId(e.target.value)}>
-            <option value="">Todas</option>
-            {branches.map((b) => <option key={b.row_id} value={b.id_sucursal}>{b.nombre_sucursal}</option>)}
-          </select>
+        <label>
+          <span>TCG</span>
+          <div className="select-wrap blue">
+            <span className="field-icon">
+              <svg viewBox="0 0 24 24"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M8 7h8M9 11h6"/></svg>
+            </span>
+            <select value={gmxGameFilter} onChange={(e)=>{setGmxGameFilter(e.target.value);setGmxSetFilter('');}}>
+              <option value="">Todos los TCG</option>
+              {gmxFinalDashboard.games.map(x=><option key={x} value={x}>{x}</option>)}
+            </select>
+          </div>
         </label>
 
-        <label>Categoría
-          <select value={category} onChange={(e) => setCategory(e.target.value)}>
-            <option value="">Todas</option>
-            {categories.map((c) => <option key={c.categoria} value={c.categoria}>{c.categoria} ({c.total})</option>)}
-          </select>
+        <label>
+          <span>Expansión</span>
+          <div className="select-wrap green">
+            <span className="field-icon">
+              <svg viewBox="0 0 24 24"><path d="m12 3 2.7 5.5 6.1.9-4.4 4.3 1 6.1-5.4-2.9-5.4 2.9 1-6.1-4.4-4.3 6.1-.9L12 3Z"/></svg>
+            </span>
+            <select value={gmxSetFilter} onChange={(e)=>setGmxSetFilter(e.target.value)}>
+              <option value="">Todas las expansiones</option>
+              {gmxFinalDashboard.sets.map(x=><option key={x} value={x}>{x}</option>)}
+            </select>
+          </div>
         </label>
 
-        <label>Existencia
-          <select value={stockStatus} onChange={(e) => setStockStatus(e.target.value)}>
-            <option value="all">Cualquier stock</option>
-            <option value="available">Con existencia</option>
-            <option value="low">Stock bajo</option>
-            <option value="out">Sin stock</option>
-          </select>
+        <label>
+          <span>Tipo</span>
+          <div className="select-wrap orange">
+            <span className="field-icon">
+              <svg viewBox="0 0 24 24"><path d="m4 8 8-4 8 4-8 4-8-4Zm0 4 8 4 8-4M4 16l8 4 8-4"/></svg>
+            </span>
+            <select value={gmxTypeFilter} onChange={(e)=>setGmxTypeFilter(e.target.value)}>
+              <option value="">Todos los tipos</option>
+              {gmxFinalDashboard.types.map(x=><option key={x} value={x}>{x}</option>)}
+            </select>
+          </div>
         </label>
 
-        <label>Producto
-          <select value={productStatus} onChange={(e) => setProductStatus(e.target.value)}>
-            <option value="">Cualquier estado</option>
-            <option value="Activo">Activo</option>
-            <option value="Inactivo">Inactivo</option>
-          </select>
+        <label className="search-field">
+          <span>&nbsp;</span>
+          <div>
+            <input type="search" value={search} onChange={(e)=>setSearch(e.target.value)} placeholder="Buscar carta, SKU o ID..." />
+            <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="6"/><path d="m16 16 4 4"/></svg>
+          </div>
         </label>
 
-        <label>Ordenar
-          <select value={sort} onChange={(e) => setSort(e.target.value)}>
-            <option value="name">Nombre</option>
-            <option value="sku">SKU</option>
-            <option value="stock">Stock</option>
-            <option value="price">Precio</option>
-            <option value="updated">Actualización</option>
-            <option value="branch">Sucursal</option>
-          </select>
-        </label>
-
-        <label>Dirección
-          <select value={direction} onChange={(e) => setDirection(e.target.value)}>
-            <option value="asc">Ascendente</option>
-            <option value="desc">Descendente</option>
-          </select>
-        </label>
-
-        <button type="button" className="secondary inventory-clear" onClick={() => {
-          setSearch('');setBranchId('');setCategory('');setStockStatus('all');setProductStatus('');setSort('name');setDirection('asc');
-        }}>Limpiar filtros</button>
-      </div> : null}
-
-      {message ? <div className="message">{message}</div> : null}
-      {bulkResult?.errors?.length ? <div className="product-import-errors">
-        <div className="section-head"><div><strong>Filas no aplicadas</strong><p>{bulkResult.errors.length} error(es). Las filas válidas sí fueron sumadas.</p></div><button className="secondary compact" onClick={() => setBulkResult(null)}>Cerrar</button></div>
-        <div className="table-wrap"><table><thead><tr><th>Fila</th><th>SKU</th><th>Motivo</th></tr></thead><tbody>
-          {bulkResult.errors.map((e, i) => <tr key={`${e.row}-${i}`}><td>{e.row}</td><td>{e.sku || '—'}</td><td><code>{e.error}</code></td></tr>)}
-        </tbody></table></div>
-      </div> : null}
-
-      <div className="tabs">
-        <button className={tab === 'inventory' ? 'tab active' : 'tab'} onClick={() => setTab('inventory')}>Inventario</button>
-        <button className={tab === 'movements' ? 'tab active' : 'tab'} onClick={() => setTab('movements')}>Movimientos</button>
-        <button className={tab === 'transfers' ? 'tab active' : 'tab'} onClick={() => setTab('transfers')}>Transferencias</button>
-      </div>
-
-      {tab === 'movements' ? <div className="inventory-search-panel">
-        <label className="inventory-search-main">Buscar movimientos
-          <input
-            type="search"
-            value={movementSearch}
-            onChange={(e) => setMovementSearch(e.target.value)}
-            placeholder="Producto, SKU, referencia, motivo, usuario…"
-            autoComplete="off"
-            aria-label="Buscar movimientos de inventario" />
-          
-          <small>Búsqueda automática por palabras. Los espacios están permitidos.</small>
-        </label>
-
-        <label>Sucursal
-          <select value={movementBranchId} onChange={(e) => setMovementBranchId(e.target.value)}>
-            <option value="">Todas</option>
-            {branches.map((b) => <option key={b.row_id} value={b.id_sucursal}>{b.nombre_sucursal}</option>)}
-          </select>
-        </label>
-
-        <label>Tipo
-          <select value={movementType} onChange={(e) => setMovementType(e.target.value)}>
-            <option value="">Todos</option>
-            {movementTypes.map((type) => <option key={type} value={type}>{type}</option>)}
-          </select>
-        </label>
-
-        <label>Desde
-          <input type="date" value={movementDateFrom} onChange={(e) => setMovementDateFrom(e.target.value)} />
-        </label>
-
-        <label>Hasta
-          <input type="date" value={movementDateTo} onChange={(e) => setMovementDateTo(e.target.value)} />
-        </label>
-
-        <button
-          type="button"
-          className="secondary inventory-clear"
-          onClick={() => {
-            setMovementSearch('');
-            setMovementBranchId('');
-            setMovementType('');
-            setMovementDateFrom('');
-            setMovementDateTo('');
-          }}>
-          
+        <button type="button" className="clear-filters" onClick={()=>{
+          setSearch('');
+          setBranchId('');
+          setCategory('');
+          setStockStatus('all');
+          setProductStatus('');
+          setGmxGameFilter('');
+          setGmxSetFilter('');
+          setGmxTypeFilter('');
+        }}>
+          <svg viewBox="0 0 24 24"><path d="M4 5h16l-6 7v5l-4 2v-7L4 5Z"/></svg>
           Limpiar filtros
         </button>
-      </div> : null}
+      </section>
 
-      {tab === 'transfers' ? <div className="inventory-search-panel">
-        <label className="inventory-search-main">Buscar transferencias
-          <input
-            type="search"
-            value={transferSearch}
-            onChange={(e) => setTransferSearch(e.target.value)}
-            placeholder="ID, origen, destino, motivo, usuario, referencia…"
-            autoComplete="off"
-            aria-label="Buscar transferencias de inventario" />
-          
-          <small>Búsqueda automática por palabras. Los espacios están permitidos.</small>
-        </label>
+      <section className="gmx-inv-final-kpis">
+        <article>
+          <span className="kpi-icon purple">
+            <svg viewBox="0 0 24 24"><path d="M15 7.5c0-1.4-1.3-2.5-3-2.5S9 6.1 9 7.5s1 2 3 2.5 3 1.2 3 2.5-1.3 2.5-3 2.5-3-1.1-3-2.5M12 3v14"/></svg>
+          </span>
+          <div><small>Valor de inventario</small><strong className="purple-text">{gmxFinalMoney(gmxFinalDashboard.totalValue)}</strong><span>MXN</span><em>↑ Inventario visible</em></div>
+        </article>
 
-        <label>Origen
-          <select value={transferOriginId} onChange={(e) => setTransferOriginId(e.target.value)}>
-            <option value="">Todos</option>
-            {branches.map((b) => <option key={b.row_id} value={b.id_sucursal}>{b.nombre_sucursal}</option>)}
-          </select>
-        </label>
+        <article>
+          <span className="kpi-icon blue">
+            <svg viewBox="0 0 24 24"><path d="m12 3 8 4-8 4-8-4 8-4Z"/><path d="m4 7 8 4 8-4v10l-8 4-8-4V7Z"/></svg>
+          </span>
+          <div><small>Unidades totales</small><strong className="blue-text">{Number(summary.units||0).toLocaleString('es-MX')}</strong><span>cartas</span><em>↑ Existencia total</em></div>
+        </article>
 
-        <label>Destino
-          <select value={transferDestinationId} onChange={(e) => setTransferDestinationId(e.target.value)}>
-            <option value="">Todos</option>
-            {branches.map((b) => <option key={b.row_id} value={b.id_sucursal}>{b.nombre_sucursal}</option>)}
-          </select>
-        </label>
+        <article>
+          <span className="kpi-icon green">
+            <svg viewBox="0 0 24 24"><path d="M20 13 13 20 4 11V4h7l9 9Z"/><circle cx="8.5" cy="8.5" r="1"/></svg>
+          </span>
+          <div><small>SKUs únicos</small><strong className="green-text">{gmxFinalDashboard.skuCount.toLocaleString('es-MX')}</strong><span>SKUs</span><em>↑ Página actual</em></div>
+        </article>
 
-        <label>Estado
-          <select value={transferStatus} onChange={(e) => setTransferStatus(e.target.value)}>
-            <option value="">Todos</option>
-            {transferStatuses.map((status) => <option key={status} value={status}>{status}</option>)}
-          </select>
-        </label>
+        <article>
+          <span className="kpi-icon orange">
+            <svg viewBox="0 0 24 24"><path d="M12 3 22 20H2L12 3Z"/><path d="M12 9v5m0 3h.01"/></svg>
+          </span>
+          <div><small>Stock bajo</small><strong className="orange-text">{Number(summary.low_stock||0).toLocaleString('es-MX')}</strong><span>cartas</span><em className="warning">• Atención requerida</em></div>
+        </article>
+      </section>
 
-        <label>Desde
-          <input type="date" value={transferDateFrom} onChange={(e) => setTransferDateFrom(e.target.value)} />
-        </label>
+      {message ? <div className="message gmx-inv-final-message">{message}</div> : null}
 
-        <label>Hasta
-          <input type="date" value={transferDateTo} onChange={(e) => setTransferDateTo(e.target.value)} />
-        </label>
-
-        <button
-          type="button"
-          className="secondary inventory-clear"
-          onClick={() => {
-            setTransferSearch('');
-            setTransferOriginId('');
-            setTransferDestinationId('');
-            setTransferStatus('');
-            setTransferDateFrom('');
-            setTransferDateTo('');
-          }}>
-          
-          Limpiar filtros
+      <nav className="gmx-inv-final-tabs">
+        <button className={tab==='inventory'?'active':''} onClick={()=>setTab('inventory')}>
+          <svg viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M8 3v4m8-4v4M8 11h3m2 0h3"/></svg>
+          Inventario
         </button>
-      </div> : null}
+        <button className={tab==='movements'?'active':''} onClick={()=>setTab('movements')}>
+          <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 7v5l3 2"/></svg>
+          Movimientos
+        </button>
+        <button className={tab==='transfers'?'active':''} onClick={()=>setTab('transfers')}>
+          <svg viewBox="0 0 24 24"><path d="M4 8h13m0 0-3-3m3 3-3 3M20 16H7m0 0 3-3m-3 3 3 3"/></svg>
+          Transferencias
+        </button>
+      </nav>
 
       {tab === 'inventory' ? <>
-        <div className="table-wrap">
-          <table>
-            <thead><tr>
-              <th>Sucursal</th><th>ID</th><th>SKU</th><th>Código barras</th><th>Producto</th><th>Categoría</th>
-              <th>Stock</th><th>Mínimo</th><th>Precio</th><th>Estado</th><th></th>
-            </tr></thead>
-            <tbody>
-              {inventory.map((item) => {
-                const stock = Number(item.stock || 0),min = Number(item.stock_minimo || 0);
-                const state = stock === 0 ? 'out' : stock <= min ? 'warning' : 'ready';
-                const label = stock === 0 ? 'Sin stock' : stock <= min ? 'Bajo' : 'OK';
-                return <tr key={item.row_id}>
-                  <td>{item.sucursal || item.id_sucursal}</td>
-                  <td><small>{item.id_producto || '—'}</small></td>
-                  <td>{item.sku || '—'}</td>
-                  <td>{item.codigo_barras || '—'}</td>
-                  <td><strong>{item.producto || item.id_producto}</strong></td>
-                  <td>{item.categoria || '—'}</td>
-                  <td>{stock}</td>
-                  <td>{min}</td>
-                  <td>{item.precio != null ? Number(item.precio).toLocaleString('es-MX', { style: 'currency', currency: 'MXN' }) : '—'}</td>
-                  <td><span className={`module-state ${state}`}>{label}</span></td>
-                  <td><button className="secondary compact" onClick={() => setAdjustItem(item)}>Ajustar</button></td>
-                </tr>;
-              })}
-              {!loading && !inventory.length ? <tr><td colSpan="11" className="empty">No hay inventario que coincida con los filtros.</td></tr> : null}
-            </tbody>
-          </table>
-        </div>
+        <section className="gmx-inv-final-panels">
 
-        <div className="inventory-pagination">
-          <span>Página {page} de {pageCount}</span>
-          <div>
-            <button className="secondary compact" disabled={page <= 1 || loading} onClick={() => setPage((p) => Math.max(1, p - 1))}>Anterior</button>
-            <button className="secondary compact" disabled={page >= pageCount || loading} onClick={() => setPage((p) => Math.min(pageCount, p + 1))}>Siguiente</button>
+          <article className="gmx-inv-final-panel">
+            <div className="panel-head"><h3>Por TCG</h3></div>
+            <div className="tcg-bars">
+              {gmxFinalDashboard.byGame.length ? gmxFinalDashboard.byGame.map((item,index)=>{
+                const classes=['purple','blue','green','orange','pink'];
+                return <div className="tcg-row" key={item.label}>
+                  <span className={`tcg-logo ${classes[index%classes.length]}`}>{String(item.label).slice(0,1).toUpperCase()}</span>
+                  <strong>{item.label}</strong>
+                  <span className="bar-track"><i className={classes[index%classes.length]} style={{width:`${Math.max(4,item.percent)}%`}} /></span>
+                  <b>{item.percent}%</b>
+                  <em>{gmxFinalMoney(item.value)}</em>
+                </div>;
+              }) : <div className="empty">Sin información para mostrar.</div>}
+            </div>
+            <button type="button" className="panel-link" onClick={()=>setGmxGameFilter('')}>Ver todos los TCG <span>›</span></button>
+          </article>
+
+          <article className="gmx-inv-final-panel">
+            <div className="panel-head"><h3>Top 5 por valor</h3></div>
+            <div className="top-list">
+              {gmxFinalDashboard.top.length ? gmxFinalDashboard.top.map((item,index)=>
+                <button type="button" key={item.row_id||`${item.sku}-${index}`} onClick={()=>setAdjustItem(item)}>
+                  {item.imagen_url||item.imagen?<img src={item.imagen_url||item.imagen} alt="" />:<span className="mini-thumb">◇</span>}
+                  <div className="top-name"><strong>{item.producto||item.id_producto}</strong><small>{item.expansion||item.set_nombre||item.edicion||item.categoria||'—'}</small></div>
+                  <span className={`rarity ${String(item.rareza||'').toLowerCase().includes('secret')?'secret':'ultra'}`}>{item.rareza||'Ultra'}</span>
+                  <small>{Number(item.stock||0)} unid.</small>
+                  <b>{gmxFinalMoney(item._value)}</b>
+                </button>
+              ) : <div className="empty">Sin información para mostrar.</div>}
+            </div>
+            <button type="button" className="panel-link">Ver todas las cartas <span>›</span></button>
+          </article>
+
+          <article className="gmx-inv-final-panel low-stock-panel">
+            <div className="panel-head"><h3>Stock bajo <span>(Atención requerida)</span></h3></div>
+            <div className="low-list">
+              {gmxFinalDashboard.low.length ? gmxFinalDashboard.low.map((item,index)=>
+                <button type="button" key={item.row_id||`${item.sku}-${index}`} onClick={()=>setAdjustItem(item)}>
+                  {item.imagen_url||item.imagen?<img src={item.imagen_url||item.imagen} alt="" />:<span className="mini-thumb">◇</span>}
+                  <strong>{item.producto||item.id_producto}</strong>
+                  <span>{Number(item.stock||0)} {Number(item.stock||0)===1?'unidad':'unidades'}</span>
+                </button>
+              ) : <div className="empty">Sin productos con stock bajo.</div>}
+            </div>
+            <button type="button" className="panel-link orange-link" onClick={()=>setStockStatus('low')}>Ver todos los de stock bajo <span>›</span></button>
+          </article>
+
+        </section>
+
+        <section className="gmx-inv-final-table-card">
+          <div className="table-head">
+            <h3>Inventario</h3>
+            <div><span>Mostrar</span><select disabled><option>50</option></select><span>registros</span></div>
           </div>
-        </div>
+
+          <div className="table-wrap-final">
+            <table>
+              <thead><tr><th>Carta</th><th>Expansión</th><th>Rareza</th><th>Condición</th><th>Idioma</th><th>SKU</th><th>Unidades</th><th>Valor Unit.</th><th>Valor Total</th><th>Estado</th><th>Acciones</th></tr></thead>
+              <tbody>
+                {gmxFinalDashboard.rows.map((item)=>{
+                  const stock=Number(item.stock||0);
+                  const min=Number(item.stock_minimo||0);
+                  const state=stock===0?'out':stock<=min?'low':'ok';
+                  const rarity=String(item.rareza||'').toLowerCase().includes('secret')?'secret':'ultra';
+                  return <tr key={item.row_id}>
+                    <td><div className="product-cell">{item.imagen_url||item.imagen?<img src={item.imagen_url||item.imagen} alt="" />:<span className="mini-thumb">◇</span>}<strong>{item.producto||item.id_producto}</strong></div></td>
+                    <td>{item.expansion||item.set_nombre||item.edicion||'—'}</td>
+                    <td><span className={`rarity ${rarity}`}>{item.rareza||'—'}</span></td>
+                    <td>{item.condicion||'—'}</td>
+                    <td>{item.idioma||'—'}</td>
+                    <td>{item.sku||'—'}</td>
+                    <td>{stock}</td>
+                    <td>{gmxFinalMoney(item.precio)}</td>
+                    <td>{gmxFinalMoney(stock*Number(item.precio||0))}</td>
+                    <td><span className={`status-dot ${state}`} /></td>
+                    <td><div className="row-actions">
+                      <button type="button" className="edit" onClick={()=>setAdjustItem(item)}>
+                        <svg viewBox="0 0 24 24"><path d="m4 16-1 5 5-1L19 9l-4-4L4 16Z"/><path d="m13 7 4 4"/></svg>
+                      </button>
+                      <button type="button" className="transfer" onClick={openTransfer}>
+                        <svg viewBox="0 0 24 24"><path d="M4 8h13m0 0-3-3m3 3-3 3M20 16H7m0 0 3-3m-3 3 3 3"/></svg>
+                      </button>
+                    </div></td>
+                  </tr>;
+                })}
+                {!loading&&!gmxFinalDashboard.rows.length?<tr><td colSpan="11" className="empty">No hay inventario que coincida con los filtros.</td></tr>:null}
+              </tbody>
+            </table>
+          </div>
+
+          <footer className="gmx-inv-final-pagination">
+            <span>{gmxFinalDashboard.rows.length ? `${((page-1)*PAGE_SIZE)+1} a ${Math.min(page*PAGE_SIZE,total)} de ${total.toLocaleString('es-MX')} resultados` : `0 de ${total.toLocaleString('es-MX')} resultados`}</span>
+            <div>
+              <button disabled={page<=1||loading} onClick={()=>setPage(p=>Math.max(1,p-1))}>‹</button>
+              <button className="active">{page}</button>
+              {page<pageCount?<button onClick={()=>setPage(Math.min(pageCount,page+1))}>{page+1}</button>:null}
+              {page+1<pageCount?<button onClick={()=>setPage(Math.min(pageCount,page+2))}>{page+2}</button>:null}
+              {page+2<pageCount?<span>…</span>:null}
+              {page+2<pageCount?<button onClick={()=>setPage(pageCount)}>{pageCount}</button>:null}
+              <button disabled={page>=pageCount||loading} onClick={()=>setPage(p=>Math.min(pageCount,p+1))}>›</button>
+            </div>
+          </footer>
+        </section>
       </> : null}
 
       {tab === 'movements' ? <>
-        <div className="section-head compact" style={{ marginTop: 12 }}>
-          <div>
-            <div className="eyebrow">TRAZABILIDAD</div>
-            <h3>Movimientos de inventario</h3>
-            <p className="section-copy">
-              {filteredMovements.length.toLocaleString('es-MX')} de {movements.length.toLocaleString('es-MX')} movimiento(s)
-            </p>
-          </div>
-        </div>
-
-        <div className="table-wrap"><table>
-          <thead><tr>
-            <th>Fecha</th>
-            <th>Sucursal</th>
-            <th>Producto / SKU</th>
-            <th>Tipo</th>
-            <th>Cantidad</th>
-            <th>Anterior</th>
-            <th>Nuevo</th>
-            <th>Motivo</th>
-            <th>Usuario</th>
-            <th>Referencia</th>
-          </tr></thead>
-          <tbody>
-            {filteredMovements.map((m) => <tr key={m.row_id}>
-              <td>{m.fecha ? new Date(m.fecha).toLocaleString('es-MX') : '—'}</td>
-              <td>{m.sucursal || m.id_sucursal || '—'}</td>
-              <td>
-                <strong>{m.producto || m.id_producto || '—'}</strong>
-                <small style={{ display: 'block' }}>{m.sku || m.id_producto || '—'}</small>
-              </td>
-              <td>{m.tipo || '—'}</td>
-              <td>{m.cantidad ?? '—'}</td>
-              <td>{m.stock_anterior ?? '—'}</td>
-              <td>{m.stock_nuevo ?? '—'}</td>
-              <td>{m.motivo || '—'}</td>
-              <td>
-                <strong>{m.nombre_usuario || '—'}</strong>
-                <small style={{ display: 'block' }}>{m.usuario || '—'}</small>
-              </td>
-              <td>{m.referencia || '—'}</td>
-            </tr>)}
-            {!filteredMovements.length ? <tr>
-              <td colSpan="10" className="empty">No hay movimientos que coincidan con los filtros.</td>
-            </tr> : null}
-          </tbody>
-        </table></div>
+        <section className="gmx-inv-final-subfilters">
+          <label className="wide"><span>Buscar movimientos</span><input type="search" value={movementSearch} onChange={(e)=>setMovementSearch(e.target.value)} placeholder="Producto, SKU, referencia, motivo, usuario…" /></label>
+          <label><span>Sucursal</span><select value={movementBranchId} onChange={(e)=>setMovementBranchId(e.target.value)}><option value="">Todas</option>{branches.map(b=><option key={b.row_id} value={b.id_sucursal}>{b.nombre_sucursal}</option>)}</select></label>
+          <label><span>Tipo</span><select value={movementType} onChange={(e)=>setMovementType(e.target.value)}><option value="">Todos</option>{movementTypes.map(type=><option key={type} value={type}>{type}</option>)}</select></label>
+          <label><span>Desde</span><input type="date" value={movementDateFrom} onChange={(e)=>setMovementDateFrom(e.target.value)} /></label>
+          <label><span>Hasta</span><input type="date" value={movementDateTo} onChange={(e)=>setMovementDateTo(e.target.value)} /></label>
+        </section>
+        <section className="gmx-inv-final-table-card subtable">
+          <div className="table-head"><h3>Movimientos</h3><span>{filteredMovements.length.toLocaleString('es-MX')} registros</span></div>
+          <div className="table-wrap-final"><table><thead><tr><th>Fecha</th><th>Sucursal</th><th>Producto / SKU</th><th>Tipo</th><th>Cantidad</th><th>Anterior</th><th>Nuevo</th><th>Motivo</th><th>Usuario</th><th>Referencia</th></tr></thead><tbody>
+            {filteredMovements.map(m=><tr key={m.row_id}><td>{m.fecha?new Date(m.fecha).toLocaleString('es-MX'):'—'}</td><td>{m.sucursal||m.id_sucursal||'—'}</td><td><strong>{m.producto||m.id_producto||'—'}</strong></td><td>{m.tipo||'—'}</td><td>{m.cantidad??'—'}</td><td>{m.stock_anterior??'—'}</td><td>{m.stock_nuevo??'—'}</td><td>{m.motivo||'—'}</td><td>{m.nombre_usuario||m.usuario||'—'}</td><td>{m.referencia||'—'}</td></tr>)}
+          </tbody></table></div>
+        </section>
       </> : null}
 
       {tab === 'transfers' ? <>
-        <div className="section-head compact" style={{ marginTop: 12 }}>
-          <div>
-            <div className="eyebrow">TRAZABILIDAD</div>
-            <h3>Transferencias de inventario</h3>
-            <p className="section-copy">
-              {filteredTransfers.length.toLocaleString('es-MX')} de {transfers.length.toLocaleString('es-MX')} transferencia(s)
-            </p>
-          </div>
-        </div>
+        <section className="gmx-inv-final-subfilters">
+          <label className="wide"><span>Buscar transferencias</span><input type="search" value={transferSearch} onChange={(e)=>setTransferSearch(e.target.value)} placeholder="ID, origen, destino, motivo, usuario…" /></label>
+          <label><span>Origen</span><select value={transferOriginId} onChange={(e)=>setTransferOriginId(e.target.value)}><option value="">Todos</option>{branches.map(b=><option key={b.row_id} value={b.id_sucursal}>{b.nombre_sucursal}</option>)}</select></label>
+          <label><span>Destino</span><select value={transferDestinationId} onChange={(e)=>setTransferDestinationId(e.target.value)}><option value="">Todos</option>{branches.map(b=><option key={b.row_id} value={b.id_sucursal}>{b.nombre_sucursal}</option>)}</select></label>
+          <label><span>Estado</span><select value={transferStatus} onChange={(e)=>setTransferStatus(e.target.value)}><option value="">Todos</option>{transferStatuses.map(status=><option key={status} value={status}>{status}</option>)}</select></label>
+        </section>
+        <section className="gmx-inv-final-table-card subtable">
+          <div className="table-head"><h3>Transferencias</h3><span>{filteredTransfers.length.toLocaleString('es-MX')} registros</span></div>
+          <div className="table-wrap-final"><table><thead><tr><th>Fecha</th><th>ID</th><th>Origen</th><th>Destino</th><th>Unidades</th><th>Estado</th><th>Motivo</th><th>Administrador</th><th>Referencia</th></tr></thead><tbody>
+            {filteredTransfers.map(t=><tr key={t.row_id}><td>{t.fecha?new Date(t.fecha).toLocaleString('es-MX'):'—'}</td><td><strong>{t.id_transferencia||'—'}</strong></td><td>{t.origen||t.id_origen||'—'}</td><td>{t.destino||t.id_destino||'—'}</td><td>{t.total_unidades??'—'}</td><td>{t.estado||'—'}</td><td>{t.motivo||'—'}</td><td>{t.nombre_admin||t.email_admin||'—'}</td><td>{t.referencia_externa||'—'}</td></tr>)}
+          </tbody></table></div>
+        </section>
+      </> : null}
 
-        <div className="table-wrap"><table>
-          <thead><tr>
-            <th>Fecha</th>
-            <th>ID</th>
-            <th>Origen</th>
-            <th>Destino</th>
-            <th>Unidades</th>
-            <th>Estado</th>
-            <th>Motivo</th>
-            <th>Administrador</th>
-            <th>Referencia externa</th>
-          </tr></thead>
-          <tbody>
-            {filteredTransfers.map((t) => <tr key={t.row_id}>
-              <td>{t.fecha ? new Date(t.fecha).toLocaleString('es-MX') : '—'}</td>
-              <td><strong>{t.id_transferencia || '—'}</strong></td>
-              <td>{t.origen || t.id_origen || '—'}</td>
-              <td>{t.destino || t.id_destino || '—'}</td>
-              <td>{t.total_unidades ?? '—'}</td>
-              <td>{t.estado || '—'}</td>
-              <td>{t.motivo || '—'}</td>
-              <td>
-                <strong>{t.nombre_admin || '—'}</strong>
-                <small style={{ display: 'block' }}>{t.email_admin || '—'}</small>
-                {t.id_admin ? <small style={{ display: 'block' }}>{t.id_admin}</small> : null}
-              </td>
-              <td>{t.referencia_externa || '—'}</td>
-            </tr>)}
-            {!filteredTransfers.length ? <tr>
-              <td colSpan="9" className="empty">No hay transferencias que coincidan con los filtros.</td>
-            </tr> : null}
-          </tbody>
-        </table></div>
-</> : null}
-
+      <VisionScannerModal open={visionOpen} title="Reconocer producto para inventario" onClose={()=>setVisionOpen(false)} onResult={handleVisionInventoryResult} />
+      <VisionCandidatePicker open={visionPickerOpen} title="Producto encontrado" subtitle={brandText("Selecciona el producto; después se abrirá el ajuste de inventario para confirmar cantidad.")} items={visionCandidates} onClose={()=>setVisionPickerOpen(false)} onPick={pickVisionInventoryProduct} />
     </section>
-
     <InventoryAdjustModal open={Boolean(adjustItem)} item={adjustItem} onClose={() => setAdjustItem(null)} onSave={saveAdjustment} />
     <TransferModal open={transferOpen} branches={branches} products={products} onClose={() => setTransferOpen(false)} onSave={saveTransfer} />
   </div>;

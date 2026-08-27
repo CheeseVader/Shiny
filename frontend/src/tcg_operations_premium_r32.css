@@ -1,0 +1,274 @@
+/* GMX_TCG_OPERACION_PREMIUM_R32_BUILD_MARKER */
+.tcgops-premium-r32{
+  --r32-purple:#7047f6;
+  --r32-purple-dark:#5830d4;
+  --r32-blue:#3278f4;
+  --r32-blue-dark:#1f62d7;
+  --r32-green:#22b573;
+  --r32-green-dark:#128b55;
+  --r32-orange:#ff932e;
+  --r32-orange-dark:#ed7410;
+  --r32-ink:#152033;
+  --r32-muted:#697489;
+  --r32-line:#e7eaf0;
+  --r32-shadow:0 14px 34px rgba(24,35,56,.09);
+  --r32-shadow2:0 8px 22px rgba(24,35,56,.065);
+  gap:16px!important;
+}
+
+/* PANEL GENERAL */
+.tcgops-premium-r32 > .content-card{
+  padding:20px!important;
+  border:1px solid #e9ebf1!important;
+  border-radius:22px!important;
+  background:
+    radial-gradient(circle at 15% 0%,rgba(112,71,246,.055),transparent 30%),
+    linear-gradient(180deg,#fbfbfe 0%,#f7f8fc 100%)!important;
+  box-shadow:0 18px 46px rgba(22,31,50,.10)!important;
+}
+
+/* CABECERA */
+.tcgops-premium-r32 .section-head{
+  padding:18px 20px!important;
+  margin:0 0 16px!important;
+  background:#fff!important;
+  border:1px solid var(--r32-line)!important;
+  border-radius:17px!important;
+  box-shadow:var(--r32-shadow2)!important;
+}
+.tcgops-premium-r32 .section-head .eyebrow{
+  color:var(--r32-purple)!important;
+  font-weight:900!important;
+  letter-spacing:.12em!important;
+}
+.tcgops-premium-r32 .section-head h2{
+  margin:4px 0 5px!important;
+  color:var(--r32-ink)!important;
+  font-size:30px!important;
+  letter-spacing:-.035em!important;
+}
+.tcgops-premium-r32 .section-head .section-copy{color:var(--r32-muted)!important}
+.tcgops-premium-r32 .phase-pill{
+  background:#efeaff!important;
+  color:#6842dc!important;
+  border:0!important;
+  border-radius:999px!important;
+  padding:7px 12px!important;
+}
+
+/* FILTROS */
+.tcgops-premium-r32 .tcgops-toolbar{
+  padding:14px!important;
+  margin:0 0 14px!important;
+  background:#fff!important;
+  border:1px solid var(--r32-line)!important;
+  border-radius:17px!important;
+  box-shadow:var(--r32-shadow2)!important;
+}
+.tcgops-premium-r32 .tcgops-toolbar label{
+  color:#3d485b!important;
+  font-weight:850!important;
+}
+.tcgops-premium-r32 .tcgops-toolbar input,
+.tcgops-premium-r32 .tcgops-toolbar select{
+  min-height:45px!important;
+  background:#fff!important;
+  border:1px solid #dde2eb!important;
+  border-radius:12px!important;
+  box-shadow:0 3px 9px rgba(27,36,56,.025)!important;
+}
+
+/* ================================================================
+   KPIs REALES DE LA CAPTURA
+   El primer bloque luego de tcgops-toolbar contiene las 4 tarjetas.
+   ================================================================ */
+.tcgops-premium-r32 .tcgops-toolbar + *{
+  display:grid!important;
+  grid-template-columns:repeat(4,minmax(0,1fr))!important;
+  gap:14px!important;
+  margin:0 0 14px!important;
+}
+
+.tcgops-premium-r32 .tcgops-toolbar + * > *{
+  position:relative!important;
+  overflow:hidden!important;
+  min-height:112px!important;
+  padding:17px 18px!important;
+  border:0!important;
+  border-radius:18px!important;
+  box-shadow:0 14px 31px rgba(26,35,57,.14)!important;
+  color:#fff!important;
+}
+
+.tcgops-premium-r32 .tcgops-toolbar + * > *::after{
+  content:""!important;
+  position:absolute!important;
+  width:145px!important;
+  height:145px!important;
+  border-radius:50%!important;
+  right:-55px!important;
+  top:-70px!important;
+  background:rgba(255,255,255,.14)!important;
+  pointer-events:none!important;
+}
+
+.tcgops-premium-r32 .tcgops-toolbar + * > *:nth-child(1){
+  background:linear-gradient(135deg,var(--r32-purple),var(--r32-purple-dark))!important;
+}
+.tcgops-premium-r32 .tcgops-toolbar + * > *:nth-child(2){
+  background:linear-gradient(135deg,var(--r32-blue),var(--r32-blue-dark))!important;
+}
+.tcgops-premium-r32 .tcgops-toolbar + * > *:nth-child(3){
+  background:linear-gradient(135deg,var(--r32-green),var(--r32-green-dark))!important;
+}
+.tcgops-premium-r32 .tcgops-toolbar + * > *:nth-child(4){
+  background:linear-gradient(135deg,var(--r32-orange),var(--r32-orange-dark))!important;
+}
+
+.tcgops-premium-r32 .tcgops-toolbar + * > * *{
+  color:inherit!important;
+}
+.tcgops-premium-r32 .tcgops-toolbar + * > * > :is(strong,b,h2,h3){
+  font-size:27px!important;
+  line-height:1.05!important;
+  letter-spacing:-.035em!important;
+}
+.tcgops-premium-r32 .tcgops-toolbar + * > * :is(small,p,span){
+  color:rgba(255,255,255,.82)!important;
+}
+
+/* iconos KPI: los cuadros pequeÃ±os visibles en captura */
+.tcgops-premium-r32 .tcgops-toolbar + * > * :is(
+  [class*="icon"],[class*="Icon"],.metric-icon,.kpi-icon
+){
+  background:rgba(255,255,255,.18)!important;
+  color:#fff!important;
+  border:1px solid rgba(255,255,255,.20)!important;
+  box-shadow:none!important;
+}
+
+/* ================================================================
+   BLOQUES DE ANALISIS DESPUES DE KPIs
+   ================================================================ */
+.tcgops-premium-r32 .tcgops-toolbar + * ~ * :is(
+  article,section,[class*="card"],[class*="panel"]
+){
+  border-radius:18px!important;
+}
+
+.tcgops-premium-r32 :is(
+  .ops-card,
+  .tcgops-analysis-card,
+  .tcgops-chart-card,
+  .tcgops-distribution-card,
+  .tcgops-activity-card,
+  .tcgops-summary-card,
+  .tcgops-movement-history
+){
+  background:#fff!important;
+  border:1px solid var(--r32-line)!important;
+  box-shadow:var(--r32-shadow2)!important;
+  border-radius:18px!important;
+}
+
+/* Tambien captura los paneles analiticos actuales aunque tengan
+   clases nuevas: tarjetas dentro de grids posteriores al KPI */
+.tcgops-premium-r32 .tcgops-toolbar + * + * > *,
+.tcgops-premium-r32 .tcgops-toolbar + * + * + * > *{
+  background:#fff!important;
+  border:1px solid var(--r32-line)!important;
+  border-radius:18px!important;
+  box-shadow:var(--r32-shadow2)!important;
+}
+
+/* titulares */
+.tcgops-premium-r32 :is(h3,h4){
+  color:var(--r32-ink);
+}
+.tcgops-premium-r32 :is(
+  [class*="eyebrow"],
+  [class*="kicker"],
+  [class*="overline"]
+){
+  color:var(--r32-purple)!important;
+  font-weight:900!important;
+  letter-spacing:.10em!important;
+}
+
+/* Barras: mÃ¡s premium y redondeadas */
+.tcgops-premium-r32 :is(
+  [class*="bar-track"],
+  [class*="progress-track"],
+  [class*="meter-track"]
+){
+  background:#edf0f6!important;
+  border-radius:999px!important;
+  overflow:hidden!important;
+}
+.tcgops-premium-r32 :is(
+  [class*="bar-fill"],
+  [class*="progress-fill"],
+  [class*="meter-fill"]
+){
+  border-radius:999px!important;
+  box-shadow:0 3px 10px rgba(80,61,190,.14)!important;
+}
+
+/* Tabs existentes, si se muestran mÃ¡s abajo */
+.tcgops-premium-r32 .tcgops-tabs{
+  background:#eff1f6!important;
+  border:1px solid #e4e7ee!important;
+  border-radius:14px!important;
+  padding:5px!important;
+  gap:5px!important;
+}
+.tcgops-premium-r32 .tcgops-tabs .tab{
+  border:0!important;
+  border-radius:10px!important;
+  background:transparent!important;
+  color:#687286!important;
+  font-weight:800!important;
+}
+.tcgops-premium-r32 .tcgops-tabs .tab.active{
+  color:#fff!important;
+  background:linear-gradient(135deg,#7448f6,#6033dc)!important;
+  box-shadow:0 7px 15px rgba(112,71,246,.22)!important;
+}
+
+/* Tablas */
+.tcgops-premium-r32 .table-wrap{
+  border:1px solid #e9ecf1!important;
+  border-radius:14px!important;
+  overflow:auto!important;
+}
+.tcgops-premium-r32 thead th{
+  background:#f8f9fc!important;
+  color:#697489!important;
+  text-transform:uppercase!important;
+  letter-spacing:.055em!important;
+  font-size:10px!important;
+}
+.tcgops-premium-r32 tbody tr:hover td{background:#fbfaff!important}
+
+/* Botones del mÃ³dulo */
+.tcgops-premium-r32 button:not(.secondary):not(.tab){
+  border:0!important;
+  border-radius:11px!important;
+  background:linear-gradient(135deg,#7448f6,#6033dc)!important;
+  color:#fff!important;
+  font-weight:800!important;
+  box-shadow:0 7px 16px rgba(112,71,246,.20)!important;
+}
+
+/* Responsive */
+@media(max-width:1050px){
+  .tcgops-premium-r32 .tcgops-toolbar + *{
+    grid-template-columns:repeat(2,minmax(0,1fr))!important;
+  }
+}
+@media(max-width:650px){
+  .tcgops-premium-r32 > .content-card{padding:13px!important}
+  .tcgops-premium-r32 .tcgops-toolbar + *{
+    grid-template-columns:1fr!important;
+  }
+}

@@ -1,0 +1,123 @@
+.alerts-page .alerts-tabs,
+.alerts-page nav.alerts-tabs{
+  display:flex!important;
+  align-items:center!important;
+  gap:8px!important;
+  flex-wrap:wrap!important;
+}
+.alerts-page .alerts-tabs button{
+  display:inline-flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  min-height:42px!important;
+  padding:9px 15px!important;
+  border:1px solid #d0d5dd!important;
+  border-radius:10px!important;
+  background:#fff!important;
+  color:#344054!important;
+  -webkit-text-fill-color:#344054!important;
+  font-weight:800!important;
+  opacity:1!important;
+  visibility:visible!important;
+}
+.alerts-page .alerts-tabs button.active,
+.alerts-page .alerts-tabs button[aria-selected="true"]{
+  background:#0b1f3a!important;
+  border-color:#0b1f3a!important;
+  color:#fff!important;
+  -webkit-text-fill-color:#fff!important;
+}
+
+/* R78 FIX6 - KPI CARDS REALES */
+.alerts-page .alerts-control-layout{
+  display:block!important;
+  width:100%!important;
+}
+.alerts-page .alert-kpis{
+  display:grid!important;
+  grid-template-columns:repeat(5,minmax(0,1fr))!important;
+  gap:12px!important;
+  width:100%!important;
+  margin:14px 0 18px!important;
+}
+.alerts-page .alert-kpi{
+  display:flex!important;
+  align-items:center!important;
+  gap:14px!important;
+  min-width:0!important;
+  min-height:112px!important;
+  padding:18px 20px!important;
+  border:1px solid #dbe3ee!important;
+  border-radius:14px!important;
+  box-sizing:border-box!important;
+  box-shadow:none!important;
+}
+.alerts-page .alert-kpi::before,
+.alerts-page .alert-kpi::after{
+  content:none!important;
+  display:none!important;
+}
+.alerts-page .alert-kpi-icon{
+  flex:0 0 44px!important;
+  width:44px!important;
+  height:44px!important;
+  display:grid!important;
+  place-items:center!important;
+  border-radius:11px!important;
+  font-size:23px!important;
+  line-height:1!important;
+  font-weight:900!important;
+}
+.alerts-page .alert-kpi-copy{
+  display:flex!important;
+  flex-direction:column!important;
+  align-items:flex-start!important;
+  gap:4px!important;
+  min-width:0!important;
+}
+.alerts-page .alert-kpi-label{
+  display:block!important;
+  font-size:12px!important;
+  line-height:1.2!important;
+  font-weight:700!important;
+  color:#667085!important;
+}
+.alerts-page .alert-kpi strong{
+  display:block!important;
+  margin:0!important;
+  font-size:25px!important;
+  line-height:1!important;
+  font-weight:850!important;
+  color:#172033!important;
+}
+.alerts-page .alert-kpi small{
+  display:block!important;
+  margin:0!important;
+  font-size:11px!important;
+  line-height:1.25!important;
+  color:#718096!important;
+}
+.alerts-page .alert-kpi-open{background:#edf5ff!important;border-color:#c7ddff!important}
+.alerts-page .alert-kpi-open .alert-kpi-icon{background:#dbeaff!important;color:#2f75d0!important}
+.alerts-page .alert-kpi-unread{background:#eefbfb!important;border-color:#c6ecee!important}
+.alerts-page .alert-kpi-unread .alert-kpi-icon{background:#d9f4f4!important;color:#15939b!important}
+.alerts-page .alert-kpi-critical{background:#fff1f0!important;border-color:#ffcfc9!important}
+.alerts-page .alert-kpi-critical .alert-kpi-icon{background:#ffe0dc!important;color:#d92d20!important}
+.alerts-page .alert-kpi-high{background:#fff7ea!important;border-color:#f6ddb2!important}
+.alerts-page .alert-kpi-high .alert-kpi-icon{background:#ffedd1!important;color:#d97706!important}
+.alerts-page .alert-kpi-resolved{background:#eefaf4!important;border-color:#ccebdc!important}
+.alerts-page .alert-kpi-resolved .alert-kpi-icon{background:#dcf5e8!important;color:#159455!important}
+.alerts-page .alerts-control-main{
+  width:100%!important;
+  min-width:0!important;
+}
+
+@media(max-width:1200px){
+  .alerts-page .alert-kpis{grid-template-columns:repeat(3,minmax(0,1fr))!important}
+}
+@media(max-width:760px){
+  .alerts-page .alert-kpis{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+}
+@media(max-width:500px){
+  .alerts-page .alert-kpis{grid-template-columns:1fr!important}
+}

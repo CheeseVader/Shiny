@@ -1,0 +1,366 @@
+/* ============================================================
+   GMX OPERACION TCG - PREMIUM MODERNO R31
+   ALCANCE: SOLO .tcgops-premium-r31
+   ============================================================ */
+
+.tcgops-premium-r31{
+  --p31-purple:#6f42f5;
+  --p31-purple2:#8b5cf6;
+  --p31-blue:#3478f6;
+  --p31-cyan:#29a8e8;
+  --p31-green:#19a96b;
+  --p31-green2:#36c785;
+  --p31-orange:#ff8a1f;
+  --p31-orange2:#ffad42;
+  --p31-ink:#172033;
+  --p31-muted:#6d7688;
+  --p31-border:#e7eaf0;
+  --p31-soft:#f7f8fc;
+  --p31-shadow:0 14px 38px rgba(27,36,58,.09);
+  --p31-shadow-soft:0 8px 24px rgba(27,36,58,.06);
+  display:grid!important;
+  gap:16px!important;
+}
+
+/* Contenedor principal del modulo */
+.tcgops-premium-r31 > .content-card,
+.tcgops-premium-r31 > section.content-card{
+  background:linear-gradient(180deg,#fbfbfe 0%,#f7f8fc 100%)!important;
+  border:1px solid #ebecef!important;
+  border-radius:22px!important;
+  box-shadow:var(--p31-shadow)!important;
+  padding:22px!important;
+  overflow:hidden!important;
+}
+
+/* Encabezado del modulo */
+.tcgops-premium-r31 .section-head{
+  align-items:flex-start!important;
+  margin-bottom:18px!important;
+  gap:16px!important;
+}
+.tcgops-premium-r31 .section-head .eyebrow{
+  color:var(--p31-purple)!important;
+  font-size:11px!important;
+  font-weight:900!important;
+  letter-spacing:.12em!important;
+}
+.tcgops-premium-r31 .section-head h2{
+  color:var(--p31-ink)!important;
+  font-size:30px!important;
+  line-height:1.08!important;
+  letter-spacing:-.035em!important;
+  margin:4px 0 6px!important;
+}
+.tcgops-premium-r31 .section-head .section-copy{
+  color:var(--p31-muted)!important;
+  font-size:13px!important;
+}
+.tcgops-premium-r31 .phase-pill{
+  border:0!important;
+  border-radius:999px!important;
+  padding:7px 11px!important;
+  color:#6840d8!important;
+  background:#efe9ff!important;
+  box-shadow:none!important;
+}
+
+/* Busqueda / filtros */
+.tcgops-premium-r31 .tcgops-toolbar{
+  background:#fff!important;
+  border:1px solid var(--p31-border)!important;
+  border-radius:17px!important;
+  padding:14px!important;
+  box-shadow:var(--p31-shadow-soft)!important;
+  gap:12px!important;
+}
+.tcgops-premium-r31 .tcgops-toolbar label{
+  color:#414a5d!important;
+  font-weight:800!important;
+}
+.tcgops-premium-r31 input,
+.tcgops-premium-r31 select,
+.tcgops-premium-r31 textarea{
+  background:#fff!important;
+  border:1px solid #dde2ea!important;
+  border-radius:12px!important;
+  color:var(--p31-ink)!important;
+  min-height:44px!important;
+  box-shadow:0 3px 10px rgba(26,35,55,.025)!important;
+  transition:border-color .18s ease,box-shadow .18s ease!important;
+}
+.tcgops-premium-r31 input:focus,
+.tcgops-premium-r31 select:focus,
+.tcgops-premium-r31 textarea:focus{
+  outline:none!important;
+  border-color:#9d83f7!important;
+  box-shadow:0 0 0 4px rgba(111,66,245,.10)!important;
+}
+
+/* KPIs: cubre implementaciones actuales y variantes visuales */
+.tcgops-premium-r31 :is(
+  .tcgops-kpis,
+  .tcgops-metrics,
+  .tcgops-summary-grid,
+  .tcgops-stat-grid,
+  .metric-grid,
+  .metrics-grid,
+  .kpi-grid,
+  .stats-grid
+){
+  display:grid!important;
+  grid-template-columns:repeat(4,minmax(0,1fr))!important;
+  gap:14px!important;
+}
+
+.tcgops-premium-r31 :is(
+  .tcgops-kpi,
+  .tcgops-metric,
+  .tcgops-stat,
+  .metric-card,
+  .kpi-card,
+  .stat-card,
+  .summary-card
+){
+  position:relative!important;
+  overflow:hidden!important;
+  border:0!important;
+  border-radius:18px!important;
+  min-height:106px!important;
+  padding:17px 18px!important;
+  color:#fff!important;
+  box-shadow:0 13px 30px rgba(33,42,68,.12)!important;
+}
+
+.tcgops-premium-r31 :is(
+  .tcgops-kpi,
+  .tcgops-metric,
+  .tcgops-stat,
+  .metric-card,
+  .kpi-card,
+  .stat-card,
+  .summary-card
+):nth-child(4n+1){
+  background:linear-gradient(135deg,#7347f6,#5a29da)!important;
+}
+.tcgops-premium-r31 :is(
+  .tcgops-kpi,
+  .tcgops-metric,
+  .tcgops-stat,
+  .metric-card,
+  .kpi-card,
+  .stat-card,
+  .summary-card
+):nth-child(4n+2){
+  background:linear-gradient(135deg,#4487f8,#286be1)!important;
+}
+.tcgops-premium-r31 :is(
+  .tcgops-kpi,
+  .tcgops-metric,
+  .tcgops-stat,
+  .metric-card,
+  .kpi-card,
+  .stat-card,
+  .summary-card
+):nth-child(4n+3){
+  background:linear-gradient(135deg,#30bf7f,#15965d)!important;
+}
+.tcgops-premium-r31 :is(
+  .tcgops-kpi,
+  .tcgops-metric,
+  .tcgops-stat,
+  .metric-card,
+  .kpi-card,
+  .stat-card,
+  .summary-card
+):nth-child(4n+4){
+  background:linear-gradient(135deg,#ff9c30,#f37812)!important;
+}
+
+.tcgops-premium-r31 :is(.metric-card,.kpi-card,.stat-card,.summary-card) *,
+.tcgops-premium-r31 :is(.tcgops-kpi,.tcgops-metric,.tcgops-stat) *{
+  color:inherit!important;
+}
+.tcgops-premium-r31 :is(.metric-card,.kpi-card,.stat-card,.summary-card) small,
+.tcgops-premium-r31 :is(.tcgops-kpi,.tcgops-metric,.tcgops-stat) small{
+  color:rgba(255,255,255,.78)!important;
+}
+
+/* Tabs premium */
+.tcgops-premium-r31 .tcgops-tabs{
+  background:#f0f2f7!important;
+  border:1px solid #e5e8ee!important;
+  border-radius:14px!important;
+  padding:5px!important;
+  gap:5px!important;
+  margin:15px 0!important;
+}
+.tcgops-premium-r31 .tcgops-tabs .tab{
+  background:transparent!important;
+  border:0!important;
+  border-radius:10px!important;
+  color:#687184!important;
+  min-height:40px!important;
+  font-weight:800!important;
+  padding:0 18px!important;
+}
+.tcgops-premium-r31 .tcgops-tabs .tab.active{
+  color:#fff!important;
+  background:linear-gradient(135deg,#7447f6,#6033df)!important;
+  box-shadow:0 7px 16px rgba(111,66,245,.22)!important;
+}
+
+/* Nota informativa */
+.tcgops-premium-r31 .tcgops-purpose-note{
+  color:#6042b5!important;
+  background:linear-gradient(135deg,#f3efff,#faf8ff)!important;
+  border:1px solid #dfd4ff!important;
+  border-radius:14px!important;
+  padding:12px 14px!important;
+}
+
+/* Paneles internos: premium blanco */
+.tcgops-premium-r31 :is(
+  .ops-card,
+  .tcgops-panel,
+  .tcgops-chart-card,
+  .tcgops-analysis-card,
+  .tcgops-distribution-card,
+  .tcgops-activity-card
+){
+  background:#fff!important;
+  border:1px solid var(--p31-border)!important;
+  border-radius:18px!important;
+  box-shadow:var(--p31-shadow-soft)!important;
+  padding:18px!important;
+}
+.tcgops-premium-r31 :is(
+  .ops-card,
+  .tcgops-panel,
+  .tcgops-chart-card,
+  .tcgops-analysis-card,
+  .tcgops-distribution-card,
+  .tcgops-activity-card
+) h3{
+  color:var(--p31-ink)!important;
+  font-size:17px!important;
+  letter-spacing:-.018em!important;
+}
+
+/* Layouts conocidos */
+.tcgops-premium-r31 .tcgops-two{
+  gap:14px!important;
+}
+.tcgops-premium-r31 .tcgops-body{
+  display:grid!important;
+  gap:14px!important;
+}
+
+/* Historial / tablas */
+.tcgops-premium-r31 .tcgops-movement-history{
+  background:#fff!important;
+  border:1px solid var(--p31-border)!important;
+  border-radius:18px!important;
+  box-shadow:var(--p31-shadow-soft)!important;
+  padding:18px!important;
+  margin-top:14px!important;
+}
+.tcgops-premium-r31 .table-wrap{
+  border:1px solid #eceef3!important;
+  border-radius:14px!important;
+  overflow:auto!important;
+}
+.tcgops-premium-r31 table{
+  border-collapse:separate!important;
+  border-spacing:0!important;
+}
+.tcgops-premium-r31 thead th{
+  background:#f8f9fc!important;
+  color:#6a7385!important;
+  font-size:10px!important;
+  letter-spacing:.055em!important;
+  text-transform:uppercase!important;
+  border-bottom:1px solid #e9ecf2!important;
+}
+.tcgops-premium-r31 tbody td{
+  border-bottom:1px solid #f0f1f5!important;
+  color:#30394c!important;
+}
+.tcgops-premium-r31 tbody tr:hover td{
+  background:#fbfaff!important;
+}
+
+/* Botones dentro del modulo */
+.tcgops-premium-r31 button:not(.tab):not(.secondary){
+  border:0!important;
+  border-radius:11px!important;
+  background:linear-gradient(135deg,#7447f6,#6235de)!important;
+  color:#fff!important;
+  font-weight:800!important;
+  box-shadow:0 7px 16px rgba(111,66,245,.18)!important;
+}
+.tcgops-premium-r31 button.secondary{
+  border:1px solid #dfe3ea!important;
+  background:#fff!important;
+  color:#394255!important;
+  border-radius:11px!important;
+  box-shadow:none!important;
+}
+
+/* Barras / graficas existentes */
+.tcgops-premium-r31 :is(
+  .bar,
+  .chart-bar,
+  .tcgops-bar,
+  .movement-bar
+){
+  border-radius:999px!important;
+  background:linear-gradient(90deg,#7547f6,#9270f7)!important;
+}
+
+/* Panel avanzado */
+.tcgops-premium-r31 .tcgops-advanced{
+  border:1px solid var(--p31-border)!important;
+  background:#fff!important;
+  border-radius:15px!important;
+  box-shadow:var(--p31-shadow-soft)!important;
+}
+
+/* Cualquier card directa en grids del modulo, sin afectar controles globales */
+.tcgops-premium-r31 :is(
+  [class*="analytics-grid"],
+  [class*="summary-grid"],
+  [class*="dashboard-grid"],
+  [class*="overview-grid"]
+) > :is(article,section,div){
+  border-radius:18px!important;
+  border-color:var(--p31-border)!important;
+  box-shadow:var(--p31-shadow-soft)!important;
+}
+
+/* Responsive */
+@media(max-width:1100px){
+  .tcgops-premium-r31 :is(
+    .tcgops-kpis,.tcgops-metrics,.tcgops-summary-grid,.tcgops-stat-grid,
+    .metric-grid,.metrics-grid,.kpi-grid,.stats-grid
+  ){
+    grid-template-columns:repeat(2,minmax(0,1fr))!important;
+  }
+}
+@media(max-width:720px){
+  .tcgops-premium-r31 > .content-card,
+  .tcgops-premium-r31 > section.content-card{
+    padding:15px!important;
+    border-radius:17px!important;
+  }
+  .tcgops-premium-r31 .section-head h2{font-size:25px!important}
+  .tcgops-premium-r31 :is(
+    .tcgops-kpis,.tcgops-metrics,.tcgops-summary-grid,.tcgops-stat-grid,
+    .metric-grid,.metrics-grid,.kpi-grid,.stats-grid
+  ){
+    grid-template-columns:1fr!important;
+  }
+}
+/* ============================================================
+   FIN GMX OPERACION TCG PREMIUM R31
+   ============================================================ */

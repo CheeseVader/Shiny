@@ -1,0 +1,261 @@
+.gmx-approved-sync{--v:#334155;--v2:#475569;--text:#171927;--muted:#697386;--line:#e6e9ef;width:100%;color:var(--text);font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif}
+.gmx-approved-sync *{box-sizing:border-box}
+.gas-top{height:100px;padding:0 34px;display:flex;align-items:center;justify-content:space-between;background:#fff;border:1px solid var(--line);border-radius:15px 15px 0 0}
+.gas-title{display:flex;align-items:center;gap:17px}.gas-refresh{font-size:43px;color:var(--v);font-weight:300}.gas-title h2{margin:0 0 5px;font-size:26px}.gas-title p{margin:0;color:var(--muted);font-size:13px}
+.gas-ok{display:flex;align-items:center;gap:9px;padding:10px 18px;border:1px solid #cde9df;border-radius:999px;background:#f5fbf8;color:#087a53;font-size:13px;font-weight:600}.gas-ok i{width:7px;height:7px;border-radius:50%;background:#13a676}
+.gas-steps{display:grid;grid-template-columns:repeat(4,1fr);gap:30px;padding:27px 34px 24px;background:#fff;border:1px solid var(--line);border-top:0}
+.gas-steps button{position:relative;border:0;background:none;display:flex;align-items:center;gap:14px;text-align:left;padding:0 0 17px;color:var(--text)}
+.gas-steps button>span{width:45px;height:45px;flex:0 0 45px;border-radius:50%;display:grid;place-items:center;background:#f0f2f5;color:#727a8b;font-weight:700}.gas-steps button div{display:flex;flex-direction:column;gap:4px}.gas-steps b{font-size:14px}.gas-steps small{color:var(--muted);font-size:12px}
+.gas-steps button.active>span{background:linear-gradient(135deg,var(--v),var(--v2));color:#fff}.gas-steps button.active b{color:var(--v)}.gas-steps button.active:after{content:"";position:absolute;left:0;right:30%;height:2px;bottom:-25px;background:var(--v)}.gas-steps button.done>span{background:#edf9f4;color:#087a53}
+.gas-message{margin:14px 0;padding:11px 14px;border:1px solid #cbd5e1;border-radius:9px;background:#f8fafc;color:#334155;font-size:12px}
+.gas-panel{margin-top:19px;background:#fff;border:1px solid var(--line);border-radius:15px;box-shadow:0 8px 28px rgba(16,24,40,.045);overflow:hidden}
+.gas-head{padding:31px 34px 22px;display:flex;justify-content:space-between;align-items:center;gap:25px}.gas-head h3{margin:0 0 7px;font-size:21px}.gas-head p{margin:0;color:var(--muted);font-size:13px}
+.gas-outline{height:45px;padding:0 17px;border:1px solid #dce1e9;border-radius:9px;background:#fff;color:#272b38;font-weight:600}
+.gas-games{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:27px 31px;padding:23px 34px 34px}
+.gas-game{position:relative;min-height:200px;padding:23px;display:grid;grid-template-columns:100px 1fr;align-items:center;text-align:left;border:1px solid var(--line);border-radius:13px;background:#fff;color:var(--text);box-shadow:0 2px 7px rgba(16,24,40,.025)}
+.gas-game:hover{border-color:#94a3b8}.gas-game.selected{border:1.5px solid #64748b;background:linear-gradient(135deg,#fff,#f8fafc);box-shadow:0 8px 21px rgba(51,65,85,.08)}
+.gas-check{position:absolute;left:23px;top:21px;width:22px;height:22px;border:1px solid #d4d9e2;border-radius:4px;display:grid;place-items:center;color:#fff}.gas-check.on{background:var(--v);border-color:var(--v)}
+.gas-logo{width:80px;height:80px;justify-self:center;border-radius:14px;display:grid;place-items:center;font-weight:900}.gas-logo.pokemon{border-radius:50%;background:linear-gradient(#ef3434 0 44%,#171717 44% 56%,#fff 56%);color:#fff}.gas-logo.magic{background:#151515;color:#ed7549;font-family:Georgia,serif;font-size:34px}.gas-logo.yugioh{background:#fff;color:#ad1725;font-family:Georgia,serif;font-style:italic}.gas-logo.onepiece{border-radius:50%;background:#d72b2b;color:#fff}.gas-logo.riftbound{background:#112c3a;color:#f09a22}.gas-logo.lorcana{background:#291d59;color:#f0d891}.gas-logo.generic{background:#f1f3f7;color:#5d6678}
+.gas-game-text{display:flex;flex-direction:column;align-items:flex-start;gap:6px}.gas-game-text>b{font-size:15px}.gas-game-text small{color:var(--muted);font-size:12px}.gas-game-text em{margin-top:11px;padding:6px 10px;border-radius:7px;font-style:normal;font-size:11px;font-weight:650}.gas-game-text em.full{background:#edf5ff;color:#155eef}.gas-game-text em.catalog{background:#edf9f3;color:#087a53}.gas-info{position:absolute;right:24px;bottom:23px;width:20px;height:20px;border:2px solid #9aa4b5;border-radius:50%;display:grid;place-items:center;color:#8f99aa;font-size:11px;font-weight:800}
+.gas-bottom{min-height:98px;border-top:1px solid var(--line);padding:19px 34px;display:flex;align-items:center;justify-content:space-between;gap:18px}.gas-counter{display:flex;align-items:center;gap:11px;color:var(--muted);font-size:12px}.gas-counter i{width:1px;height:23px;background:#e0e4ea}.gas-counter b{color:var(--v)}.gas-actions{display:flex;align-items:center;gap:12px}
+.gas-next{height:49px;padding:0 25px;border:0;border-radius:9px;background:linear-gradient(135deg,var(--v),var(--v2));color:#fff;font-weight:700;box-shadow:0 8px 18px rgba(51,65,85,.18)}.gas-next:disabled{opacity:.45}
+.gas-set-tools{padding:0 34px 19px;display:flex;align-items:center;justify-content:space-between}.gas-all{display:flex;align-items:center;gap:10px;color:var(--muted);font-size:12px}.gas-all input,.gas-set-list input,.gas-option-grid input{width:19px;height:19px;accent-color:var(--v)}
+.gas-set-list{padding:0 34px 28px;display:flex;flex-direction:column;gap:8px}.gas-set-list>label{min-height:65px;padding:9px 14px;display:grid;grid-template-columns:26px 42px minmax(220px,1fr) 120px 90px;align-items:center;gap:11px;border:1px solid var(--line);border-radius:9px}.gas-set-list>label.selected{border-color:#94a3b8;background:#fcfbff}.gas-set-icon{width:37px;height:37px;border-radius:8px;background:#f1f3f7;display:grid;place-items:center;font-size:9px;font-weight:800;color:#5e6778}.gas-set-name{display:flex;flex-direction:column;gap:3px}.gas-set-name b{font-size:12px}.gas-set-name small,.gas-date{color:var(--muted);font-size:11px}.gas-set-list em{justify-self:end;padding:5px 8px;border-radius:999px;font-size:10px;font-style:normal}.gas-set-list em.new{background:#edf9f3;color:#087a53}.gas-set-list em.synced{background:#edf4ff;color:#2767c5}.gas-empty{padding:20px;color:var(--muted);font-size:12px}
+.gas-option-grid{padding:5px 34px 31px;display:grid;grid-template-columns:repeat(2,1fr);gap:13px}.gas-option-grid>label{min-height:82px;padding:15px;border:1px solid var(--line);border-radius:10px;display:flex;align-items:center;gap:12px}.gas-option-grid>label.disabled{opacity:.45}.gas-option-grid label>span{display:flex;flex-direction:column;gap:4px}.gas-option-grid b{font-size:13px}.gas-option-grid small{color:var(--muted);font-size:11px}.gas-frequency{justify-content:space-between}.gas-frequency select{height:39px;border:1px solid #dce1e9;border-radius:8px;background:#fff;padding:0 10px}
+.gas-review{padding:4px 34px 30px;display:grid;grid-template-columns:repeat(4,1fr);gap:13px}.gas-review>div{padding:16px;border:1px solid var(--line);border-radius:10px;display:flex;flex-direction:column;gap:6px}.gas-review span{color:var(--muted);font-size:11px}.gas-review b{font-size:17px}.gas-results{margin:0 34px 25px;border:1px solid var(--line);border-radius:10px;overflow:hidden}.gas-results>div{padding:11px 14px;display:flex;justify-content:space-between;border-bottom:1px solid var(--line);font-size:12px}.gas-results>div:last-child{border-bottom:0}
+@media(max-width:1150px){.gas-games{grid-template-columns:repeat(2,1fr)}.gas-steps{gap:12px}.gas-steps small{display:none}}
+@media(max-width:720px){.gas-top,.gas-head,.gas-bottom,.gas-set-tools{align-items:flex-start;flex-direction:column}.gas-steps{grid-template-columns:1fr 1fr}.gas-games{grid-template-columns:1fr;padding:18px}.gas-head,.gas-bottom,.gas-set-tools{padding-left:18px;padding-right:18px}.gas-set-list{padding-left:18px;padding-right:18px}.gas-set-list>label{grid-template-columns:25px 40px 1fr}.gas-date,.gas-set-list em{display:none}.gas-option-grid,.gas-review{grid-template-columns:1fr;padding-left:18px;padding-right:18px}}
+
+/* R38: paleta slate + iconos administrables, sin tocar backend TCG */
+.gas-next{background:linear-gradient(135deg,#334155,#475569)!important}
+.gas-steps button.active>span{background:linear-gradient(135deg,#334155,#475569)!important}
+.gas-logo.uploaded{background:#fff;border:1px solid #e2e8f0;padding:7px;overflow:hidden}
+.gas-logo.uploaded img{width:100%;height:100%;display:block;object-fit:contain}
+.gas-game{cursor:pointer}
+.gas-icon-upload{
+  position:absolute;left:22px;bottom:18px;z-index:3;
+  padding:5px 8px;border:1px solid #cbd5e1;border-radius:7px;
+  background:#f8fafc;color:#475569;font-size:10px;line-height:1;font-weight:700;
+  cursor:pointer;transition:.15s ease
+}
+.gas-icon-upload:hover{background:#f1f5f9;border-color:#94a3b8}
+.gas-icon-upload input{display:none}
+.gas-game.selected .gas-icon-upload{background:#f1f5f9;border-color:#94a3b8;color:#334155}
+.gas-check.on{background:#475569!important;border-color:#475569!important}
+.gas-game-text em.full{background:#f1f5f9!important;color:#334155!important}
+.gas-counter b,.gas-counter>span:first-child,.gas-steps button.active b,.gas-refresh{color:#475569!important}
+
+
+/* GMX_AUTO_SYNC_MULTI_NAV_R41
+   Stepper: plain DIV controls, fully isolated from global button / role styles.
+*/
+.gmx-approved-sync .gas-steps .gas-step-link{
+  all:unset !important;
+  box-sizing:border-box !important;
+  position:relative !important;
+  display:flex !important;
+  align-items:center !important;
+  gap:14px !important;
+  min-width:0 !important;
+  min-height:62px !important;
+  padding:0 0 17px !important;
+  color:#334155 !important;
+  cursor:pointer !important;
+  user-select:none !important;
+}
+
+.gmx-approved-sync .gas-steps .gas-step-link:hover,
+.gmx-approved-sync .gas-steps .gas-step-link:focus,
+.gmx-approved-sync .gas-steps .gas-step-link:active,
+.gmx-approved-sync .gas-steps .gas-step-link.active,
+.gmx-approved-sync .gas-steps .gas-step-link.done{
+  background:transparent !important;
+  background-color:transparent !important;
+  background-image:none !important;
+  border:0 !important;
+  box-shadow:none !important;
+  color:#334155 !important;
+  transform:none !important;
+}
+
+.gmx-approved-sync .gas-steps .gas-step-link > span{
+  all:unset !important;
+  box-sizing:border-box !important;
+  width:45px !important;
+  height:45px !important;
+  min-width:45px !important;
+  flex:0 0 45px !important;
+  display:grid !important;
+  place-items:center !important;
+  border:1px solid #e2e8f0 !important;
+  border-radius:999px !important;
+  background:#f1f5f9 !important;
+  color:#64748b !important;
+  font-size:14px !important;
+  font-family:inherit !important;
+  font-weight:700 !important;
+  line-height:1 !important;
+}
+
+.gmx-approved-sync .gas-steps .gas-step-link > div{
+  all:unset !important;
+  display:flex !important;
+  flex-direction:column !important;
+  gap:4px !important;
+  min-width:0 !important;
+}
+
+.gmx-approved-sync .gas-steps .gas-step-link b{
+  all:unset !important;
+  display:block !important;
+  color:#334155 !important;
+  font-family:inherit !important;
+  font-size:14px !important;
+  font-weight:700 !important;
+  line-height:1.2 !important;
+}
+
+.gmx-approved-sync .gas-steps .gas-step-link small{
+  all:unset !important;
+  display:block !important;
+  color:#7c8798 !important;
+  font-family:inherit !important;
+  font-size:12px !important;
+  line-height:1.2 !important;
+}
+
+.gmx-approved-sync .gas-steps .gas-step-link.active > span{
+  background:#475569 !important;
+  color:#fff !important;
+  border-color:#475569 !important;
+}
+
+.gmx-approved-sync .gas-steps .gas-step-link.done > span{
+  background:#f0fdf4 !important;
+  color:#166534 !important;
+  border-color:#bbf7d0 !important;
+}
+
+.gmx-approved-sync .gas-steps .gas-step-link.active::after{
+  content:"" !important;
+  position:absolute !important;
+  left:0 !important;
+  right:30% !important;
+  bottom:-25px !important;
+  height:2px !important;
+  background:#64748b !important;
+}
+
+/* Multi-TCG: selected card stays neutral, no electric blue */
+.gmx-approved-sync .gas-game.selected{
+  border-color:#64748b !important;
+  background:#f8fafc !important;
+  box-shadow:0 5px 16px rgba(15,23,42,.07) !important;
+}
+.gmx-approved-sync .gas-check.on{
+  background:#475569 !important;
+  border-color:#475569 !important;
+}
+
+/* No Continue button at bottom of step 1 */
+.gmx-approved-sync .gas-bottom-config{
+  min-height:68px !important;
+  justify-content:flex-start !important;
+}
+
+/* Selected TCG switcher for steps 2-4 */
+.gmx-approved-sync .gas-game-tabs{
+  display:flex !important;
+  flex-wrap:wrap !important;
+  gap:8px !important;
+  padding:16px 34px !important;
+  border-bottom:1px solid #e6e9ef !important;
+  background:#f8fafc !important;
+}
+.gmx-approved-sync .gas-game-tabs button{
+  all:unset !important;
+  box-sizing:border-box !important;
+  display:inline-flex !important;
+  align-items:center !important;
+  min-height:34px !important;
+  padding:0 12px !important;
+  border:1px solid #cbd5e1 !important;
+  border-radius:999px !important;
+  background:#fff !important;
+  color:#475569 !important;
+  font-family:inherit !important;
+  font-size:11px !important;
+  font-weight:700 !important;
+  cursor:pointer !important;
+}
+.gmx-approved-sync .gas-game-tabs button.active{
+  background:#334155 !important;
+  border-color:#334155 !important;
+  color:#fff !important;
+}
+.gmx-approved-sync .gas-empty-selection{
+  min-height:160px !important;
+  display:grid !important;
+  place-items:center !important;
+  text-align:center !important;
+}
+
+/* Kill any legacy bright blue step backgrounds with extra specificity */
+html body .gmx-approved-sync .gas-steps > .gas-step-link,
+html body .gmx-approved-sync .gas-steps > .gas-step-link.active,
+html body .gmx-approved-sync .gas-steps > .gas-step-link.done{
+  background:#fff0 !important;
+  background-color:transparent !important;
+  background-image:none !important;
+}
+
+@media(max-width:720px){
+  .gmx-approved-sync .gas-game-tabs{padding:12px 18px !important}
+}
+
+/* GMX_AUTO_SYNC_SORT_R43 */
+.gmx-approved-sync .gas-sort{
+  display:flex !important;
+  align-items:center !important;
+  gap:9px !important;
+  color:#64748b !important;
+  font-size:12px !important;
+  font-weight:600 !important;
+}
+
+.gmx-approved-sync .gas-sort select{
+  min-height:36px !important;
+  padding:0 30px 0 11px !important;
+  border:1px solid #cbd5e1 !important;
+  border-radius:8px !important;
+  background:#ffffff !important;
+  color:#334155 !important;
+  font-family:inherit !important;
+  font-size:12px !important;
+  font-weight:600 !important;
+  outline:none !important;
+  box-shadow:none !important;
+}
+
+.gmx-approved-sync .gas-sort select:focus{
+  border-color:#94a3b8 !important;
+  box-shadow:0 0 0 3px rgba(148,163,184,.12) !important;
+}
+/* GMX_AUTO_SYNC_AUTO_SORT_R44 */
+.gmx-approved-sync .gas-head{
+  align-items:flex-start !important;
+}
+
+.gmx-approved-sync .gas-set-tools{
+  padding-top:2px !important;
+}
+
+.gmx-approved-sync .gas-sort{
+  display:flex !important;
+  align-items:center !important;
+  gap:9px !important;
+}
+
+.gmx-approved-sync .gas-sort select{
+  cursor:pointer !important;
+}

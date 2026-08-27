@@ -1,0 +1,31 @@
+.tcgops-stock-import-actions{
+  display:flex;
+  justify-content:flex-end;
+  align-items:center;
+  gap:10px;
+  margin:0 0 12px;
+}
+.tcgops-stock-import-actions .file-btn{
+  position:relative;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  min-height:40px;
+  padding:0 16px;
+  border-radius:8px;
+  border:1px solid #0b2246;
+  background:#0b2246;
+  color:#fff;
+  font-weight:800;
+  cursor:pointer;
+}
+.tcgops-stock-import-actions .file-btn input{
+  position:absolute;
+  inset:0;
+  opacity:0;
+  cursor:pointer;
+}
+@media(max-width:700px){
+  .tcgops-stock-import-actions{justify-content:stretch;flex-direction:column}
+  .tcgops-stock-import-actions>*{width:100%}
+}

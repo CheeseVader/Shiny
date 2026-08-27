@@ -78,3 +78,11 @@ backups/
 **/venv/
 backend/uploads/products/*
 !backend/uploads/products/.gitkeep
+
+# Backups locales generados durante desarrollo
+*.bak
+*.bak-*
+*.backup
+*.backup-*
+*.BACKUP
+*.BACKUP-*

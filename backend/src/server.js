@@ -16,6 +16,7 @@ import clientsRouter from './routes/clients.js';
 import geoRouter from './routes/geo.js';
 import branchesRouter from './routes/branches.js';
 import inventoryRouter from './routes/inventory.js';
+import inventoryStockImportRouter from './routes/inventoryStockImport.js';
 import ordersRouter from './routes/orders.js';
 import purchasesRouter from './routes/purchases.js';
 import cashRouter from './routes/cash.js';
@@ -138,6 +139,7 @@ app.use('/api/v1/product-images', requireModule('PRODUCTOS'), productImagesRoute
 app.use('/api/v1/clients', requireModule('CLIENTES'), clientsRouter);
 app.use('/api/v1/geo', requireModule('CLIENTES'), geoRouter);
 app.use('/api/v1/branches', requireModule('SUCURSALES'), branchesRouter);
+app.use('/api/v1/inventory',requireModule('INVENTARIO'),inventoryStockImportRouter);
 app.use('/api/v1/inventory', requireModule('INVENTARIO'), inventoryRouter);
 app.use('/api/v1/orders', requireModule('PEDIDOS'), ordersRouter);
 app.use('/api/v1/purchases', requireModule('COMPRAS'), purchasesRouter);

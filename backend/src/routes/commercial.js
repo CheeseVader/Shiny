@@ -13,6 +13,13 @@ import {
   finalizePosReturnAuthorization } from
 '../operationAuthorizationService.js';
 
+import {
+  getReturnAuthorizationCapability,
+  issueCurrentUserReturnAuthorization,
+  generateReturnPin,
+  redeemReturnPin
+} from '../returnPinAuthorizationService.js';
+
 const router = Router();
 router.get('/health', async (_req, res) => {try {res.json({ success: true, data: await commercialHealth() });} catch (e) {res.status(500).json({ success: false, error: e.message });}});
 
@@ -62,6 +69,58 @@ router.get('/returns', async (req, res) => {try {const r = await listReturns(req
 router.get('/returns/:id', async (req, res) => {try {const d = await getReturn(req.params.id);if (!d) return res.status(404).json({ success: false, error: 'RETURN_NOT_FOUND' });res.json({ success: true, data: d });} catch (e) {bad(res, e, 500);}});
 router.get('/returns-order/:id', async (req, res) => {try {const d = await orderForReturn(req.params.id);if (!d) return res.status(404).json({ success: false, error: 'ORDER_NOT_FOUND' });res.json({ success: true, data: d });} catch (e) {bad(res, e, 500);}});
 
+
+router.get('/returns/authorization/capability', async (req, res) => {
+  try {
+    res.json({
+      success: true,
+      data: await getReturnAuthorizationCapability(req.user)
+    });
+  } catch (e) {
+    bad(res, e, Number(e?.statusCode || 400));
+  }
+});
+
+router.post('/returns/authorize-current', async (req, res) => {
+  try {
+    const data = await issueCurrentUserReturnAuthorization({
+      orderId: req.body?.orderId || req.body?.reference || '',
+      requester: req.user,
+      ip: req.ip || req.socket?.remoteAddress || '',
+      userAgent: req.get('user-agent') || ''
+    });
+    res.json({ success: true, data });
+  } catch (e) {
+    bad(res, e, Number(e?.statusCode || 400));
+  }
+});
+
+router.post('/returns/pin/generate', async (req, res) => {
+  try {
+    const data = await generateReturnPin({
+      requester: req.user,
+      ip: req.ip || req.socket?.remoteAddress || '',
+      userAgent: req.get('user-agent') || ''
+    });
+    res.status(201).json({ success: true, data });
+  } catch (e) {
+    bad(res, e, Number(e?.statusCode || 400));
+  }
+});
+
+router.post('/returns/pin/authorize', async (req, res) => {
+  try {
+    const data = await redeemReturnPin({
+      orderId: req.body?.orderId || req.body?.reference || '',
+      pin: req.body?.pin || '',
+      requester: req.user
+    });
+    res.json({ success: true, data });
+  } catch (e) {
+    bad(res, e, Number(e?.statusCode || 400));
+  }
+});
+
 router.post('/returns/authorize', async (req, res) => {
   try {
     const data = await authorizePosReturn({
@@ -97,7 +156,7 @@ router.post('/returns/sale', async (req, res) => {
   let returnCreated = false;
 
   try {
-    const authorizationToken = String(
+    let authorizationToken = String(
       req.body?.authorizationToken ||
       req.get('x-return-authorization') ||
       ''
@@ -108,6 +167,16 @@ router.post('/returns/sale', async (req, res) => {
       req.body?.orderId ||
       ''
     ).trim();
+
+    if (!authorizationToken) {
+      const direct = await issueCurrentUserReturnAuthorization({
+        orderId,
+        requester: req.user,
+        ip: req.ip || req.socket?.remoteAddress || '',
+        userAgent: req.get('user-agent') || ''
+      });
+      authorizationToken = String(direct?.authorizationToken || '').trim();
+    }
 
     claim = await claimPosReturnAuthorization({
       token: authorizationToken,

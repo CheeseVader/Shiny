@@ -5,7 +5,7 @@ import TopBar from '../components/TopBar.jsx';
 import { api } from '../services/api.js';
 
 const pageMeta = {
-  '/admin/dashboard': ['Dashboard', brandText("GMX LOCAL")],
+  '/admin/dashboard': ['Dashboard', brandText("TCG_STORE_TEMPLATE LOCAL")],
   '/admin/productos': ['Productos', 'CATÁLOGO'],
 
 
@@ -15,10 +15,11 @@ const pageMeta = {
   '/admin/clientes': ['Clientes', 'CRM'],
   '/admin/inventario': ['Inventario', 'OPERACIÓN'],
   '/admin/sucursales': ['Sucursales', 'MULTISUCURSAL'],
-  '/admin/pos': ['Punto de venta', 'CAJA'],
-  '/admin/pedidos': ['Pedidos', 'PREPARACIÓN Y SEGUIMIENTO'],
+  '/admin/pos': ['POS', 'VENTAS'],
+  '/admin/pedidos': ['Pedidos', 'VENTAS'],
   '/admin/compras': ['Compras / Recepción', 'OPERACIÓN'],
   '/admin/caja': ['Caja / Arqueo', 'EFECTIVO'],
+  '/admin/devoluciones': ['Devoluciones', 'OPERACIÓN'],
   '/admin/comercial': ['Gestión Comercial', 'OPERACIÓN'],
   '/admin/promociones': ['Promociones / Fidelidad', 'BENEFICIOS'],
   '/admin/notificaciones': ['Notificaciones / Alertas', 'CONTROL OPERATIVO'],
@@ -41,7 +42,7 @@ export default function AppShell() {
   const [alertChecking, setAlertChecking] = useState(false);
   const [alertDockExpanded, setAlertDockExpanded] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [title, subtitle] = pageMeta[location.pathname] || [brandText("GMX"), 'LOCAL'];
+  const [title, subtitle] = pageMeta[location.pathname] || [brandText("TCG_STORE_TEMPLATE"), 'LOCAL'];
   const currentUser = (() => {try {return JSON.parse(localStorage.getItem('GMX_AUTH_USER') || '{}');} catch {return {};}})();
   const operatorMode = String(currentUser?.rol || '').toUpperCase() === 'OPERADOR';
 
@@ -64,19 +65,21 @@ export default function AppShell() {
   function canReadNotifications() {
     try {
       const access = JSON.parse(localStorage.getItem('GMX_AUTH_ACCESS') || '{}');
-      return access?.permissions?.NOTIFICACIONES?.read === true;
+      const user = JSON.parse(localStorage.getItem('GMX_AUTH_USER') || '{}');
+      const role = String(access?.role || user?.rol || '').toUpperCase();
+      return role === 'SUPERADMIN' || access?.permissions?.NOTIFICACIONES?.read === true;
     } catch {return false;}
   }
 
   function announcedIds() {
-    try {return new Set(JSON.parse(sessionStorage.getItem('GMX_ALERTS_ANNOUNCED') || '[]').map(String));}
+    try {return new Set(JSON.parse(sessionStorage.getItem('TCG_STORE_TEMPLATE_ALERTS_ANNOUNCED') || '[]').map(String));}
     catch {return new Set();}
   }
 
   function rememberAnnounced(id) {
     const ids = announcedIds();
     ids.add(String(id));
-    sessionStorage.setItem('GMX_ALERTS_ANNOUNCED', JSON.stringify([...ids].slice(-200)));
+    sessionStorage.setItem('TCG_STORE_TEMPLATE_ALERTS_ANNOUNCED', JSON.stringify([...ids].slice(-200)));
   }
 
   async function checkGlobalAlerts({ silent = true } = {}) {
@@ -191,7 +194,7 @@ export default function AppShell() {
       </div> : null}
 
       <style>{brandText(`
-        /* GMX-ALERTAS-FLOATING-FIX-20260815
+        /* TCG_STORE_TEMPLATE-ALERTAS-FLOATING-FIX-20260815
            El acceso a Alertas queda compacto por defecto para no cubrir
            botones/acciones de las tablas. Se expande sólo con hover/focus. */
         .global-alert-dock{
@@ -247,7 +250,7 @@ export default function AppShell() {
         <div className="global-unread-alert-body">
           <div className="global-unread-alert-top">
             <span>ALERTA {activeGlobalAlert.prioridad || 'MEDIA'}</span>
-            <small>{activeGlobalAlert.sucursal || activeGlobalAlert.modulo || brandText("GMX")}</small>
+            <small>{activeGlobalAlert.sucursal || activeGlobalAlert.modulo || brandText("TCG_STORE_TEMPLATE")}</small>
           </div>
           <h3>{activeGlobalAlert.titulo}</h3>
           <p>{activeGlobalAlert.mensaje}</p>

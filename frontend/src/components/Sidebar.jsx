@@ -1,5 +1,6 @@
-import { brandText } from "../config/brand.js";import { NavLink } from 'react-router';
+import { NavLink } from 'react-router';
 import NavIcon from './NavIcon.jsx';
+import BrandLogo from './BrandLogo.jsx';
 
 const groups = [
 { label: 'GENERAL', items: [
@@ -8,7 +9,7 @@ const groups = [
   ['/admin/sucursales', 'Sucursales', 'branches', 'SUCURSALES']]
 },
 { label: 'OPERACIÓN', items: [
-  ['/admin/pos', 'Punto de venta', 'orders', 'PEDIDOS'], ['/admin/pedidos', 'Pedidos', 'orders', 'PEDIDOS'], ['/admin/compras', 'Compras / Recepción', 'purchases', 'COMPRAS'],
+  ['/admin/pos', 'POS', 'orders', 'PEDIDOS'], ['/admin/pedidos', 'Pedidos', 'orders', 'PEDIDOS'], ['/admin/devoluciones', 'Devoluciones', 'buylist', 'COMERCIAL'], ['/admin/compras', 'Compras / Recepción', 'purchases', 'COMPRAS'],
   ['/admin/caja', 'Caja / Arqueo', 'inventory', 'CAJA'], ['/admin/comercial', 'Gestión Comercial', 'clients', 'COMERCIAL']]
 },
 { label: 'TCG', items: [
@@ -19,7 +20,7 @@ const groups = [
   ['/admin/notificaciones', 'Notificaciones / Alertas', 'reports', 'NOTIFICACIONES'], ['/admin/reportes', 'Reportes', 'reports', 'REPORTES'], ['/admin/administracion', 'Usuarios / Permisos', 'system', 'ADMIN'], ['/admin/sistema', 'Sistema', 'system', 'SISTEMA']]
 }];
 
-function access() {try {return JSON.parse(localStorage.getItem('GMX_AUTH_ACCESS') || '{}');} catch {return {};}}
+function access() {try {return JSON.parse(localStorage.getItem('GMX_AUTH_ACCESS') || localStorage.getItem('TCG_STORE_TEMPLATE_AUTH_ACCESS') || '{}');} catch {return {};}}
 
 export default function Sidebar({ open, onNavigate }) {
   const a = access(),role = String(a?.role || '').toUpperCase(),canRead = (m) => a?.permissions?.[m]?.read === true;
@@ -31,7 +32,7 @@ export default function Sidebar({ open, onNavigate }) {
   }));
 
   return <aside className={`sidebar ${open ? 'sidebar-open' : ''}`}>
-    <div className="brand"><div className="brand-mark">G</div><div><strong>{brandText("GMX")}</strong><span>{role === 'OPERADOR' ? 'Punto de Venta' : 'Local Management'}</span></div></div>
+    <div className="brand"><BrandLogo compact={role === 'OPERADOR'} /></div>
     <nav className="sidebar-nav">{visibleGroups.map((g) => {
         const items = g.items.filter((x) => canRead(x[3]));if (!items.length) return null;
         return <div className="nav-group" key={g.label}><div className="nav-group-label">{g.label}</div>{items.map(([to, label, icon]) => <NavLink key={to} to={to} onClick={onNavigate} className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}><NavIcon name={icon} /><span>{label}</span></NavLink>)}</div>;

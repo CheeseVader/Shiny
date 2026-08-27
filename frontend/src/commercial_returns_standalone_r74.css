@@ -1,0 +1,36 @@
+/* ============================================================
+   GMX · DEVOLUCIONES COMO MODULO INDEPENDIENTE · R74
+   ============================================================ */
+
+.commercial-returns-standalone .commercial-r71-context,
+.commercial-returns-standalone .commercial-r71-overview,
+.commercial-returns-standalone .commercial-r71-tabs{
+  display:none!important;
+}
+
+.commercial-returns-standalone .commercial-r71-shell{
+  gap:14px!important;
+}
+
+.commercial-returns-standalone .commercial-r71-main{
+  padding-top:0!important;
+}
+
+/* R73 ya muestra su propio + Nueva devolucion. */
+.commercial-returns-standalone .commercial-r71-head-actions > button{
+  display:none!important;
+}
+
+.commercial-returns-standalone .commercial-r71-head{
+  min-height:72px!important;
+}
+
+.commercial-returns-standalone .commercial-r71-head h2{
+  font-size:22px!important;
+}
+
+@media(max-width:900px){
+  .commercial-returns-standalone .commercial-r71-head{
+    min-height:62px!important;
+  }
+}

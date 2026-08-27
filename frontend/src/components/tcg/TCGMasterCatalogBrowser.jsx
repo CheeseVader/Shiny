@@ -13,7 +13,7 @@ function when(v) {
   try {return new Date(v).toLocaleString('es-MX');} catch {return String(v);}
 }
 
-export default function TCGMasterCatalogBrowser() {
+export default function TCGMasterCatalogBrowser({ onNavigate }) {
   const [summary, setSummary] = useState([]);
   const [gameCode, setGameCode] = useState('');
   const [sets, setSets] = useState([]);
@@ -35,6 +35,7 @@ export default function TCGMasterCatalogBrowser() {
   const [pricesError, setPricesError] = useState('');
   const [selectedPriceSources, setSelectedPriceSources] = useState([]);
   const [addingToTemplate, setAddingToTemplate] = useState(false);
+  const [quickView, setQuickView] = useState('expansions');
 
   const currentGame = summary.find((x) => x.game_code === gameCode) || null;
 
@@ -310,89 +311,59 @@ export default function TCGMasterCatalogBrowser() {
     }
   }
 
-  return <div className="master-catalog-browser">
-    <section className="master-catalog-summary">
-      <div className="section-head compact">
-        <div><span className="eyebrow">ADMIN · REFERENCIA</span><h2>Catálogo Maestro TCG</h2><p>Navega todo lo descargado desde APIs y fuentes externas. Esto no representa inventario disponible para clientes.</p></div>
+  const totalSets = summary.reduce((n, g) => n + Number(g.sets_count || 0), 0);
+  const totalCards = summary.reduce((n, g) => n + Number(g.cards_count || 0), 0);
+  const totalVariants = summary.reduce((n, g) => n + Number(g.cards_with_prices || 0), 0);
+  const recentSets = [...sets].slice(0, 4);
+  const showingSearch = Boolean(search.trim());
+
+  return <div className="master-catalog-browser proposal-a-master design4-master">
+    <section className="proposal-a-master-home design4-home">
+      <div className="proposal-a-heading-row design4-heading">
+        <div><span className="eyebrow">TRADING CARD GAME</span><h2>Catálogo TCG</h2><p>Gestiona y sincroniza tu catálogo de cartas TCG</p></div>
+        <span className="proposal-a-sync">● Sincronizado y actualizado</span>
       </div>
 
-      {summaryLoading ? <div className="master-catalog-loading">Cargando Catálogo Maestro…</div> : null}
-      {!summaryLoading && message ? <div className="master-catalog-error">{message}</div> : null}
-
-      <div className="master-game-cards">
-        {summary.map((g) => <button key={g.game_code} className={gameCode === g.game_code ? 'active' : ''} onClick={() => setGameCode(g.game_code)}>
-          <b>{g.game_name}</b>
-          <span>{Number(g.cards_count || 0).toLocaleString('es-MX')} cartas</span>
-          <small>{Number(g.sets_count || 0)} expansiones · {pct(g.cards_with_prices, g.cards_count)}% con precio</small>
-        </button>)}
-      </div>
-    </section>
-
-    {currentGame ? <TCGSourceSelector
-      gameCode={gameCode}
-      onSaved={(prefs) => setSelectedPriceSources(
-        Array.isArray(prefs?.priceSources) ?
-        prefs.priceSources.map((x) => String(x || '').toUpperCase()) :
-        []
-      )} /> :
-    null}
-
-    {currentGame ? <section className="master-catalog-controls">
-      <div className="master-catalog-kpis">
-        <div><span>TCG</span><strong>{currentGame.game_name}</strong></div>
-        <div><span>Expansiones</span><strong>{Number(currentGame.sets_count || 0).toLocaleString('es-MX')}</strong></div>
-        <div><span>Cartas descargadas</span><strong>{Number(currentGame.cards_count || 0).toLocaleString('es-MX')}</strong></div>
-        <div><span>Con precio</span><strong>{Number(currentGame.cards_with_prices || 0).toLocaleString('es-MX')} · {pct(currentGame.cards_with_prices, currentGame.cards_count)}%</strong></div>
-        <div><span>Última sync</span><strong>{when(currentGame.last_card_sync_at)}</strong></div>
+      <div className="design4-kpis">
+        <article><i>▱</i><div><span>TCG</span><strong>{summary.length.toLocaleString('es-MX')}</strong><small>Activos</small></div></article>
+        <article><i className="green">◇</i><div><span>Expansiones</span><strong>{totalSets.toLocaleString('es-MX')}</strong><small>Totales</small></div></article>
+        <article><i>▤</i><div><span>Cartas</span><strong>{totalCards.toLocaleString('es-MX')}</strong><small>Totales</small></div></article>
+        <article><i className="violet">▧</i><div><span>Variantes</span><strong>{totalVariants.toLocaleString('es-MX')}</strong><small>Con referencia</small></div></article>
+        <article><i className="green">$</i><div><span>Proveedores</span><strong>{summary.length.toLocaleString('es-MX')}</strong><small>Configurados</small></div></article>
       </div>
 
-      <div className="master-catalog-filters">
-        <label>TCG<select value={gameCode} onChange={(e) => setGameCode(e.target.value)}>{summary.map((g) => <option key={g.game_code} value={g.game_code}>{g.game_name}</option>)}</select></label>
-        <label>Expansión<select value={setCode} onChange={(e) => setSetCode(e.target.value)}><option value="">{search.trim() ? "Expansiones con coincidencias" : "Todas las expansiones"}</option>{sets.map((s) => <option key={s.codigo} value={s.codigo}>{s.nombre} · {s.synced_cards} cartas</option>)}</select></label>
-        <label>Rareza<select value={rarity} onChange={(e) => setRarity(e.target.value)}><option value="">{search.trim() ? "Rarezas con coincidencias" : "Todas las rarezas"}</option>{rarities.map((r) => <option key={r.rarity} value={r.rarity}>{r.rarity} · {r.cards}</option>)}</select></label>
-        <label>Por página<select value={pageSize} onChange={(e) => setPageSize(Number(e.target.value))}><option value="24">24</option><option value="60">60</option><option value="120">120</option></select></label>
-      </div>
-
-      <form className="master-catalog-search" onSubmit={submitSearch}>
-        <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Buscar es opcional: nombre, número o ID" />
-        <button disabled={busy}>{busy ? 'Cargando…' : 'Aplicar filtros'}</button>
-        {search ? <button type="button" className="secondary" onClick={() => {setSearch('');loadCards({ targetPage: 1, q: '' });}}>Limpiar</button> : null}
+      <form className="design4-filterbar" onSubmit={submitSearch}>
+        <div className="design4-search"><span>⌕</span><input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Buscar TCG, expansión o carta..." /></div>
+        <select value={gameCode} onChange={(e) => setGameCode(e.target.value)}>{summary.map((g) => <option key={g.game_code} value={g.game_code}>{g.game_name}</option>)}</select>
+        <select value={setCode} onChange={(e) => setSetCode(e.target.value)}><option value="">Expansión</option>{sets.map((x) => <option key={x.codigo} value={x.codigo}>{x.nombre}</option>)}</select>
+        <select value={rarity} onChange={(e) => setRarity(e.target.value)}><option value="">Estado</option>{rarities.map((x) => <option key={x.rarity} value={x.rarity}>{x.rarity}</option>)}</select>
+        <button type="button" className="secondary design4-clear" onClick={() => { setSearch(''); setSetCode(''); setRarity(''); }}>Limpiar</button>
+        <button type="submit" className="design4-filter-btn">▽ Filtros</button>
       </form>
-    </section> : null}
 
-    <section className="master-catalog-content">
-      <div className="section-head compact">
-        <div><h3>{setCode ? sets.find((x) => x.codigo === setCode)?.nombre || setCode : 'Todas las cartas'}</h3><p>{total.toLocaleString('es-MX')} registros encontrados. Puedes recorrerlos sin realizar una búsqueda.</p></div>
-        <div className="master-pagination-top"><button className="secondary compact" disabled={page <= 1 || busy} onClick={() => loadCards({ targetPage: page - 1 })}>←</button><span>Página {page} / {pages}</span><button className="secondary compact" disabled={page >= pages || busy} onClick={() => loadCards({ targetPage: page + 1 })}>→</button></div>
-      </div>
+      {message ? <div className="message proposal-a-message">{message}</div> : null}
 
-      {busy && !cards.length ? <div className="public-empty">Cargando catálogo…</div> : null}
+      {!showingSearch ? <section className="proposal-a-recent design4-table-card">
+        <div className="proposal-a-section-title"><strong>Expansiones recientes</strong></div>
+        <div className="table-wrap proposal-a-table"><table><thead><tr><th>Expansión</th><th>TCG</th><th>Código</th><th>Cartas</th><th>Proveedor</th><th>Estado</th><th>Actualizado</th></tr></thead>
+          <tbody>{recentSets.map((set) => <tr key={set.row_id || set.codigo}>
+            <td><strong>{set.nombre || set.codigo}</strong></td><td>{currentGame?.game_name || gameCode || '—'}</td><td>{set.codigo || '—'}</td>
+            <td>{Number(set.synced_cards || set.total_cartas || 0).toLocaleString('es-MX')}</td><td>{currentGame?.provider_name || currentGame?.catalog_provider || '—'}</td>
+            <td><span className="status active">Completo</span></td><td>{when(set.last_synced_at || set.updated_at)}</td>
+          </tr>)}</tbody></table></div>
+        {!recentSets.length && !summaryLoading ? <div className="public-empty small">No hay expansiones sincronizadas para mostrar.</div> : null}
+        <div className="design4-table-footer"><button type="button" className="secondary" onClick={() => setSearch(' ')}>Ver todas las expansiones →</button></div>
+      </section> : <section className="proposal-a-results design4-table-card">
+        <div className="proposal-a-results-head"><div><strong>Resultados</strong><span>{total.toLocaleString('es-MX')} coincidencias</span></div><button type="button" className="secondary compact" onClick={() => setSearch('')}>Cerrar resultados</button></div>
+        <div className="table-wrap proposal-a-table"><table><thead><tr><th>Carta</th><th>Expansión</th><th>Rareza</th><th>Precio mercado</th><th>Estado</th><th></th></tr></thead><tbody>{cards.map((card) => <tr key={card.row_id}>
+          <td><div className="proposal-a-card-name">{card.image_local_url || card.image_small_url || card.image_large_url ? <img src={card.image_local_url || card.image_small_url || card.image_large_url} alt="" /> : <span>TCG</span>}<div><strong>{card.name}</strong><small>#{card.collector_number || card.number || '—'}</small></div></div></td>
+          <td>{card.set_name || card.set_code}</td><td>{card.rarity || '—'}</td><td>{card.market_price || card.price_market || '—'}</td><td><span className={card.price_providers ? 'status active' : 'status warning'}>{card.price_providers ? 'Con precio' : 'Sin precio'}</span></td><td><button type="button" className="secondary compact" onClick={() => openCard(card)}>Ver</button></td>
+        </tr>)}</tbody></table></div>
+        <div className="proposal-a-pagination"><button disabled={page <= 1 || busy} onClick={() => loadCards({ targetPage: page - 1 })}>‹</button><span>{page} / {pages}</span><button disabled={page >= pages || busy} onClick={() => loadCards({ targetPage: page + 1 })}>›</button></div>
+      </section>}
 
-      <div className="master-card-grid">
-        {cards.map((card) => <button key={card.row_id} className="master-card" onClick={() => openCard(card)}>
-          <div className="master-card-image">
-            {card.image_local_url || card.image_small_url || card.image_large_url ? <img src={card.image_local_url || card.image_small_url || card.image_large_url} alt={card.name} /> : <span>Sin imagen</span>}
-          </div>
-          <div className="master-card-info">
-            <span className="master-card-set">{card.set_name || card.set_code}</span>
-            <b>{card.name}</b>
-            <small>#{card.collector_number || card.number || '—'} · {card.rarity || 'Sin rareza'}</small>
-            <small>{card.provider_code} · {card.price_providers} fuente(s) de precio</small>
-          </div>
-        </button>)}
-      </div>
-
-      {!busy && !cards.length ? <div className="public-empty">No hay cartas descargadas para estos filtros.</div> : null}
-
-      <div className="master-pagination-bottom">
-        <button disabled={page <= 1 || busy} onClick={() => loadCards({ targetPage: 1 })}>Primera</button>
-        <button disabled={page <= 1 || busy} onClick={() => loadCards({ targetPage: page - 1 })}>Anterior</button>
-        <span>Página {page} de {pages}</span>
-        <button disabled={page >= pages || busy} onClick={() => loadCards({ targetPage: page + 1 })}>Siguiente</button>
-        <button disabled={page >= pages || busy} onClick={() => loadCards({ targetPage: pages })}>Última</button>
-      </div>
+      {currentGame ? <details className="proposal-a-advanced"><summary>Configuración avanzada de fuentes</summary><TCGSourceSelector gameCode={gameCode} onSaved={(prefs) => setSelectedPriceSources(Array.isArray(prefs?.priceSources) ? prefs.priceSources.map((x) => String(x || '').toUpperCase()) : [])} /></details> : null}
     </section>
-
     {selectedCard && typeof document !== 'undefined' ? createPortal(<div className="master-card-modal-backdrop" onClick={() => {setSelectedCard(null);setPrices(null);setPricesError('');setPricesLoading(false);}}>
       <section className="master-card-modal" role="dialog" aria-modal="true" aria-label={`Detalle de ${selectedCard.name}`} onClick={(e) => e.stopPropagation()}>
         <button className="master-card-close" onClick={() => {setSelectedCard(null);setPrices(null);setPricesError('');setPricesLoading(false);}}>×</button>

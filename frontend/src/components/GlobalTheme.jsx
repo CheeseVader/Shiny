@@ -3,20 +3,25 @@ import { useLocation } from 'react-router';
 import { api } from '../services/api.js';
 
 const ADMIN_PATH_PREFIXES=[
-  '/dashboard',
-  '/productos',
-  '/clientes',
-  '/inventario',
-  '/sucursales',
-  '/pedidos',
-  '/compras',
-  '/comercial',
-  '/contenido',
-  '/tcg-operacion',
-  '/buylist',
-  '/reportes',
-  '/administracion',
-  '/sistema'
+  '/admin/dashboard',
+  '/admin/productos',
+  '/admin/categorias',
+  '/admin/clientes',
+  '/admin/inventario',
+  '/admin/sucursales',
+  '/admin/pedidos',
+  '/admin/compras',
+  '/admin/caja',
+  '/admin/comercial',
+  '/admin/contenido',
+  '/admin/promociones',
+  '/admin/notificaciones',
+  '/admin/tcg',
+  '/admin/tcg-operacion',
+  '/admin/buylist',
+  '/admin/reportes',
+  '/admin/administracion',
+  '/admin/sistema'
 ];
 
 function isAdminPath(pathname){
@@ -51,18 +56,25 @@ export default function GlobalTheme(){
         const root=document.documentElement;
         const a=(key,fallback='')=>s[`admin.appearance.${key}`]??s[`appearance.${key}`]??fallback;
 
-        root.style.setProperty('--gmx-primary',a('primary','#101828'));
-        root.style.setProperty('--gmx-surface',a('surface','#ffffff'));
-        root.style.setProperty('--gmx-background',a('background','#f2f4f7'));
-        root.style.setProperty('--gmx-radius',`${Number(a('radius','14'))}px`);
-        root.style.setProperty('--gmx-panel-opacity',String(a('panel_opacity','0.90')));
-        root.style.setProperty('--gmx-bg-opacity',String(a('background_opacity','0.18')));
-        root.style.setProperty('--gmx-bg-overlay',String(a('background_overlay','0.30')));
-        root.style.setProperty('--gmx-bg-blur',`${Number(a('background_blur','0'))}px`);
-        root.style.setProperty('--gmx-bg-position',a('background_position','center center'));
-        root.style.setProperty('--gmx-bg-size',a('background_size','cover'));
-        root.style.setProperty('--gmx-bg-attachment',String(a('background_fixed','true'))==='true'?'fixed':'scroll');
-        document.body.dataset.gmxDensity=a('density','comfortable');
+        root.style.setProperty('--tcg_store_template-primary',a('primary','#101828'));
+        root.style.setProperty('--tcg_store_template-surface',a('surface','#ffffff'));
+        root.style.setProperty('--tcg_store_template-background',a('background','#f2f4f7'));
+        root.style.setProperty('--tcg_store_template-radius',`${Number(a('radius','14'))}px`);
+        root.style.setProperty('--tcg_store_template-panel-opacity',String(a('panel_opacity','0.90')));
+        root.style.setProperty('--tcg_store_template-bg-opacity',String(a('background_opacity','0.18')));
+        root.style.setProperty('--tcg_store_template-bg-overlay',String(a('background_overlay','0.30')));
+        root.style.setProperty('--tcg_store_template-bg-blur',`${Number(a('background_blur','0'))}px`);
+        root.style.setProperty('--tcg_store_template-bg-position',a('background_position','center center'));
+        root.style.setProperty('--tcg_store_template-bg-size',a('background_size','cover'));
+        root.style.setProperty('--tcg_store_template-bg-attachment',String(a('background_fixed','true'))==='true'?'fixed':'scroll');
+        document.body.dataset.tcg_store_templateDensity=a('density','comfortable');
+        try {
+          localStorage.setItem('TCG_STORE_TEMPLATE_ADMIN_BRAND', JSON.stringify({
+            name: a('brand_name', 'GMX'),
+            logoText: a('logo_text', String(a('brand_name', 'GMX')).slice(0, 1)),
+            descriptor: a('brand_descriptor', 'LOCAL')
+          }));
+        } catch {}
 
         const mediaId=String(a('background_media_id','')).trim();
         if(mediaId){
@@ -74,12 +86,12 @@ export default function GlobalTheme(){
           if(resp.ok){
             const blob=await resp.blob();
             objectUrl=URL.createObjectURL(blob);
-            root.style.setProperty('--gmx-bg-image',`url("${objectUrl}")`);
+            root.style.setProperty('--tcg_store_template-bg-image',`url("${objectUrl}")`);
           }else{
-            root.style.setProperty('--gmx-bg-image','none');
+            root.style.setProperty('--tcg_store_template-bg-image','none');
           }
         }else{
-          root.style.setProperty('--gmx-bg-image','none');
+          root.style.setProperty('--tcg_store_template-bg-image','none');
         }
       }catch{
         // ProtectedRoute controla el acceso; no mostrar datos administrativos.
@@ -87,11 +99,11 @@ export default function GlobalTheme(){
     }
 
     loadTheme();
-    window.addEventListener('gmx-theme-changed',loadTheme);
+    window.addEventListener('tcg_store_template-theme-changed',loadTheme);
 
     return()=>{
       cancelled=true;
-      window.removeEventListener('gmx-theme-changed',loadTheme);
+      window.removeEventListener('tcg_store_template-theme-changed',loadTheme);
       if(objectUrl)URL.revokeObjectURL(objectUrl);
     };
   },[pathname]);

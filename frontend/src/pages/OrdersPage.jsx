@@ -1,14 +1,20 @@
 import { brandText } from "../config/brand.js";import { useEffect, useMemo, useRef, useState } from 'react';
 import { api } from '../services/api.js';
-import { publicApi } from '../services/publicApi.js';
 import VisionScannerModal from '../components/VisionScannerModal.jsx';
 import VisionInternetResultsModal from '../components/VisionInternetResultsModal.jsx';
 import VisionCandidatePicker from '../components/VisionCandidatePicker.jsx';
 import { visionQueries, scoreVisionCandidate } from '../utils/vision.js';
 import OrderDetailModal from '../components/OrderDetailModal.jsx';
 import MixedPaymentsPanel from '../components/MixedPaymentsPanel.jsx';
+import StoreSlideshow from '../components/public/StoreSlideshow.jsx';
+import { R23BarList } from '../components/VisualKitR23.jsx';
+import '../phase_gmx_exact_views_r23.css';
 import './OrdersPagePOSClassic.css';
 
+import './OrdersPageOrdersR62.css';
+import './OrdersPageR75Integration.css';
+import '../return_pin_authorization_r77.css';
+import './OrdersPagePOSRecommendedR78.css';
 function money(value) {
   if (value === null || value === '' || typeof value === 'undefined') return '—';
   return Number(value).toLocaleString('es-MX', { style: 'currency', currency: 'MXN' });
@@ -31,14 +37,15 @@ function sanitizePaymentReference(value) {
   return String(value || '').replace(/[^a-zA-Z0-9 _./-]/g, '').slice(0, 80);
 }
 
-function isPosAttentionMessage(value) {
-  return /no hay|no se pudo|no encontrado|no válida|no valido|inválid|error|rechaz|supera|excede|vacío|selecciona una sucursal/i.test(String(value || ''));
-}
-
-export default function OrdersPage({ mode = 'pos' }) {
-  // GMX_POS_PAGO_MIXTO_001_V5_3
-  const [tab, setTab] = useState(mode === 'orders' ? 'orders' : 'pos');
-  const [draftOrderMode, setDraftOrderMode] = useState(false);
+export default function OrdersPage({ mode = '' }) {
+  // TCG_STORE_TEMPLATE_POS_PAGO_MIXTO_001_V5_3
+  const forcedMode = mode === 'orders' || mode === 'pos'
+    ? mode
+    : (typeof window !== 'undefined' && window.location.pathname.includes('/pedidos') ? 'orders' : 'pos');
+  const [tab, setTab] = useState(forcedMode);
+  const [orderStatusFilter, setOrderStatusFilter] = useState('ALL');
+  const [orderPage, setOrderPage] = useState(1);
+  const [orderPageSize, setOrderPageSize] = useState(10);
   const [branches, setBranches] = useState([]);
   const [clients, setClients] = useState([]);
   const [clientSearch, setClientSearch] = useState('');
@@ -59,14 +66,6 @@ export default function OrdersPage({ mode = 'pos' }) {
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [completedOrder, setCompletedOrder] = useState(null);
   const [receiptBusy, setReceiptBusy] = useState(false);
-  const [receiptDeliveryStatus, setReceiptDeliveryStatus] = useState(null);
-  const [receiptChannel, setReceiptChannel] = useState('');
-  const [receiptEmail, setReceiptEmail] = useState('');
-  const [posPromoSlides, setPosPromoSlides] = useState([]);
-  const [posPromoIndex, setPosPromoIndex] = useState(0);
-  const [guestPhone, setGuestPhone] = useState('');
-  const [guestWhatsAppConsent, setGuestWhatsAppConsent] = useState(false);
-  const [whatsAppBusy, setWhatsAppBusy] = useState(false);
   const [payOrder, setPayOrder] = useState(null);
   const [payMethod, setPayMethod] = useState('EFECTIVO');
   const [payReference, setPayReference] = useState('');
@@ -98,7 +97,7 @@ export default function OrdersPage({ mode = 'pos' }) {
   async function enterPosFullscreen() {
     if (!isOperator || posStandalone || posKioskMode || posFullscreen) return;
     if (!fullscreenCapable) {
-      setMessage(brandText("Este navegador no permite pantalla completa desde la página. Abre GMX como aplicación/PWA o en modo kiosco."));
+      setMessage(brandText("Este navegador no permite pantalla completa desde la página. Abre TCG_STORE_TEMPLATE como aplicación/PWA o en modo kiosco."));
       return;
     }
     try {
@@ -159,9 +158,9 @@ export default function OrdersPage({ mode = 'pos' }) {
       posExitAuthorizedRef.current = true;
       try {if (document.fullscreenElement) await document.exitFullscreen();} catch {}
       try {await api('/api/auth/logout', { method: 'POST' });} catch {}
-      localStorage.removeItem('GMX_AUTH_TOKEN');
-      localStorage.removeItem('GMX_AUTH_USER');
-      localStorage.removeItem('GMX_AUTH_ACCESS');
+      localStorage.removeItem('TCG_STORE_TEMPLATE_AUTH_TOKEN');
+      localStorage.removeItem('TCG_STORE_TEMPLATE_AUTH_USER');
+      localStorage.removeItem('TCG_STORE_TEMPLATE_AUTH_ACCESS');
       window.location.assign('/login');
     } catch (error) {
       setPosExitError(error?.message === 'INVALID_CREDENTIALS' ? 'Contraseña incorrecta.' : String(error?.message || 'No fue posible autorizar la salida.'));
@@ -205,14 +204,16 @@ export default function OrdersPage({ mode = 'pos' }) {
   // POS-UX-002A — búsqueda manual, lector físico y cámara separados.
   const [scanMode, setScanMode] = useState(false);
   const [scanBusy, setScanBusy] = useState(false);
-  const [pendingScanQuantity, setPendingScanQuantity] = useState(1);
   const [cameraOpen, setCameraOpen] = useState(false);
   const [cameraError, setCameraError] = useState('');
   const [orderLookupOpen, setOrderLookupOpen] = useState(false);
   const [orderLookupSearch, setOrderLookupSearch] = useState('');
   const [orderLookupResults, setOrderLookupResults] = useState([]);
   const [orderLookupBusy, setOrderLookupBusy] = useState(false);
-  const [loadedPendingOrder, setLoadedPendingOrder] = useState(null);
+  const [posSource, setPosSource] = useState(null);
+  const [storefrontRuntime, setStorefrontRuntime] = useState({ zones: {}, settings: {}, promotions: [] });
+  const posBrandName = String(brandText('TCG_STORE_TEMPLATE') || 'GMX').trim() || 'GMX';
+  const [returnLauncherOpen, setReturnLauncherOpen] = useState(false);
   const scanInputRef = useRef(null);
   const cameraVideoRef = useRef(null);
   const cameraStreamRef = useRef(null);
@@ -226,7 +227,7 @@ export default function OrdersPage({ mode = 'pos' }) {
     notes: '', reintegrateStock: true, busy: false, error: ''
   });
 
-  // GMX_POS_FIX_002
+  // TCG_STORE_TEMPLATE_POS_FIX_002
   // Si una respuesta se pierde, el mismo payload reutiliza la misma clave.
   // Si carrito/pagos cambian, se genera una clave nueva.
   const [saleAttempt, setSaleAttempt] = useState({ key: '', fingerprint: '' });
@@ -336,7 +337,6 @@ export default function OrdersPage({ mode = 'pos' }) {
       });
 
       setOrderLookupResults(rows);
-      return rows;
     } catch (error) {
       setMessage(error.message || 'No se pudo buscar el pedido.');
       setOrderLookupResults([]);
@@ -345,8 +345,77 @@ export default function OrdersPage({ mode = 'pos' }) {
     }
   }
 
+
+  function orderDetailsToPosCart(order) {
+    return (Array.isArray(order?.detalles) ? order.detalles : []).map((detail, index) => {
+      const itemType = String(detail.tipo || 'PRODUCT').toUpperCase() === 'TCG' ? 'TCG' : 'PRODUCT';
+      const itemId = itemType === 'TCG' ? detail.id_inventario : detail.id_producto;
+      const quantity = Math.max(1, Number(detail.cantidad || 1));
+      return {
+        item_type: itemType,
+        item_id: itemId,
+        product_id: itemType === 'PRODUCT' ? detail.id_producto : null,
+        inventory_id: itemType === 'TCG' ? detail.id_inventario : null,
+        name: detail.producto || 'Artículo',
+        sku: detail.sku || '',
+        price: Number(detail.precio_unitario ?? detail.precio ?? 0),
+        stock: quantity,
+        quantity,
+        key: `${itemType}:${itemId || detail.id_detalle || index}`,
+        source_detail_id: detail.id_detalle || ''
+      };
+    });
+  }
+
+  async function loadExternalPosContext() {
+    if (typeof window === 'undefined' || forcedMode !== 'pos') return;
+    const params = new URLSearchParams(window.location.search);
+    const pendingOrderId = String(params.get('order') || localStorage.getItem('GMX_POS_PENDING_ORDER') || '').trim();
+    const pendingReturnId = String(params.get('return') || localStorage.getItem('GMX_POS_PENDING_RETURN') || '').trim();
+    if (!pendingOrderId && !pendingReturnId) return;
+
+    try {
+      if (pendingReturnId) {
+        const returnBody = await api(`/api/v1/commercial/returns/${encodeURIComponent(pendingReturnId)}`);
+        const returnData = returnBody.data;
+        const reference = String(returnData?.referencia || '').trim();
+        if (!reference) throw new Error('La devolución no tiene un pedido de origen.');
+
+        const searchBody = await api(`/api/v1/orders?limit=50&search=${encodeURIComponent(reference)}`);
+        const row = (searchBody.data || []).find((x) => String(x.id_pedido) === reference);
+        if (!row?.row_id) throw new Error(`No se encontró el pedido ${reference} asociado a la devolución.`);
+
+        const fullBody = await api(`/api/v1/orders/${row.row_id}`);
+        const order = fullBody.data;
+        setBranchId(order.id_sucursal || '');
+        setClientId(order.id_cliente || '');
+        setCart(orderDetailsToPosCart(order));
+        setPosSource({ type: 'RETURN', id: pendingReturnId, reference, rowId: row.row_id, order, returnData });
+        setMessage(`Devolución ${pendingReturnId} cargada en POS con ${order.detalles?.length || 0} partida(s).`);
+        localStorage.removeItem('GMX_POS_PENDING_RETURN');
+        return;
+      }
+
+      const searchBody = await api(`/api/v1/orders?limit=50&search=${encodeURIComponent(pendingOrderId)}`);
+      const row = (searchBody.data || []).find((x) => String(x.id_pedido) === pendingOrderId);
+      if (!row?.row_id) throw new Error(`No se encontró el pedido ${pendingOrderId}.`);
+
+      const fullBody = await api(`/api/v1/orders/${row.row_id}`);
+      const order = fullBody.data;
+      setBranchId(order.id_sucursal || '');
+      setClientId(order.id_cliente || '');
+      setCart(orderDetailsToPosCart(order));
+      setNotes(order.notas || '');
+      setPosSource({ type: 'ORDER', id: order.id_pedido, rowId: order.row_id, order });
+      setMessage(`Pedido ${order.id_pedido} cargado en POS. Revisa los artículos y continúa con el cobro.`);
+      localStorage.removeItem('GMX_POS_PENDING_ORDER');
+    } catch (error) {
+      setMessage(error.message || 'No fue posible cargar la operación en POS.');
+    }
+  }
+
   async function loadOrders(term = orderSearch) {
-    // GMX_POS_HIST_DEV_001
+    // TCG_STORE_TEMPLATE_POS_HIST_DEV_001
     const params = new URLSearchParams({
       limit: '200',
       search: term
@@ -387,36 +456,16 @@ export default function OrdersPage({ mode = 'pos' }) {
   }
 
   useEffect(() => {
-    setTab(mode === 'orders' ? 'orders' : 'pos');
-    setDraftOrderMode(false);
-    setMessage('');
-  }, [mode]);
-
-  useEffect(() => {
     Promise.all([loadBranches(), loadClients(''), loadOrders(''), loadTcgGames(), loadProductCategories()]).
     catch((error) => setMessage(error.message));
   }, []);
-
   useEffect(() => {
-    let active = true;
-    publicApi('/api/public/storefront').then((body) => {
-      if (!active) return;
-      const zones = body.data?.zones || {};
-      const slides = zones.HOME_HERO || [];
-      setPosPromoSlides(slides);
-      setPosPromoIndex(0);
-    }).catch(() => {
-      if (active) setPosPromoSlides([]);
-    });
-    return () => {active = false;};
-  }, []);
-
+    setTab(forcedMode);
+  }, [forcedMode]);
   useEffect(() => {
-    if (posPromoSlides.length < 2 || promoCode) return undefined;
-    const seconds = Math.max(3, Number(posPromoSlides[posPromoIndex]?.intervalo_segundos || 6));
-    const timer = setTimeout(() => setPosPromoIndex((index) => (index + 1) % posPromoSlides.length), seconds * 1000);
-    return () => clearTimeout(timer);
-  }, [posPromoSlides, posPromoIndex, promoCode]);
+    if (forcedMode !== 'pos') return;
+    loadExternalPosContext();
+  }, [forcedMode]);
 
   useEffect(() => {
     if (typeof document === 'undefined') return undefined;
@@ -444,7 +493,7 @@ export default function OrdersPage({ mode = 'pos' }) {
     const onKeyDown = (event) => {
       const key = String(event.key || '').toLowerCase();
 
-      // Salida normal protegida de GMX:
+      // Salida normal protegida de TCG_STORE_TEMPLATE:
       // Ctrl + Alt + X abre el modal SIN abandonar Fullscreen.
       if (!(event.ctrlKey && event.altKey && key === 'x')) return;
       if (!posFullscreenEnteredRef.current && !posKioskMode || posExitAuthorizedRef.current) return;
@@ -471,11 +520,11 @@ export default function OrdersPage({ mode = 'pos' }) {
 
   useEffect(() => {
     if (!isOperator || typeof document === 'undefined') return undefined;
-    document.documentElement.classList.add('gmx-operator-pos-document');
-    document.body.classList.add('gmx-operator-pos-body');
+    document.documentElement.classList.add('tcg_store_template-operator-pos-document');
+    document.body.classList.add('tcg_store_template-operator-pos-body');
     return () => {
-      document.documentElement.classList.remove('gmx-operator-pos-document');
-      document.body.classList.remove('gmx-operator-pos-body');
+      document.documentElement.classList.remove('tcg_store_template-operator-pos-document');
+      document.body.classList.remove('tcg_store_template-operator-pos-body');
     };
   }, [isOperator]);
 
@@ -483,6 +532,12 @@ export default function OrdersPage({ mode = 'pos' }) {
     api('/api/auth/me').
     then((r) => setCurrentUser(r.data?.user || null)).
     catch(() => setCurrentUser(null));
+  }, []);
+
+  useEffect(() => {
+    api('/api/v1/cms/storefront-runtime?preview=true')
+      .then((r) => setStorefrontRuntime(r.data || { zones: {}, settings: {}, promotions: [] }))
+      .catch(() => setStorefrontRuntime({ zones: {}, settings: {}, promotions: [] }));
   }, []);
 
   useEffect(() => {
@@ -506,15 +561,16 @@ export default function OrdersPage({ mode = 'pos' }) {
 
   useEffect(() => {
     if (!branchId) return;
-    const sameLoadedOrderBranch = loadedPendingOrder &&
-      String(loadedPendingOrder.id_sucursal || '') === String(branchId);
-    if (!sameLoadedOrderBranch) {
-      setCart([]);
-      if (loadedPendingOrder) setLoadedPendingOrder(null);
-    }
+    setCart([]);
     setCatalogBranchId(branchId);
     loadInventory(branchId, { search: '', type: saleType, gameId, setId }).catch((error) => setMessage(error.message));
-  }, [branchId, loadedPendingOrder?.row_id]);
+  }, [branchId]);
+
+  useEffect(() => {
+    if (!posSource?.order || !branchId) return;
+    if (String(posSource.order.id_sucursal || '') !== String(branchId)) return;
+    setCart(orderDetailsToPosCart(posSource.order));
+  }, [branchId, posSource?.id]);
 
   useEffect(() => {
     setSetId('');
@@ -585,26 +641,7 @@ export default function OrdersPage({ mode = 'pos' }) {
   }
 
   async function resolveScannedCode(rawCode, { source = 'LECTOR' } = {}) {
-    const input = String(rawCode || '').trim();
-    if (/^PED-/i.test(input)) {
-      const rows = await searchOrdersForPOS(input);
-      const exact = (rows || []).find((order) => String(order.id_pedido || '').toUpperCase() === input.toUpperCase());
-      if (!exact) {setMessage(`No se encontró el pedido ${input}.`);return;}
-      await loadPendingOrderToPOS(exact);
-      return;
-    }
-    const quantityOnly = input.match(/^(\d{1,3})\s*[*xX]\s*$/);
-    if (quantityOnly) {
-      const quantity = Math.max(1, Math.min(999, Number(quantityOnly[1])));
-      setPendingScanQuantity(quantity);
-      setProductSearch('');
-      setMessage(`Cantidad ${quantity} preparada. Escanea o escribe el código del artículo.`);
-      setTimeout(() => scanInputRef.current?.focus(), 0);
-      return;
-    }
-    const quantityAndCode = input.match(/^(\d{1,3})\s*[*xX]\s*(.+)$/);
-    const requestedQuantity = quantityAndCode ? Math.max(1, Math.min(999, Number(quantityAndCode[1]))) : pendingScanQuantity;
-    const code = String(quantityAndCode?.[2] || input).trim();
+    const code = String(rawCode || '').trim();
     if (!code || !branchId) return;
     setScanBusy(true);
     setMessage('');
@@ -614,31 +651,27 @@ export default function OrdersPage({ mode = 'pos' }) {
       const rows = Array.isArray(body.data) ? body.data : [];
       const norm = (value) => String(value ?? '').trim().toUpperCase();
       const target = norm(code);
-      const exact = rows.filter((item) => [item.sku, item.codigo_barras, item.barcode, item.barcode_value, item.item_id, item.product_id, item.inventory_id, item.card_number].some((value) => norm(value) === target));
+      const exact = rows.filter((item) => [item.sku, item.item_id, item.product_id, item.inventory_id, item.card_number].some((value) => norm(value) === target));
       const matches = exact.length ? exact : rows;
       if (matches.length === 1) {
-        const added = addToCart(matches[0], requestedQuantity);setProductSearch('');setScanMode(true);setPendingScanQuantity(1);
-        if (added) setMessage('');
+        addToCart(matches[0]);setProductSearch('');setScanMode(true);
+        setMessage(`${source}: ${code} agregado al carrito.`);
         setTimeout(() => scanInputRef.current?.focus(), 0);return;
       }
       if (matches.length > 1) {
-        setInventory(matches);setProductSearch(code);setCatalogOpen(true);setScanMode(false);setPendingScanQuantity(1);
+        setInventory(matches);setProductSearch(code);setCatalogOpen(true);setScanMode(false);
         setMessage(`Se encontraron ${matches.length} coincidencias para ${code}. Selecciona el artículo.`);return;
       }
-      // Un código simple también puede ser promocional. Las expresiones de
-      // cantidad (2*SKU) nunca se envían al motor de promociones.
-      if (!quantityAndCode && pendingScanQuantity === 1) {
-        try {
-          const quote = await previewBenefits({ promo: code, points: 0, silent: true });
-          const discount = Number(quote?.discountPromo || 0);
-          if (discount > 0) {
-            setProductSearch('');setScanMode(true);
-            setMessage(`✓ Promoción ${code.toUpperCase()} aplicada: -${money(discount)}.`);
-            setTimeout(() => scanInputRef.current?.focus(), 0);return;
-          }
-        } catch {}
-      }
-      setPendingScanQuantity(1);
+      // El mismo buscador también acepta códigos promocionales.
+      try {
+        const quote = await previewBenefits({ promo: code, points: 0, silent: true });
+        const discount = Number(quote?.discountPromo || 0);
+        if (discount > 0) {
+          setProductSearch('');setScanMode(true);
+          setMessage(`✓ Promoción ${code.toUpperCase()} aplicada: -${money(discount)}.`);
+          setTimeout(() => scanInputRef.current?.focus(), 0);return;
+        }
+      } catch {}
       setMessage(`Código ${code} no encontrado como artículo o promoción disponible.`);
       setTimeout(() => scanInputRef.current?.focus(), 0);
     } catch (error) {setMessage(error.message || 'No se pudo procesar el código.');} finally
@@ -688,7 +721,7 @@ export default function OrdersPage({ mode = 'pos' }) {
 
     if (candidates.length === 1 && candidates[0].score >= 0.90) {
       addToCart(candidates[0]);
-      setMessage('');
+      setMessage(brandText(`${candidates[0].name || candidates[0].sku} reconocido por TCG_STORE_TEMPLATE Vision y agregado al carrito.`));
       return;
     }
 
@@ -725,6 +758,71 @@ export default function OrdersPage({ mode = 'pos' }) {
     } finally {
       setVisionInternetBusy(false);
     }
+  }
+
+  async function resolveUniversalPosSearch(rawValue) {
+    const value = String(rawValue || '').trim();
+    if (!value || !branchId) return;
+
+    const upper = value.toUpperCase();
+
+    try {
+      if (upper.startsWith('PED-')) {
+        await searchOrdersForPOS(value);
+        const params = new URLSearchParams({ search: value, limit: '25' });
+        const result = await api(`/api/v1/orders?${params}`);
+        const rows = Array.isArray(result.data) ? result.data : [];
+        const exact = rows.find((row) => String(row.id_pedido || '').toUpperCase() === upper);
+        const order = exact || rows[0];
+        if (order?.row_id) {
+          const full = await getFullOrder(order.row_id);
+          if (String(full.id_sucursal || '') && String(full.id_sucursal) !== String(branchId)) {
+            setBranchId(String(full.id_sucursal));
+          }
+          setClientId(String(full.id_cliente || ''));
+          setPosSource({ type: 'ORDER', id: full.id_pedido, order: full });
+          setCart(orderDetailsToPosCart(full));
+          setProductSearch('');
+          setMessage(`Pedido ${full.id_pedido} cargado en POS.`);
+          return;
+        }
+      }
+
+      if (upper.startsWith('DEV-')) {
+        const response = await api(`/api/v1/commercial/returns/${encodeURIComponent(value)}`);
+        const record = response.data || {};
+        const reference = String(record.reference || record.referencia || record.id_pedido || record.order_id || '').trim();
+        if (!reference) throw new Error('La devolución no contiene una referencia de pedido.');
+        const orderResponse = await api(`/api/v1/commercial/returns-order/${encodeURIComponent(reference)}`);
+        const order = orderResponse.data;
+        if (!order) throw new Error('No se encontró el pedido relacionado con la devolución.');
+        if (String(order.id_sucursal || '') && String(order.id_sucursal) !== String(branchId)) {
+          setBranchId(String(order.id_sucursal));
+        }
+        setClientId(String(order.id_cliente || ''));
+        setPosSource({ type: 'RETURN', id: value, order, returnRecord: record });
+        setCart(orderDetailsToPosCart(order));
+        setProductSearch('');
+        setMessage(`Devolución ${value} cargada en POS.`);
+        return;
+      }
+
+      await resolveScannedCode(value, { source: 'BÚSQUEDA' });
+    } catch (error) {
+      setMessage(error?.message || 'No se pudo procesar la búsqueda.');
+    }
+  }
+
+  function openReturnLauncher() {
+    setReturnLauncherOpen(true);
+  }
+
+  function startSaleReturnLookup() {
+    setReturnLauncherOpen(false);
+    setOrderLookupSearch('');
+    setOrderLookupResults([]);
+    setOrderLookupOpen(true);
+    searchOrdersForPOS('');
   }
 
   function activateScanner() {
@@ -778,7 +876,7 @@ export default function OrdersPage({ mode = 'pos' }) {
 
   useEffect(() => () => stopCamera(), []);
 
-  // GMX_POS_PAGO_MIXTO_001_V4 + POS-007
+  // TCG_STORE_TEMPLATE_POS_PAGO_MIXTO_001_V4 + POS-007
   const totalBeforeManualDiscount = useMemo(() => {
     const raw = cart.reduce((sum, item) => sum + (Number(item.price) || 0) * (Number(item.quantity) || 0), 0);
     const previewTotal = Number(benefitPreview?.total);
@@ -820,18 +918,8 @@ export default function OrdersPage({ mode = 'pos' }) {
     return () => clearTimeout(timer);
   }, [catalogAddFeedback]);
 
-  useEffect(() => {
-    if (tab !== 'pos' || !isPosAttentionMessage(message)) return undefined;
-    const currentMessage = message;
-    const timer = setTimeout(() => {
-      setMessage((value) => value === currentMessage ? '' : value);
-      setTimeout(() => scanInputRef.current?.focus(), 0);
-    }, 3200);
-    return () => clearTimeout(timer);
-  }, [message, tab]);
 
-
-  function addToCart(item, quantityToAdd = 1) {
+  function addToCart(item) {
     const price = Number(item.price);
     if (!Number.isFinite(price)) {
       setMessage('El artículo no tiene un precio de venta válido.');
@@ -841,8 +929,7 @@ export default function OrdersPage({ mode = 'pos' }) {
     const key = itemKey(item);
     const existing = cart.find((row) => row.key === key);
     const stock = Math.max(0, Number(item.stock || 0));
-    const increment = Math.max(1, Math.min(999, Math.trunc(Number(quantityToAdd) || 1)));
-    const nextQuantity = (existing?.quantity || 0) + increment;
+    const nextQuantity = (existing?.quantity || 0) + 1;
 
     if (nextQuantity > stock) {
       setMessage(`No hay más existencia disponible de ${item.name || 'este artículo'} en esta sucursal.`);
@@ -853,10 +940,10 @@ export default function OrdersPage({ mode = 'pos' }) {
     if (existing) {
       setCart((current) => current.map((row) => row.key === key ? { ...row, quantity: nextQuantity } : row));
     } else {
-      setCart((current) => [...current, { ...item, key, quantity: increment }]);
+      setCart((current) => [...current, { ...item, key, quantity: 1 }]);
     }
 
-    setMessage('');
+    setMessage(`${item.name || 'Artículo'} agregado al carrito. Cantidad: ${nextQuantity}.`);
     setCatalogAddFeedback({ key, name: item.name || 'Artículo', quantity: nextQuantity, blocked: false, stamp: Date.now() });
     return true;
   }
@@ -900,31 +987,11 @@ export default function OrdersPage({ mode = 'pos' }) {
   function checkout() {
     setMessage('');
     if (!cart.length) {setMessage('El carrito está vacío.');return;}
-    if (loadedPendingOrder) {openPayOrder(loadedPendingOrder);return;}
-    if (draftOrderMode) {savePendingAdminOrder();return;}
     const availablePoints = Math.max(0, Number(loyalty?.puntos_disponibles || 0));
     if (clientId && availablePoints > 0 && Number(pointsToRedeem || 0) === 0) {
       setPointsModalOpen(true);return;
     }
     setCheckoutModalOpen(true);
-  }
-
-  async function savePendingAdminOrder() {
-    if (!branchId) {setMessage('Selecciona una sucursal.');return;}
-    if (!cart.length) {setMessage('El pedido no tiene artículos.');return;}
-    try {
-      const body = await api('/api/v1/orders/admin-pending', {
-        method: 'POST',
-        body: JSON.stringify({
-          branchId, clientId, notes,
-          items: cart.map((item) => ({ itemType: item.item_type, itemId: item.item_id,
-            productId: item.product_id || '', inventoryId: item.inventory_id || '', quantity: item.quantity }))
-        })
-      });
-      setCart([]);setNotes('');setClientId('');setClientSearch('');setDraftOrderMode(false);setTab('orders');
-      setMessage(`Pedido ${body.data.id_pedido} creado como pendiente de pago.`);
-      await loadOrders('');
-    } catch (error) {setMessage(error.message);}
   }
 
   async function performCheckout() {
@@ -945,6 +1012,31 @@ export default function OrdersPage({ mode = 'pos' }) {
     }
 
     try {
+      if (posSource?.type === 'ORDER' && posSource?.rowId) {
+        const body = await api(`/api/v1/orders/${posSource.rowId}/pay`, {
+          method: 'POST',
+          body: JSON.stringify({
+            paymentMethod,
+            paymentReference: sanitizePaymentReference(paymentReference),
+            notes
+          })
+        });
+        setCompletedOrder(body.data);
+        setMessage(`Pedido ${body.data.id_pedido} cobrado correctamente desde POS.`);
+        setCheckoutModalOpen(false);
+        setPosSource(null);
+        setCart([]);
+        await Promise.all([loadOrders(''), loadInventory(branchId)]);
+        return;
+      }
+
+      if (posSource?.type === 'RETURN') {
+        setCheckoutModalOpen(false);
+        openReturnFlow(posSource.order);
+        setMessage(`Devolución ${posSource.id}: artículos cargados. Continúa con la autorización de devolución.`);
+        return;
+      }
+
       const salePayload = {
         branchId,
         clientId,
@@ -988,11 +1080,6 @@ export default function OrdersPage({ mode = 'pos' }) {
       setCheckoutModalOpen(false);
       setMessage(`Venta ${body.data.id_pedido} registrada correctamente.`);
       setCompletedOrder(body.data);
-      setReceiptChannel('');
-      setReceiptEmail(body.data.email || '');
-      setGuestPhone(body.data.telefono || '');
-      setGuestWhatsAppConsent(false);
-      setReceiptDeliveryStatus(null);
       setSaleAttempt({ key: '', fingerprint: '' });
       setCart([]);
       setPaymentReference('');
@@ -1015,14 +1102,84 @@ export default function OrdersPage({ mode = 'pos' }) {
   }
 
   // DEV-004B — la devolución permanece dentro del POS.
-  function openReturnFlow(order) {
+  async function openReturnFlow(order) {
     if (!order?.id_pedido) return;
+
     setReturnFlow({
       open: true, stage: 'auth', order, password: '',
       authorizationToken: '', authorizationId: '', authorizer: null, items: [],
       reason: '', refund: false, refundMethod: 'EFECTIVO', refundReference: '',
-      notes: '', reintegrateStock: true, busy: false, error: ''
+      notes: '', reintegrateStock: true, busy: true, error: ''
     });
+
+    try {
+      const auth = await api('/api/v1/commercial/returns/authorize-current', {
+        method: 'POST',
+        body: JSON.stringify({ orderId: order.id_pedido })
+      });
+
+      const data = auth?.data || {};
+      const authorizationToken = String(
+        data.authorizationToken || data.token || data.returnAuthorizationToken || ''
+      ).trim();
+
+      if (!authorizationToken) {
+        throw new Error('RETURN_AUTHORIZATION_REQUIRED');
+      }
+
+      const detail = await api(`/api/v1/commercial/returns-order/${encodeURIComponent(order.id_pedido)}`);
+      const detailData = detail?.data || detail;
+      const items = normalizeReturnItems(detailData);
+
+      if (!items.length) {
+        throw new Error('El pedido no tiene artículos disponibles para devolución.');
+      }
+
+      setReturnFlow((current) => ({
+        ...current,
+        open: true,
+        stage: 'return',
+        order,
+        password: '',
+        authorizationToken,
+        authorizationId: data.authorizationId || data.id_autorizacion || '',
+        authorizer: data.authorizedBy || data.autorizador || null,
+        items,
+        busy: false,
+        error: ''
+      }));
+    } catch (error) {
+      const code = String(error?.message || error?.error || '').trim().toUpperCase();
+
+      if (
+        code.includes('RETURN_AUTHORIZATION_REQUIRED') ||
+        code.includes('RETURN_AUTHORIZATION_FORBIDDEN')
+      ) {
+        setReturnFlow((current) => ({
+          ...current,
+          open: true,
+          stage: 'auth',
+          order,
+          password: '',
+          authorizationToken: '',
+          authorizationId: '',
+          authorizer: null,
+          items: [],
+          busy: false,
+          error: ''
+        }));
+        return;
+      }
+
+      setReturnFlow((current) => ({
+        ...current,
+        open: true,
+        stage: 'auth',
+        order,
+        busy: false,
+        error: getReturnAuthorizationMessage(error)
+      }));
+    }
   }
 
   function closeReturnFlow() {
@@ -1057,56 +1214,83 @@ export default function OrdersPage({ mode = 'pos' }) {
       error?.data?.error ||
       error?.response?.data?.error ||
       error?.response?.data?.code ||
+      error?.message ||
       ''
     ).trim().toUpperCase();
 
     const messages = {
-      INVALID_AUTHORIZER_CREDENTIALS: 'Contraseña administrativa incorrecta. Verifica la contraseña e inténtalo nuevamente.',
-      AUTHORIZER_CREDENTIALS_REQUIRED: 'Ingresa la contraseña administrativa para continuar.',
-      RETURN_AUTHORIZATION_FORBIDDEN: 'El administrador no tiene autorización para realizar devoluciones.',
-      RETURN_AUTHORIZATION_BRANCH_FORBIDDEN: 'El administrador no tiene autorización para esta sucursal.',
-      RETURN_AUTHORIZATION_INVALID_OR_EXPIRED: 'La autorización administrativa superó el tiempo permitido. Solicita una nueva autorización para continuar.',
+      RETURN_AUTHORIZATION_REQUIRED: 'Esta devolución requiere autorización de un administrador.',
+      RETURN_PIN_INVALID_FORMAT: 'El código debe contener exactamente 4 dígitos.',
+      RETURN_PIN_INVALID_OR_EXPIRED: 'El código es incorrecto, venció o ya fue reemplazado.',
+      RETURN_PIN_ALREADY_USED: 'Este código ya fue utilizado. Solicita uno nuevo.',
+      RETURN_AUTHORIZATION_ALREADY_USED: 'Esta autorización ya fue utilizada. Solicita un código nuevo.',
+      RETURN_AUTHORIZATION_FORBIDDEN: 'La cuenta que generó el código ya no tiene permiso para autorizar devoluciones.',
+      RETURN_AUTHORIZATION_BRANCH_FORBIDDEN: 'El código no tiene autorización para la sucursal de este pedido.',
+      RETURN_AUTHORIZATION_INVALID_OR_EXPIRED: 'La autorización venció o ya fue utilizada.',
       ORDER_NOT_FOUND: 'No se encontró el pedido.'
     };
 
     if (messages[code]) return messages[code];
 
     const raw = String(error?.message || error?.response?.data?.message || '').trim();
-    return messages[raw] || raw || 'No fue posible autorizar la devolución.';
+    return messages[String(raw).toUpperCase()] || raw || 'No fue posible autorizar la devolución.';
   }
 
   async function authorizeReturnInPOS() {
     const orderId = String(returnFlow.order?.id_pedido || '').trim();
-    const password = String(returnFlow.password || '');
-    if (!orderId) {setReturnFlow((current) => ({ ...current, error: 'No se encontró el pedido.' }));return;}
-    if (!password) {setReturnFlow((current) => ({ ...current, error: 'Captura la contraseña administrativa.' }));return;}
+    const pin = String(returnFlow.password || '').replace(/\D/g, '').slice(0, 4);
+
+    if (!orderId) {
+      setReturnFlow((current) => ({ ...current, error: 'No se encontró el pedido.' }));
+      return;
+    }
+
+    if (!/^\d{4}$/.test(pin)) {
+      setReturnFlow((current) => ({ ...current, error: 'Captura el código de autorización de 4 dígitos.' }));
+      return;
+    }
 
     setReturnFlow((current) => ({ ...current, busy: true, error: '' }));
+
     try {
-      const auth = await api('/api/v1/commercial/returns/authorize', {
-        method: 'POST', body: JSON.stringify({ orderId, password })
+      const auth = await api('/api/v1/commercial/returns/pin/authorize', {
+        method: 'POST',
+        body: JSON.stringify({ orderId, pin })
       });
+
       const data = auth?.data || {};
       const authorizationToken = String(
-        data.authorizationToken || data.token || data.returnAuthorizationToken || data.authorization?.token || ''
+        data.authorizationToken || data.token || data.returnAuthorizationToken || ''
       ).trim();
-      if (!authorizationToken) throw new Error('La autorización fue aprobada pero no se recibió el token de operación.');
+
+      if (!authorizationToken) {
+        throw new Error('La autorización fue aprobada pero no se recibió el token de operación.');
+      }
 
       const detail = await api(`/api/v1/commercial/returns-order/${encodeURIComponent(orderId)}`);
       const detailData = detail?.data || detail;
       const items = normalizeReturnItems(detailData);
-      if (!items.length) throw new Error('El pedido no tiene artículos disponibles para devolución.');
+
+      if (!items.length) {
+        throw new Error('El pedido no tiene artículos disponibles para devolución.');
+      }
 
       setReturnFlow((current) => ({
-        ...current, stage: 'return', password: '', authorizationToken,
+        ...current,
+        stage: 'return',
+        password: '',
+        authorizationToken,
         authorizationId: data.authorizationId || data.id_autorizacion || '',
         authorizer: data.authorizedBy || data.autorizador || null,
-        items, busy: false, error: ''
+        items,
+        busy: false,
+        error: ''
       }));
     } catch (error) {
       setReturnFlow((current) => ({
         ...current,
         busy: false,
+        password: '',
         error: getReturnAuthorizationMessage(error)
       }));
     }
@@ -1169,32 +1353,6 @@ export default function OrdersPage({ mode = 'pos' }) {
     setPayNotes('');
   }
 
-  async function loadPendingOrderToPOS(order) {
-    const state = String(order?.estado_pedido || '').toUpperCase();
-    if (state !== 'PENDIENTE') {
-      setMessage(`El pedido ${order?.id_pedido || ''} está ${state || 'sin estado'} y no puede cargarse para cobro.`);
-      return;
-    }
-    try {
-      const body = await api(`/api/v1/orders/${order.row_id}`);
-      const full = body.data;
-      setLoadedPendingOrder(full);
-      setBenefitPreview(null);setPromoCode('');setPointsToRedeem(0);setManualDiscountValue(0);setManualDiscountReason('');
-      setBranchId(full.id_sucursal || branchId);
-      setCart((full.detalles || []).map((detail, index) => ({
-        key: `ORDER:${detail.row_id || index}`,
-        item_type: String(detail.tipo || '').toUpperCase() === 'TCG' ? 'TCG' : 'PRODUCT',
-        item_id: detail.id_inventario || detail.id_producto || detail.id_detalle,
-        product_id: detail.id_producto || '', inventory_id: detail.id_inventario || '',
-        name: detail.producto || 'Artículo', sku: detail.sku || '',
-        price: Number(detail.precio_unitario ?? detail.precio ?? 0),
-        quantity: Number(detail.cantidad || 0), stock: Number(detail.cantidad || 0),
-        lockedOrderLine: true
-      })));
-      setProductSearch('');setOrderLookupOpen(false);setMessage('');
-    } catch (error) {setMessage(error.message);}
-  }
-
   async function confirmPendingOrderPayment() {
     if (!payOrder) return;
     setPayBusy(true);
@@ -1211,8 +1369,6 @@ export default function OrdersPage({ mode = 'pos' }) {
       setMessage(`Pedido ${body.data.id_pedido} pagado correctamente.`);
       setCompletedOrder(body.data);
       setPayOrder(null);
-      setLoadedPendingOrder(null);
-      setCart([]);
       setPayReference('');
       setPayNotes('');
 
@@ -1238,11 +1394,11 @@ export default function OrdersPage({ mode = 'pos' }) {
     const paymentRows = Array.isArray(order?.pagos) ? order.pagos : [];
     const discounts = Number(order?.descuento_promocion || 0) + Number(order?.descuento_puntos || 0);
     const rows = details.map((x) => `<tr><td><b>${esc(x.producto || 'Artículo')}</b>${x.sku ? `<small>${esc(x.sku)}</small>` : ''}${String(x.tipo || '').toUpperCase() === 'TCG' && x.detalle ? `<small>${esc(x.detalle)}</small>` : ''}</td><td class="center">${Number(x.cantidad || 0)}</td><td class="right">${moneyLocal(x.precio_unitario || x.precio)}</td><td class="right"><b>${moneyLocal(x.subtotal)}</b></td></tr>`).join('');
-    return brandText(`<!doctype html><html><head><meta charset="utf-8"><title>GMX · ${esc(order?.id_pedido || 'Comprobante')}</title><style>
+    return brandText(`<!doctype html><html><head><meta charset="utf-8"><title>TCG_STORE_TEMPLATE · ${esc(order?.id_pedido || 'Comprobante')}</title><style>
       *{box-sizing:border-box}body{font-family:Arial,sans-serif;color:#111;margin:0;padding:18px}.ticket{max-width:760px;margin:auto}.brand{text-align:center}.brand h1{margin:0;font-size:24px}.muted{color:#666;font-size:12px}
       .meta{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin:16px 0;padding:10px;border:1px solid #ddd;border-radius:8px}table{width:100%;border-collapse:collapse}th,td{padding:8px 5px;border-bottom:1px solid #ddd;font-size:12px;text-align:left}th{font-size:10px;text-transform:uppercase}.center{text-align:center}.right{text-align:right}small{display:block;color:#666;margin-top:2px}
       .totals{margin:16px 0 0 auto;max-width:300px}.totals div{display:flex;justify-content:space-between;padding:4px 0}.total{font-size:20px;border-top:2px solid #111;margin-top:4px;padding-top:9px!important}.pay{margin-top:16px;padding:10px;border:1px solid #ddd;border-radius:8px}.thanks{text-align:center;margin-top:20px;font-size:11px;color:#666}@media print{body{padding:0}.ticket{max-width:none}}@page{margin:10mm}
-      </style></head><body><div class="ticket"><div class="brand"><h1>GMX</h1><div>Ticket / comprobante de venta</div><div class="muted">${esc(order?.id_pedido || '')}</div></div>
+      </style></head><body><div class="ticket"><div class="brand"><h1>TCG_STORE_TEMPLATE</h1><div>Ticket / comprobante de venta</div><div class="muted">${esc(order?.id_pedido || '')}</div></div>
       <div class="meta"><div><b>Fecha</b><br>${order?.fecha ? new Date(order.fecha).toLocaleString('es-MX') : '—'}</div><div><b>Sucursal</b><br>${esc(order?.sucursal || '—')}</div><div><b>Cliente</b><br>${esc(order?.nombre_cliente || 'Público general')}</div><div><b>Estado</b><br>${esc(order?.estado_pedido || '')}</div></div>
       <table><thead><tr><th>Artículo</th><th class="center">Cant.</th><th class="right">Precio</th><th class="right">Importe</th></tr></thead><tbody>${rows}</tbody></table>
       <div class="totals"><div><span>Subtotal</span><b>${moneyLocal(order?.subtotal)}</b></div>${discounts > 0 ? `<div><span>Descuentos</span><b>-${moneyLocal(discounts)}</b></div>` : ''}<div class="total"><b>Total</b><b>${moneyLocal(order?.total)}</b></div></div>
@@ -1251,7 +1407,7 @@ export default function OrdersPage({ mode = 'pos' }) {
 
   function printReceipt(order, { pdf = false } = {}) {
     const win = window.open('', '_blank', 'width=900,height=760');
-    if (!win) {setMessage(brandText("El navegador bloqueó la ventana del comprobante. Permite ventanas emergentes para GMX."));return;}
+    if (!win) {setMessage(brandText("El navegador bloqueó la ventana del comprobante. Permite ventanas emergentes para TCG_STORE_TEMPLATE."));return;}
     win.document.open();win.document.write(receiptHtml(order));win.document.close();win.focus();
     setTimeout(() => {if (pdf) setMessage('En el diálogo de impresión selecciona “Guardar como PDF”.');win.print();}, 250);
   }
@@ -1265,54 +1421,14 @@ export default function OrdersPage({ mode = 'pos' }) {
     try {printReceipt(await getFullOrder(rowId), options);} catch (error) {setMessage(error.message);}
   }
 
-  function closePaperlessReceipt() {
-    setCompletedOrder(null);
-    setReceiptDeliveryStatus(null);
-    setReceiptChannel('');
-    setGuestWhatsAppConsent(false);
-    setTimeout(() => scanInputRef.current?.focus(), 0);
-  }
-
-  async function emailReceipt(order, { automatic = false, recipient = '' } = {}) {
-    const target = String(recipient || order?.email || '').trim();
-    if (!target) {if (!automatic) setMessage('Captura el correo destinatario.');return;}
+  async function emailReceipt(order) {
+    if (!order?.email) {setMessage('El cliente no tiene un correo registrado.');return;}
     setReceiptBusy(true);
     try {
-      const body = await api(`/api/v1/orders/${order.row_id}/receipt/email`, { method: 'POST', body: JSON.stringify({ email: target }) });
-      setReceiptDeliveryStatus({ type: 'sent', text: `Comprobante enviado a ${body.data.to}.` });
-      const isPosReceipt = completedOrder?.row_id === order.row_id;
-      if (!automatic && !isPosReceipt) setMessage(`Comprobante enviado correctamente a ${body.data.to}.`);
-      if (isPosReceipt) setTimeout(closePaperlessReceipt, 650);
-    } catch (error) {
-      setReceiptDeliveryStatus({ type: 'error', text: `No se pudo enviar el correo: ${error.message}` });
-      if (!automatic) setMessage(error.message);
-    } finally
+      const body = await api(`/api/v1/orders/${order.row_id}/receipt/email`, { method: 'POST', body: '{}' });
+      setMessage(`Comprobante enviado correctamente a ${body.data.to}.`);
+    } catch (error) {setMessage(error.message);} finally
     {setReceiptBusy(false);}
-  }
-
-  async function shareGuestReceiptWhatsApp(order) {
-    if (!guestWhatsAppConsent) {setMessage('Solicita autorización del comprador para enviar el comprobante por WhatsApp.');return;}
-    const popup = window.open('', 'gmx-whatsapp-receipt');
-    try {if (popup) popup.opener = null;} catch {}
-    setWhatsAppBusy(true);
-    try {
-      const body = await api(`/api/v1/orders/${order.row_id}/receipt/whatsapp`, {
-        method: 'POST',
-        body: JSON.stringify({ phone: guestPhone })
-      });
-      const updatedOrder = body.data.order;
-      setCompletedOrder(updatedOrder);
-      const text = brandText(`GMX · Comprobante de compra\nVenta: ${updatedOrder.id_pedido}\nTotal: ${money(updatedOrder.total)}\nGracias por tu compra.`);
-      const url = `https://wa.me/${body.data.whatsappNumber}?text=${encodeURIComponent(text)}`;
-      if (popup) popup.location.href = url;else window.location.href = url;
-      setReceiptDeliveryStatus({ type: 'sent', text: `WhatsApp preparado para el teléfono terminado en ${body.data.whatsappNumber.slice(-4)}.` });
-      setTimeout(closePaperlessReceipt, 650);
-    } catch (error) {
-      try {popup?.close();} catch {}
-      setMessage(error.message);
-    } finally {
-      setWhatsAppBusy(false);
-    }
   }
 
   async function openOrder(rowId) {
@@ -1345,154 +1461,191 @@ export default function OrdersPage({ mode = 'pos' }) {
     }
   }
 
-  const posPromoSlide = posPromoSlides[posPromoIndex] || null;
-  const posPromoExternal = String(posPromoSlide?.media_source || 'LIBRARY').toUpperCase() === 'URL';
-  const posPromoImage = posPromoExternal ? posPromoSlide?.url_desktop :
-    posPromoSlide?.id_media_desktop ? `/api/public/media/${encodeURIComponent(posPromoSlide.id_media_desktop)}` : '';
+  const orderMetrics = orders.reduce((result, order) => {
+    const state = String(order.estado_pedido || order.estado || '').toUpperCase();
+    if (state === 'PAGADO') result.paid += 1;
+    else if (state === 'PENDIENTE') result.pending += 1;
+    else if (state.includes('CANCEL') || state.includes('REEMB')) result.cancelled += 1;
+    result.total += Number(order.total || 0);
+    const branch = order.sucursal || order.id_sucursal || 'Sin sucursal';
+    result.branches[branch] = (result.branches[branch] || 0) + Number(order.total || 0);
+    return result;
+  }, { paid: 0, pending: 0, cancelled: 0, total: 0, branches: {} });
+  const orderUi = useMemo(() => {
+    const normalize = (order) => String(order.estado_devolucion || order.estado_pedido || order.estado || '').toUpperCase();
+    const pending = (s) => s.includes('PENDIENTE');
+    const cancelled = (s) => s.includes('CANCEL') || s.includes('REEMB') || s.includes('DEVUELTO');
+    const completed = (s) => s === 'PAGADO' || s.includes('COMPLET');
+    const process = (s) => !pending(s) && !cancelled(s) && !completed(s);
+
+    const filtered = orders.filter((order) => {
+      const state = normalize(order);
+      if (orderStatusFilter === 'PENDING') return pending(state);
+      if (orderStatusFilter === 'PROCESS') return process(state);
+      if (orderStatusFilter === 'COMPLETED') return completed(state);
+      if (orderStatusFilter === 'CANCELLED') return cancelled(state);
+      return true;
+    });
+
+    const todayKey = new Date().toLocaleDateString('en-CA');
+    const today = orders.filter((order) => order.fecha && new Date(order.fecha).toLocaleDateString('en-CA') === todayKey);
+    const todaySales = today.reduce((sum, order) => sum + Number(order.total || 0), 0);
+
+    const counts = {
+      all: orders.length,
+      pending: orders.filter(o => pending(normalize(o))).length,
+      process: orders.filter(o => process(normalize(o))).length,
+      completed: orders.filter(o => completed(normalize(o))).length,
+      cancelled: orders.filter(o => cancelled(normalize(o))).length
+    };
+
+    const pageCount = Math.max(1, Math.ceil(filtered.length / orderPageSize));
+    const safePage = Math.min(orderPage, pageCount);
+    const start = (safePage - 1) * orderPageSize;
+
+    return {
+      filtered,
+      paged: filtered.slice(start, start + orderPageSize),
+      pageCount,
+      safePage,
+      start,
+      counts,
+      todayCount: today.length,
+      todaySales,
+      todayAverage: today.length ? todaySales / today.length : 0,
+      recent: [...orders].sort((a,b) => new Date(b.fecha || 0) - new Date(a.fecha || 0)).slice(0,5)
+    };
+  }, [orders, orderStatusFilter, orderPage, orderPageSize]);
+
+  useEffect(() => { setOrderPage(1); }, [orderStatusFilter, orderPageSize]);
+
+  function orderUiStatus(order) {
+    const state = String(order.estado_devolucion || order.estado_pedido || order.estado || '').toUpperCase();
+    if (state.includes('CANCEL') || state.includes('REEMB') || state.includes('DEVUELTO')) return ['cancelled','Cancelado'];
+    if (state === 'PAGADO' || state.includes('COMPLET')) return ['completed','Completado'];
+    if (state.includes('PENDIENTE')) return ['pending','Pendiente'];
+    return ['process','En proceso'];
+  }
 
   return (
-    <div className={`pos-stack ${isOperator ? 'operator-pos-page' : ''}`}>
-      {isOperator && !posStandalone && !posKioskMode && !posFullscreen && !posSessionStarted && fullscreenCapable ? <div className="gmx-pos-fullscreen-gate" role="dialog" aria-modal="true" aria-label="Iniciar punto de venta">
-        <div className="gmx-pos-fullscreen-card">
-          <div className="gmx-pos-fullscreen-logo">{brandText("GMX POS")}</div>
+    <div className={`pos-stack r23-view r23-orders ${isOperator ? 'operator-pos-page' : ''}`}>
+      {forcedMode === 'pos' && isOperator && !posStandalone && !posKioskMode && !posFullscreen && !posSessionStarted && fullscreenCapable ? <div className="tcg_store_template-pos-fullscreen-gate" role="dialog" aria-modal="true" aria-label="Iniciar punto de venta">
+        <div className="tcg_store_template-pos-fullscreen-card">
+          <div className="tcg_store_template-pos-fullscreen-logo">{`${posBrandName} POS`}</div>
           <h2>Iniciar Punto de Venta</h2>
-          <p>{brandText("GMX necesita una confirmación del operador para activar la pantalla completa del navegador.")}</p>
+          <p>{brandText("TCG_STORE_TEMPLATE necesita una confirmación del operador para activar la pantalla completa del navegador.")}</p>
           <button type="button" onClick={enterPosFullscreen}>⛶ Iniciar POS</button>
-          <small>{brandText("Desktop: Ctrl + Alt + X abre la salida protegida sin abandonar pantalla completa. Tablet/móvil: mantén presionado GMX POS durante 5 segundos. La salida requiere contraseña.")}</small>
+          <small>{brandText("Desktop: Ctrl + Alt + X abre la salida protegida sin abandonar pantalla completa. Tablet/móvil: mantén presionado TCG_STORE_TEMPLATE POS durante 5 segundos. La salida requiere contraseña.")}</small>
         </div>
       </div> : null}
-      {isOperator && posExitOpen ? <div className="gmx-pos-exit-lock" role="dialog" aria-modal="true" aria-label="Salida protegida del punto de venta">
-        <form className="gmx-pos-exit-card" onSubmit={authorizeProtectedPosExit}>
-          <div className="gmx-pos-exit-shield">{brandText("GMX POS")}</div>
+      {forcedMode === 'pos' && isOperator && posExitOpen ? <div className="tcg_store_template-pos-exit-lock" role="dialog" aria-modal="true" aria-label="Salida protegida del punto de venta">
+        <form className="tcg_store_template-pos-exit-card" onSubmit={authorizeProtectedPosExit}>
+          <div className="tcg_store_template-pos-exit-shield">{`${posBrandName} POS`}</div>
           <h2>Salida protegida</h2>
           <p>El punto de venta está bloqueado. Usa Volver a pantalla completa para continuar, o autoriza la salida con la contraseña del operador.</p>
-          <div className="gmx-pos-exit-context">
+          <div className="tcg_store_template-pos-exit-context">
             <span><small>Operador</small><strong>{currentUser?.nombre || currentUser?.email || 'Usuario'}</strong></span>
             <span><small>Sucursal</small><strong>{branches.find((b) => String(b.id_sucursal) === String(operatorBranchId))?.nombre_sucursal || 'Sin sucursal'}</strong></span>
           </div>
           <label>Contraseña
             <input type="password" autoFocus autoComplete="current-password" value={posExitPassword} onChange={(e) => setPosExitPassword(e.target.value)} disabled={posExitBusy} />
           </label>
-          {posExitError ? <div className="gmx-pos-exit-error">{posExitError}</div> : null}
-          <div className="gmx-pos-exit-actions">
+          {posExitError ? <div className="tcg_store_template-pos-exit-error">{posExitError}</div> : null}
+          <div className="tcg_store_template-pos-exit-actions">
             <button type="button" className="secondary" onClick={cancelProtectedPosExit} disabled={posExitBusy}>Volver a pantalla completa</button>
             <button type="submit" className="danger" disabled={posExitBusy || !posExitPassword}>{posExitBusy ? 'Validando…' : 'Autorizar salida'}</button>
           </div>
-          <small className="gmx-pos-exit-help">La salida autorizada cerrará esta sesión del operador.</small>
+          <small className="tcg_store_template-pos-exit-help">La salida autorizada cerrará esta sesión del operador.</small>
         </form>
       </div> : null}
-      <section className={`content-card ${tab === 'pos' ? 'gmx-pos-host' : ''}`}>
-        <div className="section-head">
+      <section className={`content-card ${forcedMode === 'pos' ? 'tcg_store_template-pos-host' : ''}`}>
+        {forcedMode === 'pos' ? <div className="section-head">
           <div>
             <div className="eyebrow">VENTAS · POS LOCAL</div>
-            <h2>Pedidos y punto de venta</h2>
-          </div>
-        </div>
-
-        {message && tab !== 'pos' ? <div className="message">{message}</div> : null}
-        {message && tab === 'pos' && !isPosAttentionMessage(message) ? <div className="gmx-pos-status-strip">{message}</div> : null}
-        {message && tab === 'pos' && isPosAttentionMessage(message) ? <div className="gmx-pos-attention-layer" role="alertdialog" aria-modal="false" aria-label="Aviso del punto de venta">
-          <div className="gmx-pos-attention-card">
-            <button type="button" className="gmx-pos-attention-close" aria-label="Cerrar aviso" onClick={() => {setMessage('');setTimeout(() => scanInputRef.current?.focus(), 0);}}>×</button>
-            <div className="gmx-pos-attention-icon">!</div>
-            <strong>Revisa la operación</strong>
-            <span>{message}</span>
-            <button type="button" className="gmx-pos-attention-ok" onClick={() => {setMessage('');setTimeout(() => scanInputRef.current?.focus(), 0);}}>Continuar</button>
+            <h2>Punto de venta</h2>
           </div>
         </div> : null}
-        {completedOrder ? <div className="pos-sale-delivery-layer" role="dialog" aria-modal="true" aria-labelledby="pos-sale-delivery-title">
-        <div className="pos-sale-completed pos-sale-delivery">
-          <div className="pos-sale-delivery-head"><div><span className="eyebrow">VENTA COMPLETADA</span><strong>{completedOrder.id_pedido}</strong><small>{completedOrder.id_cliente ? completedOrder.nombre_cliente || 'Cliente registrado' : 'Público general'} · {money(completedOrder.total)}</small></div>
-            <button type="button" className="pos-sale-delivery-close" aria-label="Cerrar comprobante" onClick={closePaperlessReceipt}>×</button>
-          </div>
-          <h3 id="pos-sale-delivery-title">Comprobante de venta</h3>
-          <div className="pos-guest-delivery">
-            <div><b>¿Cómo desea recibir su comprobante?</b><span>Selecciona un canal. Si es público general, el contacto se conservará solamente en esta venta.</span></div>
-            <div className="pos-delivery-channel" role="group" aria-label="Canal de envío">
-              <button type="button" className={receiptChannel === 'WHATSAPP' ? 'active' : ''} onClick={() => {setReceiptChannel('WHATSAPP');setReceiptDeliveryStatus(null);setGuestWhatsAppConsent(false);}}>WhatsApp</button>
-              <button type="button" className={receiptChannel === 'EMAIL' ? 'active' : ''} onClick={() => {setReceiptChannel('EMAIL');setReceiptDeliveryStatus(null);setGuestWhatsAppConsent(false);}}>Correo</button>
-            </div>
-            {receiptChannel === 'WHATSAPP' ? <label className="pos-guest-phone">Número destinatario de WhatsApp<input inputMode="tel" autoComplete="tel" autoFocus value={guestPhone} onChange={(event) => setGuestPhone(event.target.value.replace(/[^0-9+ ()-]/g, '').slice(0, 20))} placeholder="664 123 4567" /></label> : null}
-            {receiptChannel === 'EMAIL' ? <label className="pos-guest-phone">Correo destinatario<input type="email" autoComplete="email" autoFocus value={receiptEmail} onChange={(event) => setReceiptEmail(event.target.value.slice(0, 160))} placeholder="cliente@correo.com" /></label> : null}
-            {receiptChannel ? <label className="pos-whatsapp-consent"><input type="checkbox" checked={guestWhatsAppConsent} onChange={(event) => setGuestWhatsAppConsent(event.target.checked)} /><span>El comprador autoriza recibir este comprobante por {receiptChannel === 'EMAIL' ? 'correo' : 'WhatsApp'}.</span></label> : null}
-            {receiptDeliveryStatus ? <div className={`pos-delivery-status ${receiptDeliveryStatus.type}`}>{receiptDeliveryStatus.text}</div> : null}
-            <div className="pos-receipt-actions">
-              {receiptChannel === 'WHATSAPP' ? <button type="button" disabled={whatsAppBusy || !guestPhone.trim() || !guestWhatsAppConsent} onClick={() => shareGuestReceiptWhatsApp(completedOrder)}>{whatsAppBusy ? 'Preparando…' : 'Continuar en WhatsApp'}</button> : null}
-              {receiptChannel === 'EMAIL' ? <button type="button" disabled={receiptBusy || !receiptEmail.trim() || !guestWhatsAppConsent} onClick={() => emailReceipt(completedOrder, { recipient: receiptEmail })}>{receiptBusy ? 'Enviando…' : 'Enviar por correo'}</button> : null}
-              <button type="button" className="ghost" onClick={closePaperlessReceipt}>Sin comprobante</button>
-            </div>
-          </div>
-        </div></div> : null}
 
-        <div className="tabs" />
+        {message ? <div className="message">{message}</div> : null}
+        {completedOrder ? <div className="pos-sale-completed">
+          <div><span className="eyebrow">VENTA COMPLETADA</span><strong>{completedOrder.id_pedido}</strong><small>{completedOrder.nombre_cliente || 'Público general'} · {money(completedOrder.total)}</small></div>
+          <div className="pos-receipt-actions">
+            <button type="button" className="secondary" onClick={() => printReceipt(completedOrder)}>Imprimir ticket</button>
+            <button type="button" className="secondary" onClick={() => printReceipt(completedOrder, { pdf: true })}>Guardar PDF</button>
+            <button type="button" disabled={receiptBusy || !completedOrder.email} title={!completedOrder.email ? 'Cliente sin correo registrado' : 'Enviar comprobante'} onClick={() => emailReceipt(completedOrder)}>{receiptBusy ? 'Enviando...' : 'Enviar comprobante por correo'}</button>
+            <button type="button" className="ghost" onClick={() => setCompletedOrder(null)}>Cerrar</button>
+          </div>
+        </div> : null}
+
+
 
         {tab === 'pos' ?
-        <div className="gmx-pos-terminal">
-            <div className="gmx-pos-topline">
-              <div className="gmx-pos-brand gmx-pos-brand-protected" title={isOperator ? 'Mantén presionado 5 segundos para solicitar salida' : undefined} onPointerDown={isOperator ? startPosLongPress : undefined} onPointerUp={isOperator ? clearPosLongPress : undefined} onPointerCancel={isOperator ? clearPosLongPress : undefined} onPointerLeave={isOperator ? clearPosLongPress : undefined}>{brandText("GMX POS")}</div>
-              <div className="gmx-pos-topmeta">
+        <div className="tcg_store_template-pos-terminal">
+            {posSource ? <div className={`gmx-r75-pos-source ${posSource.type === 'RETURN' ? 'return' : 'order'}`}>
+              <div className="gmx-r75-pos-source-icon">{posSource.type === 'RETURN' ? '↩' : '▤'}</div>
+              <div><span>{posSource.type === 'RETURN' ? 'DEVOLUCIÓN CARGADA' : 'PEDIDO CARGADO'}</span><strong>{posSource.id}</strong><small>{posSource.order?.nombre_cliente || 'Público general'} · {(posSource.order?.detalles || []).length} partida(s) · {money(posSource.order?.total)}</small></div>
+              <button type="button" onClick={()=>{setPosSource(null);setCart([]);window.history.replaceState({},'', '/admin/pos');}}>×</button>
+            </div> : null}
+            <div className="tcg_store_template-pos-topline">
+              <div className="tcg_store_template-pos-brand tcg_store_template-pos-brand-protected" title={isOperator ? 'Mantén presionado 5 segundos para solicitar salida' : undefined} onPointerDown={isOperator ? startPosLongPress : undefined} onPointerUp={isOperator ? clearPosLongPress : undefined} onPointerCancel={isOperator ? clearPosLongPress : undefined} onPointerLeave={isOperator ? clearPosLongPress : undefined}>{posBrandName}</div>
+              <div className="tcg_store_template-pos-topmeta">
                 <span>Caja local</span>
                 {isOperator ?
-              <div className="gmx-pos-session-meta"><span>Sucursal</span><strong>{branches.find((b) => b.id_sucursal === branchId)?.nombre_sucursal || 'Sin sucursal asignada'}</strong></div> :
-              <label className="gmx-pos-branch-inline">
+              <div className="tcg_store_template-pos-session-meta"><span>Sucursal</span><strong>{branches.find((b) => b.id_sucursal === branchId)?.nombre_sucursal || 'Sin sucursal asignada'}</strong></div> :
+              <label className="tcg_store_template-pos-branch-inline">
                     <span>Sucursal</span>
                     <select value={branchId} onChange={(e) => setBranchId(e.target.value)}>
                       <option value="">Selecciona</option>
                       {branches.map((branch) => <option key={branch.row_id} value={branch.id_sucursal}>{branch.nombre_sucursal}</option>)}
                     </select>
                   </label>}
-                <div className="gmx-pos-session-meta"><span>Operador</span><strong>{currentUser?.nombre || currentUser?.email || 'Usuario'}</strong></div>
+                <div className="tcg_store_template-pos-session-meta"><span>Operador</span><strong>{currentUser?.nombre || currentUser?.email || 'Usuario'}</strong></div>
               </div>
             </div>
 
-            <div className="gmx-pos-workspace">
-              <main className="gmx-pos-left">
-                <div className="gmx-pos-searchbar gmx-pos-searchbar-unified">
-                  <div className="gmx-pos-search-input-wrap">
-                    <span className="gmx-pos-search-icon">⌕</span>
+            <div className="tcg_store_template-pos-workspace">
+              <main className="tcg_store_template-pos-left">
+                <div className="tcg_store_template-pos-searchbar gmx-r78-universal-searchbar">
+                  <div className={`tcg_store_template-pos-search-input-wrap gmx-r78-universal-search ${scanMode ? 'scan-active' : ''}`}>
+                    <span className="tcg_store_template-pos-search-icon">⌕</span>
                     <input
-                    ref={scanInputRef}
-                    value={productSearch}
-                    onChange={(e) => setProductSearch(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key !== 'Enter') return;
-                      e.preventDefault();
-                      if (String(productSearch || '').trim()) resolveScannedCode(productSearch, { source: 'BUSCADOR' });
-                    }}
-                    placeholder="Buscar artículo, SKU, carta o escanear código…"
-                    autoComplete="off"
-                    autoFocus />
-                    {pendingScanQuantity > 1 ? <button type="button" className="gmx-pos-quantity-chip" onClick={() => {setPendingScanQuantity(1);setMessage('Cantidad rápida cancelada.');scanInputRef.current?.focus();}} title="Cancelar cantidad rápida">{pendingScanQuantity}×</button> : null}
-                    <button type="button" className="gmx-pos-camera-inline" onClick={openCameraScanner} aria-label="Escanear con cámara" title="Cámara / QR">▣</button>
-                  </div>
+                      ref={scanInputRef}
+                      value={productSearch}
+                      onChange={(e) => setProductSearch(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key !== 'Enter') return;
+                        e.preventDefault();
+                        resolveUniversalPosSearch(productSearch);
+                      }}
+                      placeholder="Buscar por SKU, nombre, carta, código, pedido, DEV, pedimento, folio o referencia…"
+                      autoComplete="off" />
+                    <button type="button" className="gmx-r78-search-camera" title="Cámara / QR" aria-label="Abrir cámara o QR" onClick={openCameraScanner}>⌗</button>
                     <VisionScannerModal
-                    open={visionOpen}
-                    title="Reconocer producto o carta"
-                    onClose={() => setVisionOpen(false)}
-                    onResult={handleVisionPosResult} />
-                  
+                      open={visionOpen}
+                      title="Reconocer producto o carta"
+                      onClose={() => setVisionOpen(false)}
+                      onResult={handleVisionPosResult} />
                     <VisionInternetResultsModal
-                    open={visionInternetOpen}
-                    loading={visionInternetBusy}
-                    items={visionInternetCandidates}
-                    queryText={visionInternetQuery}
-                    error={visionInternetError}
-                    onClose={() => setVisionInternetOpen(false)}
-                    onPick={(item) => {
-                      setVisionInternetOpen(false);
-                      setMessage(
-                        `Carta externa seleccionada: ${item.name}${item.setCode ? ` - ${item.setCode}` : ''}. Aun no se ha agregado al inventario.`
-                      );
-                    }} />
+                      open={visionInternetOpen}
+                      loading={visionInternetBusy}
+                      items={visionInternetCandidates}
+                      queryText={visionInternetQuery}
+                      error={visionInternetError}
+                      onClose={() => setVisionInternetOpen(false)}
+                      onPick={(item) => {
+                        setVisionInternetOpen(false);
+                        setMessage(`Carta externa seleccionada: ${item.name}${item.setCode ? ` - ${item.setCode}` : ''}. Aun no se ha agregado al inventario.`);
+                      }} />
+                  </div>
                 </div>
 
-                <section className="gmx-pos-items-panel">
-                  <div className="gmx-pos-panel-title">
-                    <strong>ARTÍCULOS ({cart.length})</strong>
+                <section className="tcg_store_template-pos-items-panel">
+                  <div className="tcg_store_template-pos-panel-title">
+                    <strong>ARTÍCULOS <span className="gmx-r78-count-badge">{cart.length}</span></strong>
                   </div>
 
-                  <div className="gmx-pos-cart-table-wrap">
-                    <table className="gmx-pos-cart-table">
+                  <div className="tcg_store_template-pos-cart-table-wrap">
+                    <table className="tcg_store_template-pos-cart-table">
                       <thead>
                         <tr><th>#</th><th>Artículo</th><th>Precio</th><th>Cant.</th><th>Subtotal</th><th></th></tr>
                       </thead>
@@ -1500,145 +1653,163 @@ export default function OrdersPage({ mode = 'pos' }) {
                         {cart.map((item, index) => <tr key={item.key}>
                           <td>{index + 1}</td>
                           <td>
-                            <div className="gmx-pos-cart-product">
-                              <div className="gmx-pos-cart-thumb">{item.image_url ? <img src={item.image_url} alt="" /> : <span>{item.item_type === 'TCG' ? 'TCG' : brandText("GMX")}</span>}</div>
+                            <div className="tcg_store_template-pos-cart-product">
+                              <div className="tcg_store_template-pos-cart-thumb">{item.image_url ? <img src={item.image_url} alt="" /> : <span>{item.item_type === 'TCG' ? 'TCG' : brandText("TCG_STORE_TEMPLATE")}</span>}</div>
                               <div><strong>{item.name}</strong><small>{item.sku || item.item_id || ''}</small></div>
                             </div>
                           </td>
                           <td>{money(item.price)}</td>
                           <td>
-                            {item.lockedOrderLine ? <strong className="gmx-pos-order-locked-qty">{item.quantity}</strong> : <div className="gmx-pos-qty">
+                            <div className="tcg_store_template-pos-qty">
                               <button type="button" onClick={() => changeQuantity(item.key, Math.max(1, Number(item.quantity || 1) - 1))}>−</button>
                               <input type="number" min="1" max={item.stock} value={item.quantity} onChange={(e) => changeQuantity(item.key, e.target.value)} />
                               <button type="button" onClick={() => changeQuantity(item.key, Math.min(Number(item.stock || 9999), Number(item.quantity || 1) + 1))}>+</button>
-                            </div>}
+                            </div>
                           </td>
                           <td><strong>{money(Number(item.price || 0) * Number(item.quantity || 0))}</strong></td>
-                          <td>{item.lockedOrderLine ? <span title="Pedido existente">🔒</span> : <button type="button" className="gmx-pos-trash" onClick={() => removeFromCart(item.key)}>×</button>}</td>
+                          <td><button type="button" className="tcg_store_template-pos-trash" onClick={() => removeFromCart(item.key)}>×</button></td>
                         </tr>)}
-                        {Number(benefitPreview?.discountPromo || 0) > 0 ? <tr className="gmx-pos-adjustment-row promo"><td>🏷</td><td><strong>Promoción {promoCode || ''}</strong><small>Beneficio aplicado</small></td><td></td><td></td><td><strong>-{money(benefitPreview.discountPromo)}</strong></td><td><button type="button" className="gmx-pos-trash" onClick={() => {setPromoCode('');setBenefitPreview(null);}}>×</button></td></tr> : null}
-                        {manualDiscountAmount > 0 ? <tr className="gmx-pos-adjustment-row manual"><td>🔒</td><td><strong>Descuento manual · {manualDiscountType === 'PORCENTAJE' ? `${manualDiscountValue}%` : money(manualDiscountValue)}</strong><small>{manualDiscountReason || 'Autorizado'}</small></td><td></td><td></td><td><strong>-{money(manualDiscountAmount)}</strong></td><td><button type="button" className="gmx-pos-trash" onClick={() => {setManualDiscountValue(0);setManualDiscountReason('');}}>×</button></td></tr> : null}
+                        {Number(benefitPreview?.discountPromo || 0) > 0 ? <tr className="tcg_store_template-pos-adjustment-row promo"><td>🏷</td><td><strong>Promoción {promoCode || ''}</strong><small>Beneficio aplicado</small></td><td></td><td></td><td><strong>-{money(benefitPreview.discountPromo)}</strong></td><td><button type="button" className="tcg_store_template-pos-trash" onClick={() => {setPromoCode('');setBenefitPreview(null);}}>×</button></td></tr> : null}
+                        {manualDiscountAmount > 0 ? <tr className="tcg_store_template-pos-adjustment-row manual"><td>🔒</td><td><strong>Descuento manual · {manualDiscountType === 'PORCENTAJE' ? `${manualDiscountValue}%` : money(manualDiscountValue)}</strong><small>{manualDiscountReason || 'Autorizado'}</small></td><td></td><td></td><td><strong>-{money(manualDiscountAmount)}</strong></td><td><button type="button" className="tcg_store_template-pos-trash" onClick={() => {setManualDiscountValue(0);setManualDiscountReason('');}}>×</button></td></tr> : null}
                       </tbody>
                     </table>
-                    {!cart.length ? <div className="gmx-pos-empty">
-                      <strong>Venta nueva</strong>
-                      <span>Escanea un código, escribe en la barra o toca Catálogo / Existencias.</span>
+                    {!cart.length ? <div className="tcg_store_template-pos-empty gmx-r78-cart-empty">
+                      <span className="gmx-r78-empty-cart-icon">⌑</span>
+                      <strong>Carrito vacío</strong>
+                      <span>Busca y agrega artículos para comenzar.</span>
                     </div> : null}
                   </div>
 
-                  <div className="gmx-pos-items-footer">
+                  <div className="tcg_store_template-pos-items-footer">
                     <span>{cart.reduce((n, x) => n + Number(x.quantity || 0), 0)} artículo(s)</span>
                     <strong>{money(total)}</strong>
                   </div>
-                  <div className="gmx-pos-duebar">
-                    <strong>{loadedPendingOrder ? `Pedido ${loadedPendingOrder.id_pedido} · ` : 'Por pagar: '}{money(saleTotal)}</strong>
-                    <button type="button" className="secondary" disabled={!cart.length} onClick={() => {setCart([]);setBenefitPreview(null);setLoadedPendingOrder(null);}}>Vaciar</button>
+                  <div className="tcg_store_template-pos-duebar">
+                    <strong>Por pagar: {money(saleTotal)}</strong>
+                    <button type="button" className="secondary" disabled={!cart.length} onClick={() => {setCart([]);setBenefitPreview(null);}}>Vaciar</button>
                   </div>
                 </section>
               </main>
 
-              <aside className="gmx-pos-right">
-                <section className="gmx-pos-side-card gmx-pos-summary-card gmx-pos-summary-v2">
-                  <div className="gmx-pos-summary-head"><div className="gmx-pos-side-title">RESUMEN DE VENTA</div><span>{cart.reduce((n, x) => n + Number(x.quantity || 0), 0)} artículo(s)</span></div>
-                  <div className="gmx-pos-summary-row"><span>Subtotal</span><strong>{money(total)}</strong></div>
-                  {Number(benefitPreview?.discountPromo || 0) > 0 ? <div className="gmx-pos-summary-row discount"><span>Promociones</span><strong>-{money(Number(benefitPreview.discountPromo || 0))}</strong></div> : null}
-                  {Number(benefitPreview?.loyaltyDiscount || 0) > 0 ? <div className="gmx-pos-summary-row discount"><span>Puntos</span><strong>-{money(Number(benefitPreview.loyaltyDiscount || 0))}</strong></div> : null}
-                  {manualDiscountAmount > 0 ? <div className="gmx-pos-summary-row discount"><span>Descuento manual</span><strong>-{money(manualDiscountAmount)}</strong></div> : null}
-                  <div className="gmx-pos-summary-total"><span>TOTAL</span><strong>{money(saleTotal)}</strong></div>
-                  {Math.max(0, Number(total || 0) - Number(saleTotal || 0)) > 0 ? <div className="gmx-pos-savings"><span>🏷 Ahorro total</span><strong>-{money(Math.max(0, Number(total || 0) - Number(saleTotal || 0)))}</strong></div> : null}
+              <aside className="tcg_store_template-pos-right">
+                <section className="tcg_store_template-pos-side-card tcg_store_template-pos-summary-card tcg_store_template-pos-summary-v2">
+                  <div className="tcg_store_template-pos-summary-head"><div className="tcg_store_template-pos-side-title">RESUMEN DE VENTA</div><span>{cart.reduce((n, x) => n + Number(x.quantity || 0), 0)} artículo(s)</span></div>
+                  <div className="tcg_store_template-pos-summary-row"><span>Subtotal</span><strong>{money(total)}</strong></div>
+                  {Number(benefitPreview?.discountPromo || 0) > 0 ? <div className="tcg_store_template-pos-summary-row discount"><span>Promociones</span><strong>-{money(Number(benefitPreview.discountPromo || 0))}</strong></div> : null}
+                  {Number(benefitPreview?.loyaltyDiscount || 0) > 0 ? <div className="tcg_store_template-pos-summary-row discount"><span>Puntos</span><strong>-{money(Number(benefitPreview.loyaltyDiscount || 0))}</strong></div> : null}
+                  {manualDiscountAmount > 0 ? <div className="tcg_store_template-pos-summary-row discount"><span>Descuento manual</span><strong>-{money(manualDiscountAmount)}</strong></div> : null}
+                  <div className="tcg_store_template-pos-summary-total"><span>TOTAL</span><strong>{money(saleTotal)}</strong></div>
+                  {Math.max(0, Number(total || 0) - Number(saleTotal || 0)) > 0 ? <div className="tcg_store_template-pos-savings"><span>🏷 Ahorro total</span><strong>-{money(Math.max(0, Number(total || 0) - Number(saleTotal || 0)))}</strong></div> : null}
                 </section>
 
-                <section className={`gmx-pos-promo-banner ${promoCode ? 'active' : ''} ${posPromoImage && !promoCode ? 'has-slide' : ''}`}>
-                  {posPromoImage && !promoCode ? <img className="gmx-pos-promo-image" src={posPromoImage} alt={posPromoSlide?.titulo || 'Promoción'} /> : null}
-                  {posPromoImage && !promoCode ? <div className="gmx-pos-promo-overlay" style={{ opacity: Number(posPromoSlide?.overlay_opacity ?? .32) }} /> : null}
-                  <span className="gmx-pos-banner-kicker">{brandText("GMX · BENEFICIOS")}</span>
-                  <strong>{promoCode ? `Promoción ${promoCode}` : posPromoSlide?.titulo || 'Promociones de temporada'}</strong>
-                  <p>{promoCode ? 'Promoción aplicada a la venta actual.' : posPromoSlide?.subtitulo || 'Consulta las campañas vigentes con el botón Promoción.'}</p>
-                  <div className="gmx-pos-banner-mark">{brandText("GMX")}</div>
-                  {!promoCode && posPromoSlides.length > 1 ? <div className="gmx-pos-promo-dots">{posPromoSlides.map((slide, index) => <button type="button" key={slide.row_id || index} className={index === posPromoIndex ? 'active' : ''} aria-label={`Promoción ${index + 1}`} onClick={() => setPosPromoIndex(index)} />)}</div> : null}
+                <section className="gmx-r78-pos-hero-card">
+                  {(storefrontRuntime?.zones?.HOME_HERO || []).length
+                    ? <StoreSlideshow slides={storefrontRuntime.zones.HOME_HERO || []} settings={storefrontRuntime.settings || {}} variant="hero" />
+                    : <div className="gmx-r78-pos-hero-fallback">
+                        <span>{posBrandName} · BENEFICIOS</span>
+                        <strong>Promociones de temporada</strong>
+                        <p>El slideshow de la tienda aparecerá aquí cuando exista un Hero publicado.</p>
+                      </div>}
                 </section>
               </aside>
             </div>
 
-            <div className="gmx-pos-actions">
-              {draftOrderMode ? <button type="button" className="gmx-pos-action" onClick={() => {setCart([]);setDraftOrderMode(false);setTab('orders');}}><span>×</span>Cancelar pedido</button> : null}
-              <button type="button" className="gmx-pos-action" onClick={() => {setCatalogBranchId(branchId);setProductSearch('');setCatalogOpen(true);}}><span>▦</span>Catálogo / Existencias</button>
-              <button type="button" className="gmx-pos-action" onClick={() => {setOrderLookupSearch('');setOrderLookupResults([]);setOrderLookupOpen(true);searchOrdersForPOS('');}}><span>⌕</span>Buscar pedido</button>
-              <button type="button" className="gmx-pos-action accent" onClick={() => {setClientSearch('');setClientSearchOpen(false);setClientModalOpen(true);}}><span>●</span>{clientId ? 'Cliente seleccionado' : 'Cliente'}</button>
-              <button type="button" className="gmx-pos-action accent" disabled={!canUseManualDiscount} onClick={() => setDiscountModalOpen(true)}><span>%</span>Descuento</button>
-              <button type="button" className="gmx-pos-action accent" onClick={() => setPromoModalOpen(true)}><span>★</span>Promoción</button>
-              <button type="button" className="gmx-pos-action" onClick={() => setNotesModalOpen(true)}><span>✎</span>Observaciones</button>
-              <button className="gmx-pos-charge" type="button" onClick={checkout} disabled={!cart.length || Boolean(manualDiscountError)}>
-                <span>{draftOrderMode ? 'GUARDAR PEDIDO' : loadedPendingOrder ? 'COBRAR PEDIDO' : 'COBRAR'}</span><strong>{money(saleTotal)}</strong>
+            <div className="tcg_store_template-pos-actions gmx-r78-pos-actions">
+              <button type="button" className="tcg_store_template-pos-action" onClick={() => {setCatalogBranchId(branchId);setProductSearch('');setCatalogOpen(true);}}><span className="gmx-r78-action-icon">◇</span>Catálogo / Existencias</button>
+              <button type="button" className="tcg_store_template-pos-action" onClick={() => {setClientSearch('');setClientSearchOpen(false);setClientModalOpen(true);}}><span className="gmx-r78-action-icon">◉</span>{clientId ? 'Cliente seleccionado' : 'Cliente'}</button>
+              <button type="button" className="tcg_store_template-pos-action" disabled={!canUseManualDiscount} onClick={() => setDiscountModalOpen(true)}><span className="gmx-r78-action-icon">%</span>Descuento</button>
+              <button type="button" className="tcg_store_template-pos-action" onClick={() => setPromoModalOpen(true)}><span className="gmx-r78-action-icon">◇</span>Promoción</button>
+              <button type="button" className="tcg_store_template-pos-action" onClick={() => setNotesModalOpen(true)}><span className="gmx-r78-action-icon">▢</span>Observaciones</button>
+              <button type="button" className="tcg_store_template-pos-action gmx-r78-return-action" onClick={openReturnLauncher}><span className="gmx-r78-action-icon">↩</span>Devoluciones</button>
+              <button className="tcg_store_template-pos-charge" type="button" onClick={checkout} disabled={!cart.length || Boolean(manualDiscountError)}>
+                <span>COBRAR</span><strong>{money(saleTotal)}</strong>
               </button>
             </div>
 
-            {checkoutModalOpen ? <div className="modal-backdrop gmx-pos-checkout-backdrop" onMouseDown={() => setCheckoutModalOpen(false)}><div className="modal gmx-pos-checkout-modal" onMouseDown={(e) => e.stopPropagation()} onKeyDownCapture={blockInvalidMoneyKey} onPasteCapture={blockInvalidMoneyPaste}>
+            {returnLauncherOpen ? <div className="modal-backdrop gmx-r78-return-launcher-backdrop" onMouseDown={() => setReturnLauncherOpen(false)}>
+              <div className="modal gmx-r78-return-launcher" onMouseDown={(e) => e.stopPropagation()}>
+                <div className="modal-head">
+                  <div><div className="eyebrow">DEVOLUCIONES · POS</div><h2>¿Qué deseas devolver?</h2><p>Selecciona el origen de la operación.</p></div>
+                  <button className="icon-btn" type="button" onClick={() => setReturnLauncherOpen(false)}>×</button>
+                </div>
+                <div className="gmx-r78-return-choice-grid">
+                  <button type="button" onClick={startSaleReturnLookup}>
+                    <span>↩</span><strong>Devolución de venta</strong><small>Productos vendidos desde POS o pedidos.</small>
+                  </button>
+                  <button type="button" className="disabled-choice" disabled title="El backend actual no tiene flujo de devolución a proveedor/compra.">
+                    <span>▦</span><strong>Devolución de compra</strong><small>Recepción / proveedor · pendiente de flujo backend.</small>
+                  </button>
+                </div>
+                <div className="gmx-r78-return-launcher-note">Las devoluciones de venta solicitarán el código de autorización de 4 dígitos únicamente cuando el perfil actual no tenga privilegios para autorizar.</div>
+              </div>
+            </div> : null}
+
+            {checkoutModalOpen ? <div className="modal-backdrop tcg_store_template-pos-checkout-backdrop" onMouseDown={() => setCheckoutModalOpen(false)}><div className="modal tcg_store_template-pos-checkout-modal" onMouseDown={(e) => e.stopPropagation()} onKeyDownCapture={blockInvalidMoneyKey} onPasteCapture={blockInvalidMoneyPaste}>
               <div className="modal-head"><div><div className="eyebrow">COBRO</div><h2>Cobrar {money(saleTotal)}</h2><p>Selecciona cómo pagará el cliente.</p></div><button className="icon-btn" type="button" onClick={() => setCheckoutModalOpen(false)}>×</button></div>
-              <div className="gmx-pos-pay-methods">
+              <div className="tcg_store_template-pos-pay-methods">
                 {[['EFECTIVO', '💵', 'Efectivo'], ['TRANSFERENCIA', '🏦', 'Transferencia'], ['TARJETA', '💳', 'Tarjeta']].map(([value, icon, label]) => <button key={value} type="button" className={paymentMethod === value ? 'selected' : ''} onClick={() => {setPaymentMethod(value);setPayments((current) => current.length ? [{ ...current[0], method: value }, ...current.slice(1)] : [{ method: value, amount: 0, cashReceived: 0, reference: '' }]);}}><span>{icon}</span><strong>{label}</strong></button>)}
               </div>
-              <div className="gmx-pos-checkout-help">Para dividir el pago, usa <b>+ Agregar método</b>. Si no, captura solamente el método principal.</div>
+              <div className="tcg_store_template-pos-checkout-help">Para dividir el pago, usa <b>+ Agregar método</b>. Si no, captura solamente el método principal.</div>
               <MixedPaymentsPanel total={saleTotal} primaryMethod={paymentMethod} payments={payments} setPayments={setPaymentsSafe} />
-              {paymentMethod !== 'EFECTIVO' ? <label className="gmx-pos-primary-reference">Referencia / folio<input value={paymentReference} onChange={(e) => setPaymentReference(sanitizePaymentReference(e.target.value))} placeholder={paymentMethod === 'TRANSFERENCIA' ? 'Referencia bancaria' : 'Referencia'} /></label> : null}
-              {paymentMethod === 'TARJETA' ? <div className="gmx-pos-card-warning">Tarjeta está preparada para Mercado Pago. La venta no se marcará como autorizada hasta validar la integración del proveedor.</div> : null}
-              <div className="gmx-pos-checkout-actions"><button type="button" className="secondary" onClick={() => setCheckoutModalOpen(false)}>Volver</button><button type="button" className="gmx-pos-confirm-charge" onClick={performCheckout}>CONFIRMAR COBRO · {money(saleTotal)}</button></div>
+              {paymentMethod !== 'EFECTIVO' ? <label className="tcg_store_template-pos-primary-reference">Referencia / folio<input value={paymentReference} onChange={(e) => setPaymentReference(sanitizePaymentReference(e.target.value))} placeholder={paymentMethod === 'TRANSFERENCIA' ? 'Referencia bancaria' : 'Referencia'} /></label> : null}
+              {paymentMethod === 'TARJETA' ? <div className="tcg_store_template-pos-card-warning">Tarjeta está preparada para Mercado Pago. La venta no se marcará como autorizada hasta validar la integración del proveedor.</div> : null}
+              <div className="tcg_store_template-pos-checkout-actions"><button type="button" className="secondary" onClick={() => setCheckoutModalOpen(false)}>Volver</button><button type="button" className="tcg_store_template-pos-confirm-charge" onClick={performCheckout}>CONFIRMAR COBRO · {money(saleTotal)}</button></div>
             </div></div> : null}
 
-            {clientModalOpen ? <div className="modal-backdrop" onMouseDown={() => setClientModalOpen(false)}><div className="modal gmx-pos-client-modal" onMouseDown={(e) => e.stopPropagation()}>
+            {clientModalOpen ? <div className="modal-backdrop" onMouseDown={() => setClientModalOpen(false)}><div className="modal tcg_store_template-pos-client-modal" onMouseDown={(e) => e.stopPropagation()}>
               <div className="modal-head"><div><div className="eyebrow">CLIENTE</div><h2>Seleccionar cliente</h2></div><button className="icon-btn" type="button" onClick={() => setClientModalOpen(false)}>×</button></div>
-              <div className="gmx-pos-client-search"><input autoFocus value={clientSearch} onChange={(e) => setClientSearch(e.target.value)} placeholder="Buscar por nombre, teléfono, email o ID..." /></div>
-              <div className="gmx-pos-client-list">
-                <button type="button" className={`gmx-pos-client-row ${!clientId ? 'selected' : ''}`} onClick={() => {setClientId('');setClientSearch('');setLoyalty(null);setPointsToRedeem(0);setClientModalOpen(false);}}><strong>Público general</strong><span>Venta sin cliente asociado</span></button>
-                {clientLoading ? <div className="gmx-pos-empty">Buscando clientes…</div> : null}
-                {!clientLoading && clients.map((client) => <button type="button" className={`gmx-pos-client-row ${clientId === client.id_cliente ? 'selected' : ''}`} key={client.row_id} onClick={() => {setClientId(client.id_cliente);setClientSearch(client.nombre || client.email || client.telefono || client.id_cliente);setClientModalOpen(false);}}>
+              <div className="tcg_store_template-pos-client-search"><input autoFocus value={clientSearch} onChange={(e) => setClientSearch(e.target.value)} placeholder="Buscar por nombre, teléfono, email o ID..." /></div>
+              <div className="tcg_store_template-pos-client-list">
+                <button type="button" className={`tcg_store_template-pos-client-row ${!clientId ? 'selected' : ''}`} onClick={() => {setClientId('');setClientSearch('');setLoyalty(null);setPointsToRedeem(0);setClientModalOpen(false);}}><strong>Público general</strong><span>Venta sin cliente asociado</span></button>
+                {clientLoading ? <div className="tcg_store_template-pos-empty">Buscando clientes…</div> : null}
+                {!clientLoading && clients.map((client) => <button type="button" className={`tcg_store_template-pos-client-row ${clientId === client.id_cliente ? 'selected' : ''}`} key={client.row_id} onClick={() => {setClientId(client.id_cliente);setClientSearch(client.nombre || client.email || client.telefono || client.id_cliente);setClientModalOpen(false);}}>
                   <strong>{client.nombre || client.id_cliente}</strong><span>{[client.telefono, client.email, client.id_cliente].filter(Boolean).join(' · ')}</span>
                 </button>)}
-                {!clientLoading && !clients.length ? <div className="gmx-pos-empty">No hay clientes que coincidan.</div> : null}
+                {!clientLoading && !clients.length ? <div className="tcg_store_template-pos-empty">No hay clientes que coincidan.</div> : null}
               </div>
             </div></div> : null}
 
-            {discountModalOpen ? <div className="modal-backdrop" onMouseDown={() => setDiscountModalOpen(false)}><div className="modal gmx-pos-action-modal" onMouseDown={(e) => e.stopPropagation()}>
+            {discountModalOpen ? <div className="modal-backdrop" onMouseDown={() => setDiscountModalOpen(false)}><div className="modal tcg_store_template-pos-action-modal" onMouseDown={(e) => e.stopPropagation()}>
               <div className="modal-head"><div><div className="eyebrow">DESCUENTO MANUAL</div><h2>Aplicar descuento</h2></div><button className="icon-btn" type="button" onClick={() => setDiscountModalOpen(false)}>×</button></div>
-              <div className="gmx-pos-modal-grid"><label>Tipo<select value={manualDiscountType} onChange={(e) => setManualDiscountType(e.target.value)}><option value="PORCENTAJE">Porcentaje (%)</option><option value="MONTO">Monto ($)</option></select></label><label>{manualDiscountType === 'PORCENTAJE' ? 'Porcentaje' : 'Monto'}<input type="number" onKeyDown={blockInvalidMoneyKey} onPaste={blockInvalidMoneyPaste} min="0" max={manualDiscountType === 'PORCENTAJE' ? '100' : undefined} step="0.01" value={manualDiscountValue} onChange={(e) => setManualDiscountValue(Math.max(0, Number(e.target.value || 0)))} /></label></div>
+              <div className="tcg_store_template-pos-modal-grid"><label>Tipo<select value={manualDiscountType} onChange={(e) => setManualDiscountType(e.target.value)}><option value="PORCENTAJE">Porcentaje (%)</option><option value="MONTO">Monto ($)</option></select></label><label>{manualDiscountType === 'PORCENTAJE' ? 'Porcentaje' : 'Monto'}<input type="number" onKeyDown={blockInvalidMoneyKey} onPaste={blockInvalidMoneyPaste} min="0" max={manualDiscountType === 'PORCENTAJE' ? '100' : undefined} step="0.01" value={manualDiscountValue} onChange={(e) => setManualDiscountValue(Math.max(0, Number(e.target.value || 0)))} /></label></div>
               <label>Motivo / autorización<input value={manualDiscountReason} onChange={(e) => setManualDiscountReason(e.target.value)} placeholder="Motivo obligatorio" /></label>
               {Number(manualDiscountValue || 0) > 0 ? <div className="benefit-summary"><span>Base <b>{money(totalBeforeManualDiscount)}</b></span><span>Descuento <b>-{money(manualDiscountAmount)}</b></span><strong>Total final {money(saleTotal)}</strong>{manualDiscountError ? <span className="danger-text">{manualDiscountError}</span> : null}</div> : null}
-              <div className="gmx-pos-modal-actions"><button type="button" className="secondary" onClick={() => {setManualDiscountValue(0);setManualDiscountReason('');setDiscountModalOpen(false);}}>Quitar descuento</button><button type="button" disabled={Boolean(manualDiscountError) || Number(manualDiscountValue || 0) <= 0} onClick={() => setDiscountModalOpen(false)}>Aplicar</button></div>
+              <div className="tcg_store_template-pos-modal-actions"><button type="button" className="secondary" onClick={() => {setManualDiscountValue(0);setManualDiscountReason('');setDiscountModalOpen(false);}}>Quitar descuento</button><button type="button" disabled={Boolean(manualDiscountError) || Number(manualDiscountValue || 0) <= 0} onClick={() => setDiscountModalOpen(false)}>Aplicar</button></div>
             </div></div> : null}
 
-            {promoModalOpen ? <div className="modal-backdrop" onMouseDown={() => setPromoModalOpen(false)}><div className="modal gmx-pos-action-modal" onMouseDown={(e) => e.stopPropagation()}>
+            {promoModalOpen ? <div className="modal-backdrop" onMouseDown={() => setPromoModalOpen(false)}><div className="modal tcg_store_template-pos-action-modal" onMouseDown={(e) => e.stopPropagation()}>
               <div className="modal-head"><div><div className="eyebrow">PROMOCIÓN</div><h2>Aplicar código promocional</h2></div><button className="icon-btn" type="button" onClick={() => setPromoModalOpen(false)}>×</button></div>
               <label>Código promocional<input autoFocus value={promoCode} onChange={(e) => setPromoCode(e.target.value.toUpperCase())} placeholder="Escanea o captura el código" onKeyDown={async (e) => {if (e.key === 'Enter') {e.preventDefault();try {await previewBenefits({ promo: promoCode, points: pointsToRedeem });setPromoModalOpen(false);} catch {}}}} /></label>
               <p className="muted">También puedes escanear el código directamente en el buscador universal del POS.</p>
-              <div className="gmx-pos-modal-actions"><button type="button" className="secondary" onClick={() => {setPromoCode('');setBenefitPreview(null);setPromoModalOpen(false);}}>Quitar promoción</button><button type="button" onClick={async () => {try {await previewBenefits({ promo: promoCode, points: pointsToRedeem });setPromoModalOpen(false);} catch {}}}>Aplicar promoción</button></div>
+              <div className="tcg_store_template-pos-modal-actions"><button type="button" className="secondary" onClick={() => {setPromoCode('');setBenefitPreview(null);setPromoModalOpen(false);}}>Quitar promoción</button><button type="button" onClick={async () => {try {await previewBenefits({ promo: promoCode, points: pointsToRedeem });setPromoModalOpen(false);} catch {}}}>Aplicar promoción</button></div>
             </div></div> : null}
 
-            {notesModalOpen ? <div className="modal-backdrop" onMouseDown={() => setNotesModalOpen(false)}><div className="modal gmx-pos-action-modal" onMouseDown={(e) => e.stopPropagation()}>
+            {notesModalOpen ? <div className="modal-backdrop" onMouseDown={() => setNotesModalOpen(false)}><div className="modal tcg_store_template-pos-action-modal" onMouseDown={(e) => e.stopPropagation()}>
               <div className="modal-head"><div><div className="eyebrow">OBSERVACIONES</div><h2>Notas de la venta</h2></div><button className="icon-btn" type="button" onClick={() => setNotesModalOpen(false)}>×</button></div>
               <label>Observación<textarea rows="5" value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Agrega una observación opcional…" /></label>
-              <div className="gmx-pos-modal-actions"><button type="button" className="secondary" onClick={() => {setNotes('');setNotesModalOpen(false);}}>Limpiar</button><button type="button" onClick={() => setNotesModalOpen(false)}>Guardar observación</button></div>
+              <div className="tcg_store_template-pos-modal-actions"><button type="button" className="secondary" onClick={() => {setNotes('');setNotesModalOpen(false);}}>Limpiar</button><button type="button" onClick={() => setNotesModalOpen(false)}>Guardar observación</button></div>
             </div></div> : null}
 
-            {pointsModalOpen ? <div className="modal-backdrop" onMouseDown={() => setPointsModalOpen(false)}><div className="modal gmx-pos-action-modal" onMouseDown={(e) => e.stopPropagation()}>
+            {pointsModalOpen ? <div className="modal-backdrop" onMouseDown={() => setPointsModalOpen(false)}><div className="modal tcg_store_template-pos-action-modal" onMouseDown={(e) => e.stopPropagation()}>
               <div className="modal-head"><div><div className="eyebrow">PUNTOS DEL CLIENTE</div><h2>¿Deseas canjear puntos?</h2></div><button className="icon-btn" type="button" onClick={() => setPointsModalOpen(false)}>×</button></div>
               <p>Este cliente tiene <strong>{Number(loyalty?.puntos_disponibles || 0)} puntos</strong> disponibles.</p>
               <label>Puntos a canjear<input type="number" onKeyDown={blockInvalidMoneyKey} onPaste={blockInvalidMoneyPaste} min="0" max={Number(loyalty?.puntos_disponibles || 0)} value={pointsToRedeem} onChange={(e) => setPointsToRedeem(Math.min(Number(loyalty?.puntos_disponibles || 0), Math.max(0, Number(e.target.value || 0))))} /></label>
-              <div className="gmx-pos-modal-actions"><button type="button" className="secondary" onClick={() => {setPointsToRedeem(0);setPointsModalOpen(false);setCheckoutModalOpen(true);}}>No usar puntos</button><button type="button" onClick={async () => {try {await previewBenefits({ promo: promoCode, points: pointsToRedeem, silent: true });setPointsModalOpen(false);setCheckoutModalOpen(true);} catch {}}}>Canjear y continuar</button></div>
+              <div className="tcg_store_template-pos-modal-actions"><button type="button" className="secondary" onClick={() => {setPointsToRedeem(0);setPointsModalOpen(false);setCheckoutModalOpen(true);}}>No usar puntos</button><button type="button" onClick={async () => {try {await previewBenefits({ promo: promoCode, points: pointsToRedeem, silent: true });setPointsModalOpen(false);setCheckoutModalOpen(true);} catch {}}}>Canjear y continuar</button></div>
             </div></div> : null}
 
-            {orderLookupOpen ? <div className="modal-backdrop gmx-pos-order-backdrop" onMouseDown={() => setOrderLookupOpen(false)}>
-              <div className="modal gmx-pos-order-modal" onMouseDown={(e) => e.stopPropagation()}>
+            {orderLookupOpen ? <div className="modal-backdrop tcg_store_template-pos-order-backdrop" onMouseDown={() => setOrderLookupOpen(false)}>
+              <div className="modal tcg_store_template-pos-order-modal" onMouseDown={(e) => e.stopPropagation()}>
                 <div className="modal-head">
                   <div>
-                    <div className="eyebrow">{'PEDIDOS \u00b7 POS'}</div>
-                    <h2>Buscar pedido</h2>
-                    <p>{'Busca por n\u00famero de pedido, cliente, tel\u00e9fono o email.'}</p>
+                    <div className="eyebrow">{'DEVOLUCIONES · POS'}</div>
+                    <h2>Selecciona la venta a devolver</h2>
+                    <p>Busca por pedido, cliente, teléfono o email.</p>
                   </div>
                   <button className="icon-btn" type="button" aria-label="Cerrar" onClick={() => setOrderLookupOpen(false)}>X</button>
                 </div>
 
                 <form
-                className="gmx-pos-order-search"
+                className="tcg_store_template-pos-order-search"
                 onSubmit={(e) => {
                   e.preventDefault();
                   searchOrdersForPOS(orderLookupSearch);
@@ -1655,32 +1826,32 @@ export default function OrdersPage({ mode = 'pos' }) {
                   </button>
                 </form>
 
-                <div className="gmx-pos-order-results">
+                <div className="tcg_store_template-pos-order-results">
                   {!orderLookupBusy && orderLookupResults.length > 0 ?
-                <div className="gmx-pos-order-list-title">
+                <div className="tcg_store_template-pos-order-list-title">
                       {orderLookupSearch.trim() ? 'RESULTADOS' : 'PEDIDOS RECIENTES'}
                     </div> :
                 null}
 
-                  {orderLookupBusy ? <div className="gmx-pos-empty">Buscando pedidos...</div> : null}
+                  {orderLookupBusy ? <div className="tcg_store_template-pos-empty">Buscando pedidos...</div> : null}
 
                   {!orderLookupBusy && orderLookupResults.map((order) =>
-                <article className="gmx-pos-order-result" key={order.row_id}>
-                      <div className="gmx-pos-order-result-main">
+                <article className="tcg_store_template-pos-order-result" key={order.row_id}>
+                      <div className="tcg_store_template-pos-order-result-main">
                         <div>
                           <strong>{order.id_pedido}</strong>
-                          <span>{order.id_cliente ? order.nombre_cliente || 'Cliente registrado' : 'Público general'}{order.telefono ? ` · ${order.telefono}` : ''}</span>
+                          <span>{order.nombre_cliente || 'P?blico general'}</span>
                         </div>
                         <strong>{money(order.total)}</strong>
                       </div>
 
-                      <div className="gmx-pos-order-result-meta">
+                      <div className="tcg_store_template-pos-order-result-meta">
                         <span>{order.sucursal || order.id_sucursal || 'Sin sucursal'}</span>
                         <span>{order.metodo_pago || 'Sin m?todo'}</span>
                         <span>{order.estado_devolucion || order.estado_pedido || 'Sin estado'}</span>
                       </div>
 
-                      <div className="gmx-pos-order-result-actions">
+                      <div className="tcg_store_template-pos-order-result-actions">
                         <button
                       type="button"
                       className="secondary compact"
@@ -1698,10 +1869,10 @@ export default function OrdersPage({ mode = 'pos' }) {
                       className="compact"
                       onClick={() => {
                         setOrderLookupOpen(false);
-                        loadPendingOrderToPOS(order);
+                        openPayOrder(order);
                       }}>
                       
-                              Cargar al POS
+                              Registrar pago
                             </button> :
                     null}
 
@@ -1709,7 +1880,7 @@ export default function OrdersPage({ mode = 'pos' }) {
                     <button
                       type="button"
                       className="compact"
-                      onClick={() => openReturnFlow(order)}>
+                      onClick={() => {setOrderLookupOpen(false);openReturnFlow(order);}}>
                       
                               Devolver / Reembolso
                             </button> :
@@ -1719,45 +1890,45 @@ export default function OrdersPage({ mode = 'pos' }) {
                 )}
 
                   {!orderLookupBusy && orderLookupSearch.trim() && orderLookupResults.length === 0 ?
-                <div className="gmx-pos-empty">No se encontraron pedidos.</div> :
+                <div className="tcg_store_template-pos-empty">No se encontraron pedidos.</div> :
                 null}
                 </div>
               </div>
             </div> : null}
 
-            {cameraOpen ? <div className="modal-backdrop gmx-pos-camera-backdrop" onMouseDown={() => {stopCamera();setCameraOpen(false);}}>
-              <div className="modal gmx-pos-camera-modal" onMouseDown={(e) => e.stopPropagation()}>
+            {cameraOpen ? <div className="modal-backdrop tcg_store_template-pos-camera-backdrop" onMouseDown={() => {stopCamera();setCameraOpen(false);}}>
+              <div className="modal tcg_store_template-pos-camera-modal" onMouseDown={(e) => e.stopPropagation()}>
                 <div className="modal-head">
                   <div><div className="eyebrow">ESCÁNER POR CÁMARA</div><h2>Código de barras / QR</h2></div>
                   <button className="icon-btn" type="button" onClick={() => {stopCamera();setCameraOpen(false);}}>×</button>
                 </div>
-                <div className="gmx-pos-camera-stage">
+                <div className="tcg_store_template-pos-camera-stage">
                   <video ref={cameraVideoRef} playsInline muted />
-                  <div className="gmx-pos-camera-guide"></div>
+                  <div className="tcg_store_template-pos-camera-guide"></div>
                 </div>
-                {cameraError ? <div className="gmx-pos-camera-error">{cameraError}</div> : <p className="gmx-pos-camera-help">Coloca el código dentro del recuadro y pulsa Leer código.</p>}
-                <div className="gmx-pos-camera-actions">
+                {cameraError ? <div className="tcg_store_template-pos-camera-error">{cameraError}</div> : <p className="tcg_store_template-pos-camera-help">Coloca el código dentro del recuadro y pulsa Leer código.</p>}
+                <div className="tcg_store_template-pos-camera-actions">
                   <button type="button" className="secondary" onClick={() => {stopCamera();setCameraOpen(false);}}>Cancelar</button>
                   <button type="button" onClick={detectFromCamera} disabled={scanBusy || Boolean(cameraError)}>{scanBusy ? 'Leyendo…' : 'Leer código'}</button>
                 </div>
               </div>
             </div> : null}
 
-            {catalogOpen ? <div className="modal-backdrop gmx-pos-catalog-backdrop" onMouseDown={() => setCatalogOpen(false)}>
-              <div className="modal gmx-pos-catalog-modal" onMouseDown={(e) => e.stopPropagation()}>
+            {catalogOpen ? <div className="modal-backdrop tcg_store_template-pos-catalog-backdrop" onMouseDown={() => setCatalogOpen(false)}>
+              <div className="modal tcg_store_template-pos-catalog-modal" onMouseDown={(e) => e.stopPropagation()}>
                 <div className="modal-head">
                   <div><div className="eyebrow">CATÁLOGO POS</div><h2>Agregar artículos</h2></div>
                   <button className="icon-btn" type="button" onClick={() => setCatalogOpen(false)}>×</button>
                 </div>
-                {catalogAddFeedback ? <div className={`gmx-pos-add-toast ${catalogAddFeedback.blocked ? 'blocked' : ''}`} role="status" aria-live="polite">
+                {catalogAddFeedback ? <div className={`tcg_store_template-pos-add-toast ${catalogAddFeedback.blocked ? 'blocked' : ''}`} role="status" aria-live="polite">
                   <strong>{catalogAddFeedback.blocked ? 'Sin existencia disponible' : '✓ Agregado al carrito'}</strong>
                   <span>{catalogAddFeedback.name}{catalogAddFeedback.quantity > 0 ? ` · Cantidad ${catalogAddFeedback.quantity}` : ''}</span>
                 </div> : null}
-                <div className="gmx-pos-modal-search"><input autoFocus value={productSearch} onChange={(e) => setProductSearch(e.target.value)} placeholder="Buscar por nombre, SKU, código de barras, carta..." /></div>
-                <div className="gmx-pos-modal-filters">
+                <div className="tcg_store_template-pos-modal-search"><input autoFocus value={productSearch} onChange={(e) => setProductSearch(e.target.value)} placeholder="Buscar por nombre, SKU, código de barras, carta..." /></div>
+                <div className="tcg_store_template-pos-modal-filters">
                   {isOperator ?
-                <div className="gmx-pos-branch-filter gmx-pos-branch-fixed"><span>Sucursal</span><strong>{branches.find((b) => b.id_sucursal === branchId)?.nombre_sucursal || 'Sin sucursal asignada'}</strong></div> :
-                <label className="gmx-pos-branch-filter">Sucursal
+                <div className="tcg_store_template-pos-branch-filter tcg_store_template-pos-branch-fixed"><span>Sucursal</span><strong>{branches.find((b) => b.id_sucursal === branchId)?.nombre_sucursal || 'Sin sucursal asignada'}</strong></div> :
+                <label className="tcg_store_template-pos-branch-filter">Sucursal
                       <select value={catalogBranchId || branchId} onChange={(e) => setCatalogBranchId(e.target.value)}>
                         {branches.map((branch) => <option key={branch.row_id} value={branch.id_sucursal}>{branch.nombre_sucursal}</option>)}
                       </select>
@@ -1766,9 +1937,9 @@ export default function OrdersPage({ mode = 'pos' }) {
                   {saleType === 'TCG' || saleType === 'ALL' ? <><label>TCG<select value={gameId} onChange={(e) => setGameId(e.target.value)}><option value="">Todos los TCG</option>{tcgGames.map((g) => <option key={g.id_juego} value={g.id_juego}>{g.nombre}</option>)}</select></label><label>Expansión<select value={setId} disabled={!gameId} onChange={(e) => setSetId(e.target.value)}><option value="">Todas</option>{tcgSets.map((x) => <option key={x.id_set} value={x.id_set}>{x.nombre}</option>)}</select></label></> : null}
                   {saleType === 'PRODUCT' || saleType === 'ALL' ? <label>Categoría<select value={productCategory} onChange={(e) => setProductCategory(e.target.value)}><option value="">Todas</option>{productCategories.map((c) => <option key={c.categoria} value={c.categoria}>{c.categoria} ({c.total})</option>)}</select></label> : null}
                 </div>
-                <div className="gmx-pos-modal-count">{catalogLoading ? 'Buscando…' : `${visibleInventory.length} resultado(s)`}</div>
-                {!isOperator && catalogBranchId && branchId && catalogBranchId !== branchId ? <div className="gmx-pos-branch-note">Consulta de existencias en otra sucursal. Para vender, selecciona la sucursal activa del POS.</div> : null}
-                <div className="gmx-pos-modal-grid">
+                <div className="tcg_store_template-pos-modal-count">{catalogLoading ? 'Buscando…' : `${visibleInventory.length} resultado(s)`}</div>
+                {!isOperator && catalogBranchId && branchId && catalogBranchId !== branchId ? <div className="tcg_store_template-pos-branch-note">Consulta de existencias en otra sucursal. Para vender, selecciona la sucursal activa del POS.</div> : null}
+                <div className="tcg_store_template-pos-modal-grid">
                   {visibleInventory.map((item) => {
                   const key = itemKey(item);
                   const cartRow = cart.find((row) => row.key === key);
@@ -1777,10 +1948,10 @@ export default function OrdersPage({ mode = 'pos' }) {
                   const exhausted = stock <= qty;
                   const viewingOtherBranch = !isOperator && Boolean(catalogBranchId && branchId && catalogBranchId !== branchId);
                   const fresh = catalogAddFeedback?.key === key && !catalogAddFeedback?.blocked;
-                  return <article className={`gmx-pos-modal-item ${fresh ? 'just-added' : ''} ${qty > 0 ? 'in-cart' : ''}`} key={key}>
-                      <div className="gmx-pos-modal-thumb">{item.image_url ? <img src={item.image_url} alt={item.name} /> : <span>{item.item_type === 'TCG' ? 'TCG' : brandText("GMX")}</span>}</div>
-                      <div className="gmx-pos-modal-main"><small>{item.item_type === 'TCG' ? 'CARTA TCG' : 'PRODUCTO'}</small><strong>{item.name}</strong><span>{[item.sku, item.game_name, item.set_name, item.card_number].filter(Boolean).join(' · ')}</span><em>Existencia {item.stock ?? 0}{qty > 0 ? ` · En carrito ${qty}` : ''}</em></div>
-                      <strong className="gmx-pos-modal-price">{money(item.price)}</strong>
+                  return <article className={`tcg_store_template-pos-modal-item ${fresh ? 'just-added' : ''} ${qty > 0 ? 'in-cart' : ''}`} key={key}>
+                      <div className="tcg_store_template-pos-modal-thumb">{item.image_url ? <img src={item.image_url} alt={item.name} /> : <span>{item.item_type === 'TCG' ? 'TCG' : brandText("TCG_STORE_TEMPLATE")}</span>}</div>
+                      <div className="tcg_store_template-pos-modal-main"><small>{item.item_type === 'TCG' ? 'CARTA TCG' : 'PRODUCTO'}</small><strong>{item.name}</strong><span>{[item.sku, item.game_name, item.set_name, item.card_number].filter(Boolean).join(' · ')}</span><em>Existencia {item.stock ?? 0}{qty > 0 ? ` · En carrito ${qty}` : ''}</em></div>
+                      <strong className="tcg_store_template-pos-modal-price">{money(item.price)}</strong>
                       <button
                       type="button"
                       className={fresh ? 'added' : ''}
@@ -1789,104 +1960,177 @@ export default function OrdersPage({ mode = 'pos' }) {
                       {viewingOtherBranch ? 'Consulta otra sucursal' : exhausted ? `✓ En carrito: ${qty} · Agotado` : qty > 0 ? `✓ Cantidad: ${qty}` : '+ Agregar'}</button>
                     </article>;
                 })}
-                  {!catalogLoading && !visibleInventory.length ? <div className="gmx-pos-empty">No hay artículos disponibles con estos filtros.</div> : null}
+                  {!catalogLoading && !visibleInventory.length ? <div className="tcg_store_template-pos-empty">No hay artículos disponibles con estos filtros.</div> : null}
                 </div>
               </div>
             </div> : null}
           </div> :
         null}
-        {tab === 'orders' ?
-        <div>
-            <form className="order-toolbar" onSubmit={(e) => {
-            e.preventDefault();
-            loadOrders(orderSearch).catch((error) => setMessage(error.message));
-          }}>
-              <input value={orderSearch} onChange={(e) => setOrderSearch(e.target.value)} placeholder="Pedido, cliente, teléfono, email..." />
-              <button className="secondary">Buscar</button>
-              <button type="button" onClick={() => {setCart([]);setNotes('');setDraftOrderMode(true);setTab('pos');}}>Nuevo pedido</button>
-            </form>
+        {forcedMode === 'orders' ? <div className="gmx-orders-r61">
 
-            <div className="table-wrap">
-              <table>
-                <thead>
-                  <tr><th>Fecha</th><th>Pedido</th><th>Cliente / contacto</th><th>Sucursal</th><th>Pago</th><th>Unidades</th><th>Total</th><th>Estado</th><th></th></tr>
-                </thead>
-                <tbody>
-                  {orders.map((order) =>
-                <tr key={order.row_id}>
-                      <td>{order.fecha ? new Date(order.fecha).toLocaleString('es-MX') : '—'}</td>
-                      <td>{order.id_pedido}</td>
-                      <td><div className="pos-history-customer"><strong>{order.id_cliente ? order.nombre_cliente || 'Cliente registrado' : 'Público general'}</strong><small>{order.id_cliente ? `Registrado · ${order.email || order.telefono || order.id_cliente}` : `Ocasional${order.telefono ? ` · WhatsApp ${order.telefono}` : ' · sin contacto'}`}</small></div></td>
-                      <td>{order.sucursal || order.id_sucursal || '—'}</td>
-                      <td>{order.metodo_pago || '—'}</td>
-                      <td>{order.unidades ?? 0}</td>
-                      <td>{money(order.total)}</td>
-                      <td>
-                        <span className={`module-state ${String(order.estado_devolucion || order.estado_pedido || '').toUpperCase().includes('DEVUELTO') || String(order.estado_pedido || '').toUpperCase() === 'CANCELADO' ? 'warning' : 'ready'}`}>
-                          {order.estado_devolucion || order.estado_pedido || '—'}
-                        </span>
-                      </td>
-                      <td>
-                        <div className="pos-history-actions">
-                          <button className="secondary compact" onClick={() => openOrder(order.row_id)}>Ver</button>
-                          {String(order.estado_pedido || '').toUpperCase() === 'PENDIENTE' ?
-                      <button className="compact pos-pay-order-btn" onClick={() => openPayOrder(order)}>Registrar pago</button> :
-                      null}
-                          {String(order.estado_pedido || '').toUpperCase() === 'PAGADO' ? <>
-                            <button className="secondary compact" onClick={() => openReturnFlow(order)}>Devolver / Reembolso</button>
-                            <button className="secondary compact" onClick={() => printOrderFromHistory(order.row_id)}>Ticket</button>
-                            <button className="secondary compact" onClick={() => printOrderFromHistory(order.row_id, { pdf: true })}>PDF</button>
-                            <button className="secondary compact" disabled={receiptBusy || !order.email} title={!order.email ? 'Cliente sin correo' : 'Enviar comprobante'} onClick={() => emailReceipt(order)}>Correo</button>
-      <VisionCandidatePicker
-                          open={visionPickerOpen}
-                          title="Selecciona el artÃ­culo para vender"
-                          items={visionCandidates}
-                          onClose={() => setVisionPickerOpen(false)}
-                          onPick={(item) => {
-                            addToCart(item);
-                            setVisionPickerOpen(false);
-                            setMessage('');
-                          }} />
-                        
-</> : null}
-                        </div>
-                      </td>
-                    </tr>
-                )}
-                </tbody>
-              </table>
+          <div className="gmx-orders-pagehead">
+            <span>VENTAS</span>
+            <h2>Pedidos</h2>
+            <p>Gestión de pedidos y ventas</p>
+          </div>
+
+          <div className="gmx-orders-shell">
+            <div className="gmx-orders-darkhead">
+              <strong>PEDIDOS</strong>
+              <div>
+                <label><span>Sucursal</span>
+                  <select value={branchId} onChange={(e)=>setBranchId(e.target.value)}>
+                    <option value="">Todas</option>
+                    {branches.map(branch=><option key={branch.row_id} value={branch.id_sucursal}>{branch.nombre_sucursal}</option>)}
+                  </select>
+                </label>
+                <span>Operador</span>
+                <b>{currentUser?.nombre || currentUser?.email || 'Administrador Principal'}</b>
+              </div>
             </div>
-          </div> :
-        null}
+
+            <div className="gmx-orders-body">
+              <div className="gmx-orders-toolbar">
+                <form onSubmit={(e)=>{e.preventDefault();loadOrders(orderSearch).catch(error=>setMessage(error.message));}}>
+                  <span>⌕</span>
+                  <input value={orderSearch} onChange={(e)=>setOrderSearch(e.target.value)} placeholder="Buscar pedido por folio, cliente, estatus..." />
+                </form>
+
+                <button type="button" className={orderStatusFilter==='ALL'?'flt all active':'flt all'} onClick={()=>setOrderStatusFilter('ALL')}>☷ Todos los pedidos</button>
+                <button type="button" className={orderStatusFilter==='PENDING'?'flt pending active':'flt pending'} onClick={()=>setOrderStatusFilter('PENDING')}>◷ Pendientes</button>
+                <button type="button" className={orderStatusFilter==='PROCESS'?'flt process active':'flt process'} onClick={()=>setOrderStatusFilter('PROCESS')}>↻ En proceso</button>
+                <button type="button" className={orderStatusFilter==='COMPLETED'?'flt completed active':'flt completed'} onClick={()=>setOrderStatusFilter('COMPLETED')}>✓ Completados</button>
+                <button type="button" className={orderStatusFilter==='CANCELLED'?'flt cancelled active':'flt cancelled'} onClick={()=>setOrderStatusFilter('CANCELLED')}>× Cancelados</button>
+                <button type="button" className="new-order" onClick={()=>window.location.assign('/admin/pos')}>＋ Nuevo pedido</button>
+              </div>
+
+              <div className="gmx-orders-layout">
+                <main>
+                  <div className="gmx-orders-kpis">
+                    <article><i className="blue">▤</i><div><span>Todos los pedidos</span><strong>{orderUi.counts.all}</strong><small>Total</small></div></article>
+                    <article><i className="amber">◷</i><div><span>Pendientes</span><strong>{orderUi.counts.pending}</strong><small>{orderUi.counts.all ? Math.round(orderUi.counts.pending/orderUi.counts.all*100) : 0}% del total</small></div></article>
+                    <article><i className="blue">↻</i><div><span>En proceso</span><strong>{orderUi.counts.process}</strong><small>{orderUi.counts.all ? Math.round(orderUi.counts.process/orderUi.counts.all*100) : 0}% del total</small></div></article>
+                    <article><i className="green">✓</i><div><span>Completados</span><strong>{orderUi.counts.completed}</strong><small>{orderUi.counts.all ? Math.round(orderUi.counts.completed/orderUi.counts.all*100) : 0}% del total</small></div></article>
+                    <article><i className="red">×</i><div><span>Cancelados</span><strong>{orderUi.counts.cancelled}</strong><small>{orderUi.counts.all ? Math.round(orderUi.counts.cancelled/orderUi.counts.all*100) : 0}% del total</small></div></article>
+                  </div>
+
+                  <section className="gmx-orders-list">
+                    <div className="gmx-orders-listtitle">Listado de pedidos ({orderUi.filtered.length})</div>
+                    <div className="gmx-orders-tablewrap">
+                      <table>
+                        <thead><tr><th>Folio</th><th>Fecha</th><th>Cliente</th><th>Total</th><th>Estatus</th><th>Operador</th><th>Acciones</th></tr></thead>
+                        <tbody>
+                          {orderUi.paged.map(order=>{
+                            const [cls,label]=orderUiStatus(order);
+                            return <tr key={order.row_id}>
+                              <td><strong>{order.id_pedido}</strong></td>
+                              <td>{order.fecha?new Date(order.fecha).toLocaleString('es-MX'):'—'}</td>
+                              <td>{order.nombre_cliente||'Público general'}</td>
+                              <td><strong>{money(order.total)}</strong></td>
+                              <td><span className={`gmx-order-status ${cls}`}>{label}</span></td>
+                              <td>{order.nombre_usuario||order.operador||order.usuario||currentUser?.nombre||'—'}</td>
+                              <td><div className="gmx-order-actions">
+                                <button type="button" onClick={()=>openOrder(order.row_id)}>Ver</button>
+                                {String(order.estado_pedido||'').toUpperCase()==='PENDIENTE' ?
+                                  <button type="button" className="pay" onClick={()=>{
+                                    try{localStorage.setItem('GMX_POS_PENDING_ORDER',String(order.id_pedido||''));}catch{}
+                                    window.location.assign(`/admin/pos?order=${encodeURIComponent(order.id_pedido||'')}`);
+                                  }}>Cobrar en POS</button>:null}
+                              </div></td>
+                            </tr>
+                          })}
+                          {!orderUi.paged.length?<tr><td colSpan="7"><div className="gmx-orders-empty">
+                            <span>▤</span>
+                            <strong>No hay pedidos registrados</strong>
+                            <p>Los pedidos que registres aparecerán aquí.</p>
+                            <button type="button" onClick={()=>window.location.assign('/admin/pos')}>＋ Crear nuevo pedido</button>
+                          </div></td></tr>:null}
+                        </tbody>
+                      </table>
+                    </div>
+
+                    <footer className="gmx-orders-pagination">
+                      <span>Mostrando {orderUi.filtered.length ? orderUi.start+1 : 0} a {Math.min(orderUi.start+orderPageSize,orderUi.filtered.length)} de {orderUi.filtered.length} pedidos</span>
+                      <div>
+                        <button type="button" disabled={orderUi.safePage<=1} onClick={()=>setOrderPage(p=>Math.max(1,p-1))}>‹</button>
+                        <button type="button" className="active">{orderUi.safePage}</button>
+                        <button type="button" disabled={orderUi.safePage>=orderUi.pageCount} onClick={()=>setOrderPage(p=>Math.min(orderUi.pageCount,p+1))}>›</button>
+                        <select value={orderPageSize} onChange={(e)=>setOrderPageSize(Number(e.target.value))}>
+                          <option value="10">10 / página</option>
+                          <option value="20">20 / página</option>
+                          <option value="50">50 / página</option>
+                        </select>
+                      </div>
+                    </footer>
+                  </section>
+                </main>
+
+                <aside className="gmx-orders-side">
+                  <section>
+                    <h3>RESUMEN</h3>
+                    <div><span>Pedidos hoy</span><b>{orderUi.todayCount}</b></div>
+                    <div><span>Ventas hoy</span><b>{money(orderUi.todaySales)}</b></div>
+                    <div><span>Ticket promedio</span><b>{money(orderUi.todayAverage)}</b></div>
+                    <hr/>
+                    <small>TOTAL VENTAS HOY</small>
+                    <strong className="today-total">{money(orderUi.todaySales)}</strong>
+                  </section>
+
+                  <section className="recent">
+                    <h3>▧ PEDIDOS RECIENTES</h3>
+                    {orderUi.recent.length ? <div className="recent-list">
+                      {orderUi.recent.map(order=><button type="button" key={order.row_id} onClick={()=>openOrder(order.row_id)}>
+                        <div><strong>{order.id_pedido}</strong><small>{order.nombre_cliente||'Público general'}</small></div>
+                        <span>{money(order.total)}</span>
+                      </button>)}
+                    </div>:<div className="recent-empty"><span>▱</span><strong>No hay pedidos recientes</strong><p>Los últimos pedidos aparecerán aquí.</p></div>}
+                    <button type="button" className="view-all" onClick={()=>setOrderStatusFilter('ALL')}>Ver todos los pedidos ›</button>
+                  </section>
+
+                  <section>
+                    <h3>INFORMACIÓN</h3>
+                    <div><span>Sucursal</span><b>{branches.find(b=>b.id_sucursal===branchId)?.nombre_sucursal||'Todas'}</b></div>
+                    <div><span>Operador</span><b>{currentUser?.nombre||currentUser?.email||'Administrador Principal'}</b></div>
+                    <div><span>Fecha</span><b>{new Date().toLocaleString('es-MX')}</b></div>
+                    <div><span>Estado</span><b className="system-ok">● Sistema operativo</b></div>
+                  </section>
+                </aside>
+              </div>
+            </div>
+          </div>
+        </div> : null}
+
       </section>
 
-      {returnFlow.open ? <div className="modal-backdrop gmx-pos-return-backdrop" onMouseDown={closeReturnFlow}>
-        <div className="modal gmx-pos-return-modal gmx-pos-return-dialog" onMouseDown={(e) => e.stopPropagation()}>
+      {returnFlow.open ? <div className="modal-backdrop tcg_store_template-pos-return-backdrop" onMouseDown={closeReturnFlow}>
+        <div className="modal tcg_store_template-pos-return-modal tcg_store_template-pos-return-dialog" onMouseDown={(e) => e.stopPropagation()}>
           <div className="modal-head">
             <div><div className="eyebrow">DEVOLUCIÓN · POS</div><h2>{returnFlow.stage === 'auth' ? 'Autorización administrativa' : 'Procesar devolución'}</h2><p className="section-copy">{returnFlow.order?.id_pedido || 'Pedido'}</p></div>
             <button className="icon-btn" type="button" disabled={returnFlow.busy} onClick={closeReturnFlow}>×</button>
           </div>
-          {returnFlow.error ? <div className="gmx-pos-return-error" role="alert">{returnFlow.error}</div> : null}
+          {returnFlow.error ? <div className="tcg_store_template-pos-return-error" role="alert">{returnFlow.error}</div> : null}
 
-          {returnFlow.stage === 'auth' ? <div className="gmx-pos-return-auth">
-            <div className="gmx-pos-return-security"><strong>Esta operación requiere autorización.</strong><span>La credencial administrativa autoriza únicamente esta devolución y queda vinculada al pedido.</span></div>
-            <div className="gmx-pos-return-order-summary">
+          {returnFlow.stage === 'auth' ? <div className="tcg_store_template-pos-return-auth gmx-r77-pin-auth">
+            <div className="tcg_store_template-pos-return-security"><strong>Autorización requerida</strong><span>Solicita a un administrador autorizado un código temporal de 4 dígitos. El código es de un solo uso y vence en 5 minutos.</span></div>
+            <div className="tcg_store_template-pos-return-order-summary">
               <div><span>Pedido</span><strong>{returnFlow.order?.id_pedido}</strong></div>
               <div><span>Cliente</span><strong>{returnFlow.order?.nombre_cliente || 'Público general'}</strong></div>
               <div><span>Sucursal</span><strong>{returnFlow.order?.sucursal || returnFlow.order?.id_sucursal || '—'}</strong></div>
               <div><span>Total</span><strong>{money(returnFlow.order?.total)}</strong></div>
             </div>
-            <div className="gmx-pos-return-fields gmx-pos-return-auth-fields">
-              <label className="gmx-pos-return-password-label">Contraseña administrativa<input className="gmx-pos-return-password-input" type="password" autoFocus autoComplete="new-password" value={returnFlow.password} onChange={(e) => setReturnFlow((c) => ({ ...c, password: e.target.value, error: '' }))} onKeyDown={(e) => {if (e.key === 'Enter' && !returnFlow.busy) authorizeReturnInPOS();}} placeholder="Captura la contraseña administrativa" disabled={returnFlow.busy} /></label>
+            <div className="tcg_store_template-pos-return-fields tcg_store_template-pos-return-auth-fields">
+              <label className="tcg_store_template-pos-return-password-label gmx-r77-pin-label">Código de autorización
+                <input className="tcg_store_template-pos-return-password-input gmx-r77-pin-input" type="text" inputMode="numeric" pattern="[0-9]*" maxLength="4" autoFocus autoComplete="one-time-code" value={returnFlow.password} onChange={(e) => setReturnFlow((c) => ({ ...c, password: e.target.value.replace(/\D/g, '').slice(0, 4), error: '' }))} onKeyDown={(e) => {if (e.key === 'Enter' && !returnFlow.busy) authorizeReturnInPOS();}} placeholder="••••" disabled={returnFlow.busy} />
+              </label>
             </div>
-            <div className="gmx-pos-return-actions"><button type="button" className="secondary" disabled={returnFlow.busy} onClick={closeReturnFlow}>Cancelar</button><button type="button" disabled={returnFlow.busy} onClick={authorizeReturnInPOS}>{returnFlow.busy ? 'Validando autorización…' : 'Autorizar devolución'}</button></div>
-          </div> : <div className="gmx-pos-return-editor">
-            <div className="gmx-pos-return-authorized"><span>✓ Autorización aprobada</span><strong>{returnFlow.authorizer?.nombre || returnFlow.authorizer?.email || 'Administrador autorizado'}</strong>{returnFlow.authorizationId ? <small>{returnFlow.authorizationId}</small> : null}</div>
-            <div className="gmx-pos-return-items">
-              <div className="gmx-pos-return-items-head"><span>Artículo</span><span>Disponible</span><span>Devolver</span><span>Importe</span></div>
+            <div className="tcg_store_template-pos-return-actions"><button type="button" className="secondary" disabled={returnFlow.busy} onClick={closeReturnFlow}>Cancelar</button><button type="button" disabled={returnFlow.busy} onClick={authorizeReturnInPOS}>{returnFlow.busy ? 'Validando código…' : 'Autorizar devolución'}</button></div>
+          </div> : <div className="tcg_store_template-pos-return-editor">
+            <div className="tcg_store_template-pos-return-authorized"><span>✓ Autorización aprobada</span><strong>{returnFlow.authorizer?.nombre || returnFlow.authorizer?.email || 'Administrador autorizado'}</strong>{returnFlow.authorizationId ? <small>{returnFlow.authorizationId}</small> : null}</div>
+            <div className="tcg_store_template-pos-return-items">
+              <div className="tcg_store_template-pos-return-items-head"><span>Artículo</span><span>Disponible</span><span>Devolver</span><span>Importe</span></div>
               {returnFlow.items.map((item) => {
                 const qty = Number(item._quantity || 0),price = Number(item.precio_unitario || item.precio || 0);
-                return <div className="gmx-pos-return-item" key={item._key}>
+                return <div className="tcg_store_template-pos-return-item" key={item._key}>
                   <div><strong>{item.producto || item.name || 'Artículo'}</strong><small>{item.sku || item.id_producto || ''}</small></div>
                   <span>{item._available}</span>
                   <input type="number" min="0" max={item._available} step="1" value={qty} onChange={(e) => setReturnItemQuantity(item._key, e.target.value)} onKeyDown={(e) => ['e', 'E', '+', '-'].includes(e.key) && e.preventDefault()} />
@@ -1894,20 +2138,20 @@ export default function OrdersPage({ mode = 'pos' }) {
                 </div>;
               })}
             </div>
-            <div className="gmx-pos-return-form">
-              <label className="gmx-pos-return-field-label">Motivo<select className="gmx-pos-return-select" value={returnFlow.reason} onChange={(e) => setReturnFlow((c) => ({ ...c, reason: e.target.value, error: '' }))} disabled={returnFlow.busy}>
+            <div className="tcg_store_template-pos-return-form">
+              <label className="tcg_store_template-pos-return-field-label">Motivo<select className="tcg_store_template-pos-return-select" value={returnFlow.reason} onChange={(e) => setReturnFlow((c) => ({ ...c, reason: e.target.value, error: '' }))} disabled={returnFlow.busy}>
                 <option value="">Seleccionar motivo</option><option value="PRODUCTO_DEFECTUOSO">Producto defectuoso</option><option value="PRODUCTO_INCORRECTO">Producto incorrecto</option><option value="CAMBIO_DE_OPINION">Cambio de opinión</option><option value="ERROR_EN_VENTA">Error en venta</option><option value="OTRO">Otro</option>
               </select></label>
-              <label className="gmx-pos-return-check"><input type="checkbox" checked={returnFlow.reintegrateStock} onChange={() => {}} hidden /><span role="checkbox" aria-checked={returnFlow.reintegrateStock} tabIndex="0" className={returnFlow.reintegrateStock ? 'checked' : ''} onClick={() => setReturnFlow((c) => ({ ...c, reintegrateStock: !c.reintegrateStock }))}>✓</span><div><strong>Reintegrar al inventario</strong><small>Los artículos vendibles regresarán a existencia.</small></div></label>
-              <label className="gmx-pos-return-refund-toggle"><span>Reembolso al cliente</span><input type="checkbox" checked={returnFlow.refund} onChange={(e) => setReturnFlow((c) => ({ ...c, refund: e.target.checked, error: '' }))} disabled={returnFlow.busy} /></label>
-              {returnFlow.refund ? <div className="gmx-pos-return-refund-grid">
-                <label className="gmx-pos-return-field-label">Método de reembolso<select className="gmx-pos-return-select" value={returnFlow.refundMethod} onChange={(e) => setReturnFlow((c) => ({ ...c, refundMethod: e.target.value, error: '' }))}><option value="EFECTIVO">Efectivo</option><option value="TARJETA">Tarjeta</option><option value="TRANSFERENCIA">Transferencia</option><option value="OTRO">Otro</option></select></label>
-                <label className="gmx-pos-return-field-label">Referencia<input className="gmx-pos-return-text-input" value={returnFlow.refundReference} onChange={(e) => setReturnFlow((c) => ({ ...c, refundReference: e.target.value }))} placeholder="Referencia opcional" /></label>
+              <label className="tcg_store_template-pos-return-check"><input type="checkbox" checked={returnFlow.reintegrateStock} onChange={() => {}} hidden /><span role="checkbox" aria-checked={returnFlow.reintegrateStock} tabIndex="0" className={returnFlow.reintegrateStock ? 'checked' : ''} onClick={() => setReturnFlow((c) => ({ ...c, reintegrateStock: !c.reintegrateStock }))}>✓</span><div><strong>Reintegrar al inventario</strong><small>Los artículos vendibles regresarán a existencia.</small></div></label>
+              <label className="tcg_store_template-pos-return-refund-toggle"><span>Reembolso al cliente</span><input type="checkbox" checked={returnFlow.refund} onChange={(e) => setReturnFlow((c) => ({ ...c, refund: e.target.checked, error: '' }))} disabled={returnFlow.busy} /></label>
+              {returnFlow.refund ? <div className="tcg_store_template-pos-return-refund-grid">
+                <label className="tcg_store_template-pos-return-field-label">Método de reembolso<select className="tcg_store_template-pos-return-select" value={returnFlow.refundMethod} onChange={(e) => setReturnFlow((c) => ({ ...c, refundMethod: e.target.value, error: '' }))}><option value="EFECTIVO">Efectivo</option><option value="TARJETA">Tarjeta</option><option value="TRANSFERENCIA">Transferencia</option><option value="OTRO">Otro</option></select></label>
+                <label className="tcg_store_template-pos-return-field-label">Referencia<input className="tcg_store_template-pos-return-text-input" value={returnFlow.refundReference} onChange={(e) => setReturnFlow((c) => ({ ...c, refundReference: e.target.value }))} placeholder="Referencia opcional" /></label>
               </div> : null}
-              <label className="gmx-pos-return-field-label">Notas<textarea className="gmx-pos-return-textarea" rows="2" value={returnFlow.notes} onChange={(e) => setReturnFlow((c) => ({ ...c, notes: e.target.value }))} placeholder="Observaciones de la devolución (opcional)" disabled={returnFlow.busy} /></label>
+              <label className="tcg_store_template-pos-return-field-label">Notas<textarea className="tcg_store_template-pos-return-textarea" rows="2" value={returnFlow.notes} onChange={(e) => setReturnFlow((c) => ({ ...c, notes: e.target.value }))} placeholder="Observaciones de la devolución (opcional)" disabled={returnFlow.busy} /></label>
             </div>
-            <div className="gmx-pos-return-summary"><span>Total a devolver</span><strong>{money(returnFlow.items.reduce((sum, item) => sum + Number(item.precio_unitario || item.precio || 0) * Number(item._quantity || 0), 0))}</strong></div>
-            <div className="gmx-pos-return-actions"><button type="button" className="secondary" disabled={returnFlow.busy} onClick={closeReturnFlow}>Cancelar</button><button type="button" disabled={returnFlow.busy} onClick={submitReturnInPOS}>{returnFlow.busy ? 'Procesando devolución…' : 'Confirmar devolución'}</button></div>
+            <div className="tcg_store_template-pos-return-summary"><span>Total a devolver</span><strong>{money(returnFlow.items.reduce((sum, item) => sum + Number(item.precio_unitario || item.precio || 0) * Number(item._quantity || 0), 0))}</strong></div>
+            <div className="tcg_store_template-pos-return-actions"><button type="button" className="secondary" disabled={returnFlow.busy} onClick={closeReturnFlow}>Cancelar</button><button type="button" disabled={returnFlow.busy} onClick={submitReturnInPOS}>{returnFlow.busy ? 'Procesando devolución…' : 'Confirmar devolución'}</button></div>
           </div>}
         </div>
       </div> : null}
@@ -1948,7 +2192,7 @@ export default function OrdersPage({ mode = 'pos' }) {
             </label>
           </div>
 
-          <div className="pos-payment-warning">{brandText("\n            Al confirmar, GMX volverá a validar el stock, descontará el inventario y cambiará el pedido a PAGADO.\n          ")}
+          <div className="pos-payment-warning">{brandText("\n            Al confirmar, TCG_STORE_TEMPLATE volverá a validar el stock, descontará el inventario y cambiará el pedido a PAGADO.\n          ")}
 
           </div>
 

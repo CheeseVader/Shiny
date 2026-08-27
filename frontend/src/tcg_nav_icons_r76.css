@@ -1,0 +1,61 @@
+/* ============================================================
+   GMX · CATALOGO TCG · ICONOGRAFIA DE NAVEGACION R76
+   ============================================================ */
+
+/* SVG consistente con el lenguaje visual GMX */
+.tcg-r76-nav-label{
+  display:inline-block;
+}
+
+.r23-tcg nav button svg,
+.tcg-page nav button svg,
+.tcg-tabs button svg,
+.tcg-nav button svg,
+.tcg-module-tabs button svg{
+  flex:0 0 auto;
+  width:21px;
+  height:21px;
+  margin-right:9px;
+  vertical-align:middle;
+  color:#53637a;
+  transition:color .18s ease,transform .18s ease;
+}
+
+.r23-tcg nav button.active svg,
+.tcg-page nav button.active svg,
+.tcg-tabs button.active svg,
+.tcg-nav button.active svg,
+.tcg-module-tabs button.active svg{
+  color:#0f6bff;
+}
+
+.r23-tcg nav button:hover svg,
+.tcg-page nav button:hover svg,
+.tcg-tabs button:hover svg,
+.tcg-nav button:hover svg,
+.tcg-module-tabs button:hover svg{
+  color:#0f6bff;
+  transform:translateY(-1px);
+}
+
+/* Si la barra usa flex, garantiza icono + nombre perfectamente alineados. */
+.r23-tcg nav button,
+.tcg-page nav button,
+.tcg-tabs button,
+.tcg-nav button,
+.tcg-module-tabs button{
+  align-items:center;
+}
+
+/* Mobile: icono visible sin ampliar el tab. */
+@media(max-width:700px){
+  .r23-tcg nav button svg,
+  .tcg-page nav button svg,
+  .tcg-tabs button svg,
+  .tcg-nav button svg,
+  .tcg-module-tabs button svg{
+    width:19px;
+    height:19px;
+    margin-right:6px;
+  }
+}

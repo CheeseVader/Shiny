@@ -1,0 +1,36 @@
+/* GMX SYS-H Premium — visual-only layer. No backend/API logic changes. */
+.sys-h-premium{--sysh-ink:#13243b;--sysh-muted:#64748b;--sysh-line:#e7edf5;--sysh-soft:#f7f9fc;--sysh-blue:#2563eb;--sysh-green:#16a34a;--sysh-warn:#f59e0b;display:grid;gap:18px}
+.sys-h-premium .message{border-radius:12px;padding:12px 16px;box-shadow:0 8px 24px rgba(15,23,42,.06)}
+.sys-h-premium>.content-card,.sys-h-premium .content-card{border:1px solid var(--sysh-line);border-radius:18px;background:#fff;box-shadow:0 10px 30px rgba(15,23,42,.055);padding:22px}
+.sys-h-premium>.content-card:first-of-type{position:relative;overflow:hidden;background:linear-gradient(135deg,#fff 0%,#fbfdff 72%,#f3f7ff 100%)}
+.sys-h-premium>.content-card:first-of-type:after{content:"";position:absolute;width:220px;height:220px;border-radius:50%;right:-110px;top:-130px;background:rgba(37,99,235,.06);pointer-events:none}
+.sys-h-premium .section-head{display:flex;align-items:flex-start;justify-content:space-between;gap:18px;margin-bottom:18px}
+.sys-h-premium .eyebrow{font-size:11px;font-weight:800;letter-spacing:.12em;color:#5d6b7d;margin-bottom:5px}
+.sys-h-premium h2{color:var(--sysh-ink);letter-spacing:-.02em;margin:0}.sys-h-premium .section-copy{color:var(--sysh-muted);margin:6px 0 0;max-width:780px}
+.sys-h-premium button{border-radius:10px;font-weight:750;min-height:40px;box-shadow:none}.sys-h-premium button:not(.secondary){background:var(--sysh-ink)}
+.sys-h-premium button:not(.secondary):hover{filter:brightness(1.08)}
+.sys-h-premium button.secondary{background:#fff;border:1px solid #d8e0eb;color:var(--sysh-ink)}
+.sys-h-premium .system-grid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:12px}
+.sys-h-premium .system-grid>div{position:relative;min-height:100px;border:1px solid var(--sysh-line);border-radius:15px;background:#fff;padding:16px;display:flex;flex-direction:column;justify-content:center;box-shadow:0 6px 18px rgba(15,23,42,.035)}
+.sys-h-premium .system-grid>div:before{content:"";position:absolute;left:16px;top:14px;width:8px;height:8px;border-radius:50%;background:var(--sysh-green);box-shadow:0 0 0 5px rgba(22,163,74,.09)}
+.sys-h-premium .system-grid span{font-size:12px;color:var(--sysh-muted);font-weight:700;margin:12px 0 5px}.sys-h-premium .system-grid strong{font-size:18px;color:var(--sysh-ink);overflow:hidden;text-overflow:ellipsis}
+.sys-h-premium .system-section-tabs{display:flex;gap:6px;padding:6px;border:1px solid var(--sysh-line);border-radius:14px;background:#fff;box-shadow:0 8px 24px rgba(15,23,42,.045);overflow:auto}
+.sys-h-premium .system-section-tabs button{white-space:nowrap;flex:1;background:transparent!important;color:#64748b;border:0;box-shadow:none;padding:10px 16px}
+.sys-h-premium .system-section-tabs button.active{background:#eef4ff!important;color:#1d4ed8;box-shadow:inset 0 0 0 1px #dbe7ff}
+.sys-h-premium input,.sys-h-premium select,.sys-h-premium textarea{border:1px solid #dbe3ee!important;border-radius:10px!important;background:#fbfcfe!important;min-height:42px;transition:border-color .15s,box-shadow .15s,background .15s}
+.sys-h-premium textarea{min-height:90px}.sys-h-premium input:focus,.sys-h-premium select:focus,.sys-h-premium textarea:focus{outline:none;border-color:#8bb1ff!important;box-shadow:0 0 0 4px rgba(37,99,235,.09)!important;background:#fff!important}
+.sys-h-premium label{color:#344256;font-weight:700;gap:7px}.sys-h-premium label small,.sys-h-premium small{color:var(--sysh-muted)}
+.sys-h-premium .system-settings-grid,.sys-h-premium .form-grid{gap:16px}.sys-h-premium .system-check-setting,.sys-h-premium .check-label{border:1px solid var(--sysh-line);border-radius:12px;padding:13px 14px;background:var(--sysh-soft)}
+.sys-h-premium .system-settings-note,.sys-h-premium .architecture-note,.sys-h-premium .smtp-test-box{border:1px solid #dfe8f4;border-radius:14px;background:#f8fbff;padding:16px;color:#526174}
+.sys-h-premium .smtp-grid,.sys-h-premium .finance-fx-grid{gap:16px}.sys-h-premium .smtp-card,.sys-h-premium .finance-fx-card{border:1px solid var(--sysh-line)!important;border-radius:16px!important;background:#fff!important;padding:18px!important;box-shadow:0 6px 18px rgba(15,23,42,.035)}
+.sys-h-premium .smtp-card h3,.sys-h-premium .finance-fx-card h3,.sys-h-premium .finance-fx-history h3{color:var(--sysh-ink)}
+.sys-h-premium .smtp-secret-status,.sys-h-premium .finance-token-status{border-radius:9px;padding:8px 10px;background:#f0fdf4;color:#15803d;font-weight:700;font-size:12px}
+.sys-h-premium .finance-effective-rate{border:1px solid #dbe7ff;border-radius:14px;padding:12px 16px;background:#f7faff;min-width:245px}.sys-h-premium .finance-effective-rate span,.sys-h-premium .finance-effective-rate small{display:block;color:var(--sysh-muted)}.sys-h-premium .finance-effective-rate strong{display:block;color:#1d4ed8;font-size:20px;margin:2px 0}
+.sys-h-premium .finance-fx-history,.sys-h-premium .technical-empty{border:1px solid var(--sysh-line);border-radius:15px;background:#fff;padding:16px;margin-top:16px}
+.sys-h-premium .technical-kpis{gap:12px}.sys-h-premium .technical-kpis article{border:1px solid var(--sysh-line);border-radius:14px;background:#fff;box-shadow:0 6px 18px rgba(15,23,42,.035)}
+.sys-h-premium .technical-tabs{display:flex;gap:6px;border-bottom:1px solid var(--sysh-line);padding-bottom:8px}.sys-h-premium .technical-tabs button{background:transparent!important;color:#64748b}.sys-h-premium .technical-tabs button.active{background:#eef4ff!important;color:#1d4ed8}
+.sys-h-premium .table-wrap{border:1px solid var(--sysh-line);border-radius:13px;overflow:auto}.sys-h-premium table{margin:0}.sys-h-premium thead th{background:#f7f9fc;color:#536176}
+.sys-h-premium .smtp-progress-track{border-radius:999px;overflow:hidden;background:#e8eef7}.sys-h-premium .smtp-progress-bar{border-radius:999px;background:linear-gradient(90deg,#2563eb,#16a34a)}
+@media(max-width:1200px){.sys-h-premium .system-grid{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:760px){.sys-h-premium{gap:12px}.sys-h-premium>.content-card,.sys-h-premium .content-card{padding:16px;border-radius:14px}.sys-h-premium .section-head{flex-direction:column}.sys-h-premium .system-grid{grid-template-columns:repeat(2,1fr)}.sys-h-premium .system-section-tabs button{flex:0 0 auto}.sys-h-premium .finance-effective-rate{width:100%;min-width:0}}
+@media(max-width:480px){.sys-h-premium .system-grid{grid-template-columns:1fr}}

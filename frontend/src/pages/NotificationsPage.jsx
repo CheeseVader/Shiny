@@ -1,7 +1,9 @@
 import { brandText } from "../config/brand.js";import { useEffect, useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router';
 import { api } from '../services/api.js';
+import '../phase_gmx_exact_views_r23.css';
 
+import '../notifications_visual_r78_fix4.css';
 const priorities = ['', 'CRITICA', 'ALTA', 'MEDIA', 'BAJA'];
 const defaults = {
   'alerts.low_stock_enabled': 'true', 'alerts.low_stock_threshold': '5',
@@ -20,6 +22,7 @@ export default function NotificationsPage() {
   const [filters, setFilters] = useState({ status: 'OPEN', priority: '', type: '', search: '' });
   const [message, setMessage] = useState(''),[busy, setBusy] = useState(false),[refreshing, setRefreshing] = useState(false),[tab, setTab] = useState('alerts');
   const [lastUpdated, setLastUpdated] = useState(null);
+  const [selectedAlertId, setSelectedAlertId] = useState('');
 
   async function load({ silent = false } = {}) {
     if (!silent) setRefreshing(true);
@@ -57,9 +60,37 @@ export default function NotificationsPage() {
     const q = filters.search.trim().toLowerCase();
     return !q ? rows : rows.filter((x) => [x.titulo, x.mensaje, x.referencia, x.tipo, x.sucursal].some((v) => String(v || '').toLowerCase().includes(q)));
   }, [rows, filters.search]);
+  const selectedAlert = useMemo(() => {
+    const wanted = focusedAlertId || selectedAlertId;
+    return visible.find((row) => String(row.row_id) === String(wanted)) || visible[0] || null;
+  }, [visible, focusedAlertId, selectedAlertId]);
+  const typeSummary = useMemo(() => {
+    const counts = visible.reduce((result, row) => {
+      const key = String(row.tipo || 'OTRA').replaceAll('_', ' ');
+      result[key] = (result[key] || 0) + 1;
+      return result;
+    }, {});
+    return Object.entries(counts).sort((a, b) => b[1] - a[1]).slice(0, 5);
+  }, [visible]);
+  const trendSummary = useMemo(() => {
+    const days = Array.from({ length: 7 }, (_, index) => {
+      const date = new Date();
+      date.setHours(0, 0, 0, 0);
+      date.setDate(date.getDate() - (6 - index));
+      return { key: date.toISOString().slice(0, 10), label: date.toLocaleDateString('es-MX', { weekday: 'short' }), count: 0 };
+    });
+    const byKey = new Map(days.map((day) => [day.key, day]));
+    visible.forEach((row) => {
+      if (!row.fecha) return;
+      const key = new Date(row.fecha).toISOString().slice(0, 10);
+      if (byKey.has(key)) byKey.get(key).count += 1;
+    });
+    return days;
+  }, [visible]);
 
   useEffect(() => {
     if (!focusedAlertId || !rows.length) return;
+    setSelectedAlertId(focusedAlertId);
     const timer = setTimeout(() => {
       document.getElementById(`alert-row-${focusedAlertId}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }, 120);
@@ -126,7 +157,7 @@ export default function NotificationsPage() {
   const setBool = (key, val) => setSettings((x) => ({ ...x, [key]: String(val) }));
   const setNum = (key, val) => setSettings((x) => ({ ...x, [key]: String(val) }));
 
-  return <div className="alerts-page">
+  return <div className="alerts-page r23-view r23-alerts">
     <header className="alerts-hero">
       <div><div className="eyebrow">CONTROL OPERATIVO</div><h1>Notificaciones / Alertas</h1><p>Condiciones que requieren atención en inventario, finanzas, compras, caja y TCG.</p></div>
       <div className="alerts-header-tools">
@@ -149,49 +180,96 @@ export default function NotificationsPage() {
     </header>
     {message ? <div className="message">{message}</div> : null}
 
-    <div className="alert-kpis">
-      <article><span>Abiertas</span><strong>{summary.abiertas || 0}</strong></article>
-      <article><span>No leídas</span><strong>{summary.no_leidas || 0}</strong></article>
-      <article className="critical"><span>Críticas</span><strong>{summary.criticas || 0}</strong></article>
-      <article className="high"><span>Altas</span><strong>{summary.altas || 0}</strong></article>
-      <article><span>Resueltas</span><strong>{summary.resueltas || 0}</strong></article>
-    </div>
-
     <nav className="alerts-tabs">
       <button className={tab === 'alerts' ? 'active' : ''} onClick={() => setTab('alerts')}>Centro de alertas</button>
       <button className={tab === 'settings' ? 'active' : ''} onClick={() => setTab('settings')}>Configuración</button>
     </nav>
 
-    {tab === 'alerts' ? <>
-      <div className="alert-filterbar">
-        <select value={filters.status} onChange={(e) => setFilters((x) => ({ ...x, status: e.target.value }))}><option value="OPEN">Abiertas</option><option value="UNREAD">No leídas</option><option value="RESOLVED">Resueltas</option><option value="ALL">Todas</option></select>
-        <select value={filters.priority} onChange={(e) => setFilters((x) => ({ ...x, priority: e.target.value }))}>{priorities.map((p) => <option key={p} value={p}>{p || 'Todas las prioridades'}</option>)}</select>
-        <select value={filters.type} onChange={(e) => setFilters((x) => ({ ...x, type: e.target.value }))}><option value="">Todos los tipos</option>{types.map((t) => <option key={t}>{t}</option>)}</select>
-        <input value={filters.search} onChange={(e) => setFilters((x) => ({ ...x, search: e.target.value }))} placeholder="Buscar alerta, referencia, sucursal…" />
-      </div>
+    {tab === 'alerts' ? <section className="alerts-control-layout">
+      <section className="alert-kpis" aria-label="Resumen rápido de alertas">
+        <article className="alert-kpi alert-kpi-open">
+          <div className="alert-kpi-icon" aria-hidden="true">◎</div>
+          <div className="alert-kpi-copy">
+            <span className="alert-kpi-label">Alertas abiertas</span>
+            <strong>{summary.abiertas || 0}</strong>
+            <small>Requieren seguimiento</small>
+          </div>
+        </article>
+        <article className="alert-kpi alert-kpi-unread">
+          <div className="alert-kpi-icon" aria-hidden="true">✉</div>
+          <div className="alert-kpi-copy">
+            <span className="alert-kpi-label">No leídas</span>
+            <strong>{summary.no_leidas || 0}</strong>
+            <small>Pendientes de revisar</small>
+          </div>
+        </article>
+        <article className="alert-kpi alert-kpi-critical">
+          <div className="alert-kpi-icon" aria-hidden="true">!</div>
+          <div className="alert-kpi-copy">
+            <span className="alert-kpi-label">Críticas</span>
+            <strong>{summary.criticas || 0}</strong>
+            <small>Atención inmediata</small>
+          </div>
+        </article>
+        <article className="alert-kpi alert-kpi-high">
+          <div className="alert-kpi-icon" aria-hidden="true">△</div>
+          <div className="alert-kpi-copy">
+            <span className="alert-kpi-label">Altas</span>
+            <strong>{summary.altas || 0}</strong>
+            <small>Prioridad alta</small>
+          </div>
+        </article>
+        <article className="alert-kpi alert-kpi-resolved">
+          <div className="alert-kpi-icon" aria-hidden="true">✓</div>
+          <div className="alert-kpi-copy">
+            <span className="alert-kpi-label">Resueltas</span>
+            <strong>{summary.resueltas || 0}</strong>
+            <small>Atendidas correctamente</small>
+          </div>
+        </article>
+      </section>
+      <div className="alerts-control-main">
+      <section className="alerts-visual-summary" aria-label="Resumen visual de alertas">
+        <article>
+          <div className="alerts-visual-heading"><div><span>Distribución</span><h3>Alertas por tipo</h3></div><strong>{visible.length}</strong></div>
+          <div className="alerts-type-bars">{typeSummary.map(([label, value]) => <div key={label}><span>{label}</span><i><b style={{ width: `${Math.max(8, (value / Math.max(1, typeSummary[0]?.[1] || 1)) * 100)}%` }} /></i><strong>{value}</strong></div>)}</div>
+        </article>
+        <article>
+          <div className="alerts-visual-heading"><div><span>Tendencia</span><h3>Últimos 7 días</h3></div><strong>{trendSummary.reduce((sum, day) => sum + day.count, 0)}</strong></div>
+          <div className="alerts-trend-bars">{trendSummary.map((day) => <div key={day.key}><i><b style={{ height: `${Math.max(day.count ? 14 : 3, (day.count / Math.max(1, ...trendSummary.map((item) => item.count))) * 100)}%` }} /></i><strong>{day.count}</strong><span>{day.label.replace('.', '')}</span></div>)}</div>
+        </article>
+      </section>
 
-      {focusedAlertId ? <div className="focused-alert-banner">
-        <span>Mostrando la alerta seleccionada desde el aviso global.</span>
-        <button className="secondary compact" onClick={() => setSearchParams({})}>Quitar selección</button>
-      </div> : null}
-      <div className="alerts-list">
-        {visible.map((x) => <article id={`alert-row-${x.row_id}`} key={x.row_id} className={`alert-card ${String(x.prioridad || 'media').toLowerCase()} ${x.leida ? 'read' : ''} ${x.resuelta ? 'resolved' : ''} ${String(x.row_id) === String(focusedAlertId) ? 'focused' : ''}`}>
-          <div className="alert-icon">{x.tipo === 'STOCK_BAJO' ? '📦' : x.tipo === 'TCG_STOCK_BAJO' ? '🃏' : x.tipo?.startsWith('CXP_') ? '💳' : x.tipo === 'COMPRA_SIN_FACTURA' ? '🧾' : x.tipo === 'DIFERENCIA_CAJA' ? '💵' : '⚠️'}</div>
-          <div className="alert-body">
-            <div className="alert-title-line"><h3>{x.titulo}</h3><span className={`priority-pill ${String(x.prioridad).toLowerCase()}`}>{x.prioridad}</span></div>
-            <p>{x.mensaje}</p>
-            <div className="alert-meta"><span>{x.tipo}</span>{x.sucursal ? <span>{x.sucursal}</span> : null}{x.referencia ? <span>Ref. {x.referencia}</span> : null}<span>{x.fecha ? new Date(x.fecha).toLocaleString('es-MX') : '—'}</span></div>
-            {x.resuelta && x.nota_resolucion ? <div className="resolution-note">✓ {x.nota_resolucion}</div> : null}
+      <section className="alerts-center-grid">
+        <div className="alerts-inbox">
+          <div className="alert-filterbar">
+            <select value={filters.status} onChange={(e) => setFilters((x) => ({ ...x, status: e.target.value }))}><option value="OPEN">Abiertas</option><option value="UNREAD">No leídas</option><option value="RESOLVED">Resueltas</option><option value="ALL">Todas</option></select>
+            <select value={filters.priority} onChange={(e) => setFilters((x) => ({ ...x, priority: e.target.value }))}>{priorities.map((p) => <option key={p} value={p}>{p || 'Todas las prioridades'}</option>)}</select>
+            <select value={filters.type} onChange={(e) => setFilters((x) => ({ ...x, type: e.target.value }))}><option value="">Todos los tipos</option>{types.map((t) => <option key={t}>{t}</option>)}</select>
+            <input value={filters.search} onChange={(e) => setFilters((x) => ({ ...x, search: e.target.value }))} placeholder="Buscar alerta, referencia, sucursal…" />
           </div>
-          <div className="alert-card-actions">
-            {x.ruta && !x.resuelta ? <Link className="button secondary compact" to={x.ruta} onClick={() => !x.leida && mark(x, true)}>Atender</Link> : null}
-            {!x.leida ? <button className="secondary compact" onClick={() => mark(x, true)}>Marcar leída</button> : !x.resuelta ? <button className="secondary compact" onClick={() => mark(x, false)}>No leída</button> : null}
-            {!x.resuelta ? <button className="compact" onClick={() => resolve(x, true)}>Resolver</button> : <button className="secondary compact" onClick={() => resolve(x, false)}>Reabrir</button>}
+
+          {focusedAlertId ? <div className="focused-alert-banner">
+            <span>Mostrando la alerta seleccionada desde el aviso global.</span>
+            <button className="secondary compact" onClick={() => setSearchParams({})}>Quitar selección</button>
+          </div> : null}
+          <div className="alerts-list alerts-list-compact">
+            {visible.map((x) => <article onClick={() => setSelectedAlertId(x.row_id)} id={`alert-row-${x.row_id}`} key={x.row_id} className={`alert-card ${String(x.prioridad || 'media').toLowerCase()} ${x.leida ? 'read' : ''} ${x.resuelta ? 'resolved' : ''} ${String(x.row_id) === String(selectedAlert?.row_id) ? 'selected focused' : ''}`}>
+              <div className="alert-icon">{alertIcon(x.tipo)}</div>
+              <div className="alert-body">
+                <div className="alert-title-line"><h3>{x.titulo}</h3><span className={`priority-pill ${String(x.prioridad).toLowerCase()}`}>{x.prioridad}</span></div>
+                <p>{x.mensaje}</p>
+                <div className="alert-meta">{x.sucursal ? <span>{x.sucursal}</span> : null}<span>{x.fecha ? new Date(x.fecha).toLocaleString('es-MX') : '—'}</span></div>
+              </div>
+            </article>)}
+            {!visible.length ? <div className="alerts-empty"><b>Sin alertas para estos filtros.</b><span>{brandText("TCG_STORE_TEMPLATE continuará revisando las condiciones configuradas.")}</span></div> : null}
           </div>
-        </article>)}
-        {!visible.length ? <div className="alerts-empty"><b>Sin alertas para estos filtros.</b><span>{brandText("GMX continuará revisando las condiciones configuradas.")}</span></div> : null}
+        </div>
+
+      </section>
       </div>
-    </> : null}
+      <AlertDetail alert={selectedAlert} onRead={mark} onResolve={resolve} />
+    </section> : null}
 
     {tab === 'settings' ? <section className="alerts-settings">
       <div className="alerts-settings-head"><div><h2>Reglas automáticas</h2><p>Define cuándo una condición debe convertirse en alerta.</p></div><button onClick={saveSettings}>Guardar configuración</button></div>
@@ -206,6 +284,32 @@ export default function NotificationsPage() {
       </div>
     </section> : null}
   </div>;
+}
+
+function alertIcon(type) {
+  return type === 'STOCK_BAJO' ? '📦' : type === 'TCG_STOCK_BAJO' ? '🃏' : type?.startsWith('CXP_') ? '💳' : type === 'COMPRA_SIN_FACTURA' ? '🧾' : type === 'DIFERENCIA_CAJA' ? '💵' : '⚠️';
+}
+
+function AlertDetail({ alert, onRead, onResolve }) {
+  if (!alert) return <aside className="alert-detail-panel empty"><div className="alert-detail-empty"><span>✓</span><h3>Sin alertas seleccionadas</h3><p>Ajusta los filtros o ejecuta una revisión para consultar condiciones pendientes.</p></div></aside>;
+  return <aside className={`alert-detail-panel ${String(alert.prioridad || 'media').toLowerCase()}`}>
+    <div className="alert-detail-header"><span className="alert-detail-icon">{alertIcon(alert.tipo)}</span><div><span>Detalle de alerta</span><h2>{alert.titulo}</h2></div><span className={`priority-pill ${String(alert.prioridad).toLowerCase()}`}>{alert.prioridad}</span></div>
+    <p className="alert-detail-message">{alert.mensaje}</p>
+    <dl className="alert-detail-data">
+      <div><dt>Tipo</dt><dd>{String(alert.tipo || '—').replaceAll('_', ' ')}</dd></div>
+      <div><dt>Sucursal</dt><dd>{alert.sucursal || 'Todas / no indicada'}</dd></div>
+      <div><dt>Referencia</dt><dd>{alert.referencia || '—'}</dd></div>
+      <div><dt>Detectada</dt><dd>{alert.fecha ? new Date(alert.fecha).toLocaleString('es-MX') : '—'}</dd></div>
+      <div><dt>Lectura</dt><dd>{alert.leida ? 'Leída' : 'Pendiente'}</dd></div>
+      <div><dt>Estado</dt><dd>{alert.resuelta ? 'Resuelta' : 'Abierta'}</dd></div>
+    </dl>
+    {alert.resuelta && alert.nota_resolucion ? <div className="resolution-note">✓ {alert.nota_resolucion}</div> : null}
+    <div className="alert-detail-actions">
+      {alert.ruta && !alert.resuelta ? <Link className="button" to={alert.ruta} onClick={() => !alert.leida && onRead(alert, true)}>Atender alerta</Link> : null}
+      {!alert.leida ? <button className="secondary" onClick={() => onRead(alert, true)}>Marcar leída</button> : !alert.resuelta ? <button className="secondary" onClick={() => onRead(alert, false)}>Marcar no leída</button> : null}
+      {!alert.resuelta ? <button onClick={() => onResolve(alert, true)}>Resolver</button> : <button className="secondary" onClick={() => onResolve(alert, false)}>Reabrir</button>}
+    </div>
+  </aside>;
 }
 
 function Setting({ title, enabled, onEnabled, children }) {

@@ -1,0 +1,119 @@
+.cash-ob{display:grid;grid-template-columns:150px minmax(0,1fr);min-height:560px;margin-top:12px;border:1px solid #e4e7ec;border-radius:11px;background:#fff;overflow:hidden;color:#344054}.cash-ob *{box-sizing:border-box}
+.cash-ob-nav{padding:12px 8px;border-right:1px solid #e7e9ee;background:#fff}.cash-ob-nav button{position:relative;width:100%;min-height:38px!important;display:flex!important;align-items:center!important;gap:8px!important;margin:0 0 4px!important;padding:0 10px!important;border:0!important;border-radius:6px!important;background:transparent!important;color:#526071!important;box-shadow:none!important;font-size:7px!important;font-weight:700!important;text-align:left!important}.cash-ob-nav button svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:1.8}.cash-ob-nav button.active{background:#f5f2ff!important;color:#6746e8!important}.cash-ob-nav button.active:before{content:"";position:absolute;left:-8px;top:0;bottom:0;width:2px;background:#6d4df3}
+.cash-ob-content{min-width:0;padding:0 12px 12px}.cash-ob-head{display:flex;align-items:center;justify-content:space-between;gap:16px;min-height:60px;padding:9px 0;border-bottom:1px solid #eef0f3}.cash-ob-head small{display:block;color:#596579;font-size:6px;font-weight:800}.cash-ob-head h2{margin:2px 0 0;color:#172033;font-size:17px}.cash-ob-head-actions{display:flex;align-items:end;gap:7px}.cash-ob-head-actions label{display:grid;gap:3px}.cash-ob-head-actions label span{font-size:5.5px;font-weight:800}.cash-ob-head-actions select{height:28px!important;min-height:28px!important;padding:0 24px 0 7px!important;border:1px solid #dfe3e8!important;border-radius:6px!important;background:#fff!important;font-size:6.5px!important}.cash-ob-head-actions button{height:28px!important;min-height:28px!important;display:flex!important;align-items:center!important;gap:5px!important;padding:0 9px!important;border:1px solid #d8cffd!important;border-radius:6px!important;background:#f7f4ff!important;color:#6e4cf0!important;box-shadow:none!important;font-size:6.5px!important;font-weight:700!important}.cash-ob-head-actions svg{width:11px;height:11px;fill:none;stroke:currentColor;stroke-width:1.8}
+.cash-ob-message{margin:8px 0 0;padding:7px 9px;border:1px solid #e4e7ec;border-radius:6px;background:#fafbfc;color:#667085;font-size:6.5px}
+.cash-ob-controlrow{display:grid;grid-template-columns:150px 170px minmax(260px,1.35fr) 180px;gap:8px;padding:10px 0 8px}.cash-ob-card{min-height:150px;padding:10px;border:1px solid #e5e8ed;border-radius:8px;background:#fff}.cash-ob-label{color:#344054;font-size:7px;font-weight:800;text-align:center}.cash-ob-status{text-align:center}.cash-ob-lock{display:grid;place-items:center;width:34px;height:34px;margin:12px auto 6px;border-radius:50%}.cash-ob-lock.open{background:#eaf8f1;color:#23a66d}.cash-ob-lock.closed{background:#fff0f2;color:#d95865}.cash-ob-lock svg{width:19px;height:19px;fill:none;stroke:currentColor;stroke-width:1.8}.cash-ob-status>strong{display:block;color:#20a067;font-size:12px}.cash-ob-status>small{display:block;margin-top:3px;color:#667085;font-size:5.6px}
+.cash-ob-title{display:flex;align-items:center;gap:6px;margin-bottom:8px}.cash-ob-title span{display:grid;place-items:center;width:22px;height:22px;border-radius:6px}.cash-ob-title svg{width:13px;height:13px;fill:none;stroke:currentColor;stroke-width:1.8}.cash-ob-title b{color:#344054;font-size:7.5px}.cash-ob-title.green span{background:#eaf8f1;color:#25a66d}.cash-ob-title.purple span{background:#f2eeff;color:#7553e9}.cash-ob-title.blue span{background:#edf6ff;color:#2c82d5}.cash-ob-card label{display:grid;gap:3px;margin-bottom:6px}.cash-ob-card label>span{color:#667085;font-size:5.8px;font-weight:800}.cash-ob-card input,.cash-ob-card select{width:100%;height:28px!important;min-height:28px!important;padding:0 7px!important;border:1px solid #dfe4ea!important;border-radius:6px!important;background:#fff!important;color:#344054!important;box-shadow:none!important;font-size:6.5px!important}.cash-ob-card button{box-shadow:none!important}.green-btn,.purple-btn,.blue-btn{width:100%!important;height:27px!important;min-height:27px!important;margin-top:4px!important;border-radius:6px!important;background:#fff!important;font-size:6px!important;font-weight:800!important}.green-btn{border:1px solid #bfe7d1!important;color:#249a65!important}.purple-btn{border:1px solid #d7cdfd!important;color:#704ee8!important}.blue-btn{border:1px solid #c9e0f7!important;color:#2a7ece!important}
+.cash-ob-types{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-bottom:6px}.cash-ob-types button{height:25px!important;min-height:25px!important;border-radius:5px!important;background:#fff!important;font-size:5.8px!important}.cash-ob-types .in{border:1px solid #c7e8d5!important;color:#269b67!important}.cash-ob-types .out{border:1px solid #f0c8cc!important;color:#d95863!important}.cash-ob-types .in.active{background:#edf9f2!important}.cash-ob-types .out.active{background:#fff2f3!important}.cash-ob-adjustfields{display:grid;grid-template-columns:.8fr 1.2fr;gap:6px}
+.cash-ob-lower{display:grid;grid-template-columns:1fr 1fr;gap:8px}.cash-ob-tablecard,.cash-ob-full{overflow:hidden;border:1px solid #e5e8ed;border-radius:8px;background:#fff}.cash-ob-tablehead{display:flex;align-items:center;gap:6px;min-height:32px;padding:6px 8px;border-bottom:1px solid #edf0f3}.cash-ob-tablehead h3{margin:0;color:#344054;font-size:7.5px}.purple-icon,.blue-icon{display:grid;place-items:center;width:20px;height:20px;border-radius:5px;font-size:9px}.purple-icon{background:#f1edff;color:#7452e8}.blue-icon{background:#edf6ff;color:#2c82d5}.cash-ob-tablewrap{overflow:auto}.cash-ob-tablewrap table{width:100%;border-collapse:collapse;table-layout:fixed}.cash-ob-tablewrap th{height:24px;padding:0 6px;border-bottom:1px solid #edf0f3;background:#fafbfc;color:#7c8798;font-size:5.2px;text-align:left;white-space:nowrap}.cash-ob-tablewrap td{height:27px;padding:2px 6px;border-bottom:1px solid #f0f2f4;color:#536072;font-size:5.8px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.cash-ob-tablecard:first-child th:nth-child(1){width:27%}.cash-ob-tablecard:first-child th:nth-child(2){width:36%}.cash-ob-tablecard:first-child th:nth-child(3){width:20%}.cash-ob-tablecard:first-child th:nth-child(4){width:17%;text-align:right}.cash-ob-tablecard:first-child td:nth-child(4){text-align:right}.cash-ob-tablecard:nth-child(2) th:nth-child(1){width:22%}.cash-ob-tablecard:nth-child(2) th:nth-child(2){width:22%}.cash-ob-tablecard:nth-child(2) th:nth-child(3){width:28%}.cash-ob-tablecard:nth-child(2) th:nth-child(4){width:14%}.cash-ob-tablecard:nth-child(2) th:nth-child(5){width:14%}.in-money{color:#229766!important;font-weight:700}.out-money{color:#d95863!important;font-weight:700}.cash-ob-more{width:100%!important;height:27px!important;min-height:27px!important;padding:0 8px!important;border:0!important;border-top:1px solid #edf0f3!important;border-radius:0!important;background:#fff!important;color:#704ee8!important;box-shadow:none!important;font-size:5.8px!important;text-align:left!important}.cash-ob .empty{padding:15px!important;color:#98a2b3!important;text-align:center!important}
+.cash-ob-full{margin-top:10px}.cash-ob-fullhead{display:flex;align-items:center;justify-content:space-between;min-height:38px;padding:6px 9px;border-bottom:1px solid #edf0f3}.cash-ob-fullhead>div{display:flex;align-items:center;gap:6px}.cash-ob-fullhead h3{margin:0;color:#344054;font-size:8px}.cash-ob-fullhead>span{padding:3px 6px;border-radius:999px;background:#f2f4f7;color:#667085;font-size:5.8px}.cash-ob-tablewrap.full{max-height:480px}.cash-ob-tablewrap.full th,.cash-ob-tablewrap.full td{font-size:6.2px}
+.cash-ob button:disabled,.cash-ob input:disabled,.cash-ob select:disabled{opacity:.45;cursor:not-allowed}
+@media(max-width:1050px){.cash-ob{grid-template-columns:125px minmax(0,1fr)}.cash-ob-controlrow{grid-template-columns:1fr 1fr}.cash-ob-lower{grid-template-columns:1fr}}
+@media(max-width:700px){.cash-ob{grid-template-columns:1fr}.cash-ob-nav{display:flex;gap:4px;overflow:auto;border-right:0;border-bottom:1px solid #e7e9ee}.cash-ob-nav button{width:auto;min-width:max-content}.cash-ob-nav button.active:before{left:0;right:0;top:auto;bottom:-1px;width:auto;height:2px}.cash-ob-controlrow{grid-template-columns:1fr}.cash-ob-head{align-items:flex-start;flex-direction:column}.cash-ob-head-actions{width:100%;justify-content:space-between}}
+/* R58 - TIPOGRAFIA AMPLIADA OPCION B */
+/* Solo tipografia y controles. No cambia layout ni JSX. */
+
+.cash-ob-nav button{
+  font-size:12px!important;
+  line-height:1.2!important;
+}
+.cash-ob-head small{
+  font-size:10px!important;
+}
+.cash-ob-head h2{
+  font-size:26px!important;
+  line-height:1.15!important;
+}
+.cash-ob-head-actions label span{
+  font-size:10px!important;
+}
+.cash-ob-head-actions select,
+.cash-ob-head-actions button{
+  font-size:11px!important;
+}
+.cash-ob-message{
+  font-size:11px!important;
+}
+
+.cash-ob-label{
+  font-size:12px!important;
+}
+.cash-ob-status>strong{
+  font-size:20px!important;
+}
+.cash-ob-status>small{
+  font-size:10px!important;
+}
+
+.cash-ob-title b{
+  font-size:13px!important;
+}
+.cash-ob-card label>span{
+  font-size:11px!important;
+}
+.cash-ob-card input,
+.cash-ob-card select{
+  font-size:12px!important;
+}
+.green-btn,
+.purple-btn,
+.blue-btn{
+  font-size:11px!important;
+}
+.cash-ob-types button{
+  font-size:11px!important;
+}
+
+.cash-ob-tablehead h3{
+  font-size:13px!important;
+}
+.cash-ob-tablewrap th{
+  font-size:10px!important;
+}
+.cash-ob-tablewrap td{
+  font-size:11px!important;
+  line-height:1.25!important;
+}
+.cash-ob-more{
+  font-size:11px!important;
+}
+
+.cash-ob-fullhead h3{
+  font-size:14px!important;
+}
+.cash-ob-fullhead>span{
+  font-size:10px!important;
+}
+.cash-ob-tablewrap.full th,
+.cash-ob-tablewrap.full td{
+  font-size:12px!important;
+}
+
+.cash-ob-tablewrap th,
+.cash-ob-tablewrap td{
+  padding-left:8px!important;
+  padding-right:8px!important;
+}
+
+.cash-ob-tablewrap th{
+  height:30px!important;
+}
+.cash-ob-tablewrap td{
+  height:34px!important;
+}
+
+.cash-ob-card input,
+.cash-ob-card select{
+  height:34px!important;
+  min-height:34px!important;
+}
+.cash-ob-types button{
+  height:31px!important;
+  min-height:31px!important;
+}
+.green-btn,
+.purple-btn,
+.blue-btn{
+  height:32px!important;
+  min-height:32px!important;
+}

@@ -47,8 +47,8 @@ export default function DualAppearanceDesigner({ settings, setSettings, media = 
   }
 
   useEffect(() => {
-    window.addEventListener('gmx-media-library-updated', refreshMediaLibrary);
-    return () => window.removeEventListener('gmx-media-library-updated', refreshMediaLibrary);
+    window.addEventListener('tcg_store_template-media-library-updated', refreshMediaLibrary);
+    return () => window.removeEventListener('tcg_store_template-media-library-updated', refreshMediaLibrary);
   }, []);
 
   const [scope, setScope] = useState('client');
@@ -87,7 +87,16 @@ export default function DualAppearanceDesigner({ settings, setSettings, media = 
     const payload = Object.fromEntries(Object.entries(settings).filter(([k]) => k.startsWith(prefix)));
     try {
       await api('/api/v1/content/settings', { method: 'PUT', body: JSON.stringify(payload) });
-      if (scope === 'admin') window.dispatchEvent(new Event('gmx-theme-changed'));
+      if (scope === 'admin') {
+        try {
+          localStorage.setItem('TCG_STORE_TEMPLATE_ADMIN_BRAND', JSON.stringify({
+            name: get('admin', 'brand_name', brandText("TCG_STORE_TEMPLATE")),
+            logoText: get('admin', 'logo_text', 'G'),
+            descriptor: get('admin', 'brand_descriptor', 'LOCAL')
+          }));
+        } catch {}
+        window.dispatchEvent(new Event('tcg_store_template-theme-changed'));
+      }
       setMessage(scope === 'client' ? 'Tema del CLIENTE guardado.' : 'Tema de ADMINISTRACIÓN guardado.');
     } catch (e) {setMessage(e.message);}
   }
@@ -123,12 +132,15 @@ export default function DualAppearanceDesigner({ settings, setSettings, media = 
       <div className="store-builder-tabs">
         <button className={builderTab === 'theme' ? 'active' : ''} onClick={() => setBuilderTab('theme')}>🎨 Tema / Templates</button>
         <button className={builderTab === 'hero' ? 'active' : ''} onClick={() => setBuilderTab('hero')}>🎞 Slideshow / Hero</button>
-        <button className={builderTab === 'preview' ? 'active' : ''} onClick={() => setBuilderTab('preview')}>👁 Preview</button>
       </div>
 
       {builderTab === 'theme' ? <>
-        <section className="template-section">
-          <div className="designer-section-title"><div><h3>Templates Arcade / TCG / Anime</h3><p>Cinco estilos dinámicos como punto de partida; después puedes ajustar cada detalle.</p></div></div>
+        <div className="designer-layout designer-layout-theme">
+          <ThemeForm title="Tema de la tienda" scope="client" get={get} set={set} media={liveMedia} />
+          <StorePreview device={device} style={publicStyle} settings={settings} get={get} runtime={runtime} onOpenFull={() => setFullPreview(true)} />
+        </div>
+        <details className="template-section template-section-collapsed">
+          <summary><span>Templates Arcade / TCG / Anime</span><small>Usar un estilo como punto de partida</small></summary>
           <div className="template-grid">
             {Object.entries(TEMPLATES).map(([id, t]) => <button key={id} className={`template-card ${t.premium ? 'premium-template' : ''} ${get('client', 'template') === id ? 'selected' : ''}`} onClick={() => applyTemplate(id)}>
               <div className="template-badges">{t.premium ? <span className="premium-badge">ARCADE / TCG</span> : null}{t.recommended ? <span className="recommended">RECOMENDADO</span> : null}</div>
@@ -136,11 +148,7 @@ export default function DualAppearanceDesigner({ settings, setSettings, media = 
               <div className="template-swatches"><i style={{ background: t.values.background }} /><i style={{ background: t.values.primary }} /><i style={{ background: t.values.secondary }} /><i style={{ background: t.values.accent }} /></div>
             </button>)}
           </div>
-        </section>
-        <div className="designer-layout">
-          <ThemeForm title="Personalización de tienda" scope="client" get={get} set={set} media={liveMedia} />
-          <StorePreview device={device} style={publicStyle} settings={settings} get={get} runtime={runtime} onOpenFull={() => setFullPreview(true)} />
-        </div>
+        </details>
       </> : null}
 
       {builderTab === 'hero' ? <section className="hero-builder-wrap">
@@ -160,19 +168,51 @@ export default function DualAppearanceDesigner({ settings, setSettings, media = 
         </div>
       </section> : null}
 
-      {builderTab === 'preview' ? <StorePreview device={device} style={publicStyle} settings={settings} get={get} runtime={runtime} onOpenFull={() => setFullPreview(true)} /> : null}
-
       {fullPreview ? <div className="fullscreen-preview-modal">
         <div className="fullscreen-preview-toolbar"><strong>Preview completo · {device}</strong><button onClick={() => setFullPreview(false)}>Cerrar ✕</button></div>
         <StorePreview device={device} style={publicStyle} settings={settings} get={get} runtime={runtime} full />
       </div> : null}
     </> : <>
       <div className="designer-layout">
-        <ThemeForm title="Personalización del servidor / admin" scope="admin" get={get} set={set} media={liveMedia} />
+        <ThemeForm title="Tema del administrador" scope="admin" get={get} set={set} media={liveMedia} />
         <AdminPreview device={device} get={get} />
       </div>
     </>}
   </div>;
+}
+
+function AuthenticatedMediaPreview({ mediaId, className = '', alt = '' }) {
+  const [src, setSrc] = useState('');
+  const [failed, setFailed] = useState(false);
+
+  useEffect(() => {
+    let alive = true;
+    let objectUrl = '';
+    setSrc('');
+    setFailed(false);
+    if (!mediaId) return undefined;
+
+    const token = localStorage.getItem('GMX_AUTH_TOKEN') || localStorage.getItem('TCG_STORE_TEMPLATE_AUTH_TOKEN') || '';
+    fetch(`/api/v1/content/media/${encodeURIComponent(mediaId)}/file`, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {}
+    })
+      .then(async (r) => {
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        const blob = await r.blob();
+        objectUrl = URL.createObjectURL(blob);
+        if (alive) setSrc(objectUrl);
+      })
+      .catch(() => { if (alive) setFailed(true); });
+
+    return () => {
+      alive = false;
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+    };
+  }, [mediaId]);
+
+  if (failed) return <div className={`${className} authenticated-media-error`} aria-label={alt}>No se pudo cargar la vista previa.</div>;
+  if (!src) return <div className={`${className} authenticated-media-loading`} aria-label={alt}><span /></div>;
+  return <img src={src} className={className} alt={alt} />;
 }
 
 function ThemeForm({ title, scope, get, set, media }) {
@@ -180,15 +220,24 @@ function ThemeForm({ title, scope, get, set, media }) {
   return <article className="contentmk-card theme-form">
     <h3>{title}</h3>
     <div className="contentmk-fields cols2">
-      <label>Nombre de marca<input value={get(scope, 'brand_name', brandText("GMX"))} onChange={(e) => set(scope, 'brand_name', e.target.value)} /></label>
+      <label>Nombre de marca<input value={get(scope, 'brand_name', brandText("TCG_STORE_TEMPLATE"))} onChange={(e) => set(scope, 'brand_name', e.target.value)} /></label>
       <label>Texto/logo<input maxLength="4" value={get(scope, 'logo_text', 'G')} onChange={(e) => set(scope, 'logo_text', e.target.value)} /></label>
+      {!client ? <label>Descriptor del logo<input maxLength="16" value={get(scope, 'brand_descriptor', 'LOCAL')} onChange={(e) => set(scope, 'brand_descriptor', e.target.value.toUpperCase())} placeholder="LOCAL" /></label> : null}
       <label>Principal<input type="color" value={get(scope, 'primary', '#111827')} onChange={(e) => set(scope, 'primary', e.target.value)} /></label>
       {client ? <label>Secundario<input type="color" value={get(scope, 'secondary', '#f59e0b')} onChange={(e) => set(scope, 'secondary', e.target.value)} /></label> : null}
       {client ? <label>Acento<input type="color" value={get(scope, 'accent', '#8b5cf6')} onChange={(e) => set(scope, 'accent', e.target.value)} /></label> : null}
       <label>Superficie<input type="color" value={get(scope, 'surface', '#ffffff')} onChange={(e) => set(scope, 'surface', e.target.value)} /></label>
       <label>Fondo<input type="color" value={get(scope, 'background', '#f2f4f7')} onChange={(e) => set(scope, 'background', e.target.value)} /></label>
       {client ? <label>Texto<input type="color" value={get(scope, 'text', '#f8fafc')} onChange={(e) => set(scope, 'text', e.target.value)} /></label> : null}
-      <label className="span2">Imagen background<select value={get(scope, 'background_media_id', '')} onChange={(e) => set(scope, 'background_media_id', e.target.value)}><option value="">Sin imagen</option>{media.filter((m) => m.activo !== false).map((m) => <option key={m.id_media} value={m.id_media}>{m.nombre || m.nombre_archivo}</option>)}</select></label>
+      <label className="span2 background-media-field">Fondo de la {client ? 'tienda' : 'administración'}
+        <select value={get(scope, 'background_media_id', '')} onChange={(e) => set(scope, 'background_media_id', e.target.value)}>
+          <option value="">Sin imagen</option>{media.filter((m) => m.activo !== false).map((m) => <option key={m.id_media} value={m.id_media}>{m.nombre || m.nombre_archivo}</option>)}
+        </select>
+        {get(scope, 'background_media_id', '') ? <div className="background-live-preview">
+          <AuthenticatedMediaPreview mediaId={get(scope, 'background_media_id', '')} className="background-live-preview-image" alt="Vista previa del fondo seleccionado" />
+          <div><strong>Fondo seleccionado</strong><small>La previsualización se actualiza inmediatamente.</small></div>
+        </div> : <div className="background-empty-preview">Selecciona una imagen de la biblioteca para usarla como fondo.</div>}
+      </label>
       <label>Radio<input type="range" min="4" max="30" value={get(scope, 'radius', client ? '18' : '14')} onChange={(e) => set(scope, 'radius', e.target.value)} /><span>{get(scope, 'radius', client ? '18' : '14')} px</span></label>
       <label>Opacidad paneles<input type="range" min=".55" max="1" step=".05" value={get(scope, 'panel_opacity', client ? '.88' : '.90')} onChange={(e) => set(scope, 'panel_opacity', e.target.value)} /><span>{Math.round(Number(get(scope, 'panel_opacity', client ? '.88' : '.90')) * 100)}%</span></label>
       <label>Opacidad background<input type="range" min="0" max="1" step=".05" value={get(scope, 'background_opacity', client ? '.28' : '.18')} onChange={(e) => set(scope, 'background_opacity', e.target.value)} /><span>{Math.round(Number(get(scope, 'background_opacity', client ? '.28' : '.18')) * 100)}%</span></label>
@@ -211,11 +260,11 @@ function StorePreview({ device, style, get, runtime, heroOnly = false, onOpenFul
   return <article className={`preview-shell ${full ? 'full' : ''}`}>
     <div className="preview-label"><strong>PREVIEW CLIENTE</strong><div><span>{device.toUpperCase()} · {full ? 'FULL' : `${width}px`}</span>{!full ? <button className="preview-popout" onClick={onOpenFull}>⛶ Pantalla completa</button> : null}</div></div>
     <div className={`store-preview device-${device} fx-${get('client', 'visual_fx', 'none')}`} style={{ ...style, maxWidth: width }}>
-      {bgId ? <SecureMedia mediaId={bgId} className="store-background" /> : null}
+      {bgId ? <AuthenticatedMediaPreview mediaId={bgId} className="store-background" alt="Fondo de la tienda" /> : null}
       <div className="store-overlay" style={{ opacity: Number(get('client', 'background_overlay', '.38')) }} />
 
       {!heroOnly ? <header className={`store-header ${get('client', 'header_style', 'floating')}`}>
-        <div className="store-brand"><b>{get('client', 'logo_text', 'G')}</b><strong>{get('client', 'brand_name', brandText("GMX"))}</strong></div>
+        <div className="store-brand"><b>{get('client', 'logo_text', 'G')}</b><strong>{get('client', 'brand_name', brandText("TCG_STORE_TEMPLATE"))}</strong></div>
         <div className="store-search">🔎 Buscar cartas, productos, sets...</div>
         <nav><span>Magic</span><span>Yu-Gi-Oh!</span><span>Pokémon</span><span>One Piece</span><span>Más</span><span>👤</span><span>🛒 3</span></nav>
       </header> : null}
@@ -318,10 +367,13 @@ function BannerVisual({ banner, device }) {
 
 function AdminPreview({ device, get }) {
   const width = device === 'desktop' ? 1100 : device === 'tablet' ? 760 : 390;
+  const bgId = get('admin', 'background_media_id', '');
   return <article className="preview-shell"><div className="preview-label"><strong>PREVIEW ADMIN</strong><span>{device.toUpperCase()}</span></div>
     <div className={`admin-preview device-${device}`} style={{ maxWidth: width, background: get('admin', 'background', '#f2f4f7'), borderRadius: Number(get('admin', 'radius', '14')) }}>
-      <aside style={{ background: get('admin', 'primary', '#101828') }}><b>{get('admin', 'logo_text', 'G')}</b><strong>{get('admin', 'brand_name', brandText("GMX"))}</strong><span>Dashboard</span><span>Productos</span><span>Pedidos</span><span>TCG</span></aside>
-      <main><small>{brandText("GMX ADMIN")}</small><h2>Dashboard</h2><div className="admin-metrics"><div>Productos<br /><b>128</b></div><div>Pedidos<br /><b>37</b></div></div><div className="admin-table-mock">Vista del servidor / backoffice</div></main>
+      {bgId ? <AuthenticatedMediaPreview mediaId={bgId} className="admin-preview-background" alt="Fondo del administrador" /> : null}
+      <div className="admin-preview-overlay" style={{ opacity: Number(get('admin', 'background_overlay', '.30')) }} />
+      <aside style={{ background: get('admin', 'primary', '#101828') }}><div className="preview-dynamic-brand"><strong>{get('admin', 'brand_name', brandText("TCG_STORE_TEMPLATE"))}</strong><small>{get('admin', 'brand_descriptor', 'LOCAL')}</small></div><span>Dashboard</span><span>Productos</span><span>Pedidos</span><span>TCG</span></aside>
+      <main><small>{brandText("TCG_STORE_TEMPLATE ADMIN")}</small><h2>Dashboard</h2><div className="admin-metrics"><div>Productos<br /><b>128</b></div><div>Pedidos<br /><b>37</b></div></div><div className="admin-table-mock">Vista del servidor / backoffice</div></main>
     </div>
   </article>;
 }

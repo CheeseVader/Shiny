@@ -98,6 +98,7 @@ export default function App(){
         <Route path="pedidos" element={<OrdersPage mode="orders"/>}/>
         <Route path="compras" element={<PurchasesCashPage/>}/>
         <Route path="caja" element={<PurchasesCashPage/>}/>
+        <Route path="devoluciones" element={<CommercialPage/>}/>
         <Route path="comercial" element={<CommercialPage/>}/>
         <Route path="contenido" element={<ContentMarketingPage/>}/>
         <Route path="promociones" element={<PromotionsLoyaltyPage/>}/>
