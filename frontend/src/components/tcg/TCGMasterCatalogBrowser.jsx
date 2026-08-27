@@ -18,8 +18,6 @@ export default function TCGMasterCatalogBrowser({ onNavigate }) {
   const [gameCode, setGameCode] = useState('');
   const [sets, setSets] = useState([]);
   const [setCode, setSetCode] = useState('');
-  const [rarities, setRarities] = useState([]);
-  const [rarity, setRarity] = useState('');
   const [search, setSearch] = useState('');
   const [cards, setCards] = useState([]);
   const [page, setPage] = useState(1);
@@ -35,7 +33,6 @@ export default function TCGMasterCatalogBrowser({ onNavigate }) {
   const [pricesError, setPricesError] = useState('');
   const [selectedPriceSources, setSelectedPriceSources] = useState([]);
   const [addingToTemplate, setAddingToTemplate] = useState(false);
-  const [quickView, setQuickView] = useState('expansions');
 
   const currentGame = summary.find((x) => x.game_code === gameCode) || null;
 
@@ -62,7 +59,7 @@ export default function TCGMasterCatalogBrowser({ onNavigate }) {
     setMessage('');
     try {
       const r = await api('/api/v1/tcg-sync/master-catalog/summary');
-      const list = Array.isArray(r.data) ? r.data : [];
+      const list = (Array.isArray(r.data) ? r.data : []).filter((x) => Number(x.cards_count || 0) > 0);
       setSummary(list);
       if (!gameCode && list.length) setGameCode(list[0].game_code);
       if (!list.length) {
@@ -81,19 +78,10 @@ export default function TCGMasterCatalogBrowser({ onNavigate }) {
     const qs = new URLSearchParams({ gameCode: code });
     if (q.trim()) qs.set('search', q.trim());
     const r = await api(`/api/v1/tcg-sync/master-catalog/sets?${qs}`);
-    setSets(r.data || []);
+    setSets((r.data || []).filter((x) => Number(x.synced_cards || 0) > 0));
   }
 
-  async function loadRarities(code, set = '', q = '') {
-    if (!code) {setRarities([]);return;}
-    const qs = new URLSearchParams({ gameCode: code });
-    if (set) qs.set('setCode', set);
-    if (q.trim()) qs.set('search', q.trim());
-    const r = await api(`/api/v1/tcg-sync/master-catalog/rarities?${qs}`);
-    setRarities(r.data || []);
-  }
-
-  async function loadCards({ targetPage = page, code = gameCode, set = setCode, rar = rarity, q = search } = {}) {
+  async function loadCards({ targetPage = page, code = gameCode, set = setCode, q = search } = {}) {
     if (!code) {setCards([]);return;}
     setBusy(true);setMessage('');
     try {
@@ -103,7 +91,6 @@ export default function TCGMasterCatalogBrowser({ onNavigate }) {
         pageSize: String(pageSize)
       });
       if (set) qs.set('setCode', set);
-      if (rar) qs.set('rarity', rar);
       if (q) qs.set('search', q);
       const r = await api(`/api/v1/tcg-sync/master-catalog/cards?${qs}`);
       setCards(r.data?.rows || []);
@@ -120,62 +107,50 @@ export default function TCGMasterCatalogBrowser({ onNavigate }) {
   useEffect(() => {loadSummary();}, []);
   useEffect(() => {
     if (!gameCode) return;
-    setSetCode('');setRarity('');setPage(1);setSelectedCard(null);setPrices(null);setPricesError('');setPricesLoading(false);
+    setSetCode('');setPage(1);setSelectedCard(null);setPrices(null);setPricesError('');setPricesLoading(false);
     Promise.all([
     loadSets(gameCode),
-    loadRarities(gameCode, ''),
     loadSourcePreferences(gameCode)]
     ).catch((e) => setMessage(e.message));
-    loadCards({ targetPage: 1, code: gameCode, set: '', rar: '', q: '' });
+    loadCards({ targetPage: 1, code: gameCode, set: '', q: '' });
   }, [gameCode]);
 
   useEffect(() => {
     if (!gameCode) return;
-    setRarity('');setPage(1);setSelectedCard(null);setPrices(null);setPricesError('');setPricesLoading(false);
-    loadRarities(gameCode, setCode, search).catch((e) => setMessage(e.message));
-    loadCards({ targetPage: 1, code: gameCode, set: setCode, rar: '', q: search });
+    setPage(1);setSelectedCard(null);setPrices(null);setPricesError('');setPricesLoading(false);
+    loadCards({ targetPage: 1, code: gameCode, set: setCode, q: search });
   }, [setCode]);
 
   useEffect(() => {
     if (!gameCode) return;
     setPage(1);setSelectedCard(null);setPrices(null);setPricesError('');setPricesLoading(false);
-    loadCards({ targetPage: 1, code: gameCode, set: setCode, rar: rarity, q: search });
-  }, [rarity, pageSize]);
+    loadCards({ targetPage: 1, code: gameCode, set: setCode, q: search });
+  }, [pageSize]);
 
   useEffect(() => {
     if (!gameCode) return;
     const timer = setTimeout(async () => {
       try {
-        const [setResponse] = await Promise.all([
-        (async () => {
+        const setResponse = await (async () => {
           const qs = new URLSearchParams({ gameCode });
           if (search.trim()) qs.set('search', search.trim());
           return api(`/api/v1/tcg-sync/master-catalog/sets?${qs}`);
-        })(),
-        loadRarities(gameCode, setCode, search)]
-        );
+        })();
 
-        const compatibleSets = setResponse.data || [];
+        const compatibleSets = (setResponse.data || []).filter((x) => Number(x.synced_cards || 0) > 0);
         setSets(compatibleSets);
 
         if (setCode && !compatibleSets.some((x) => x.codigo === setCode)) {
           setSetCode('');
-          setRarity('');
         }
 
-        await loadCards({ targetPage: 1, code: gameCode, set: compatibleSets.some((x) => x.codigo === setCode) ? setCode : '', rar: rarity, q: search });
+        await loadCards({ targetPage: 1, code: gameCode, set: compatibleSets.some((x) => x.codigo === setCode) ? setCode : '', q: search });
       } catch (e) {
         setMessage(e.message);
       }
     }, 350);
     return () => clearTimeout(timer);
   }, [search]);
-
-  async function submitSearch(e) {
-    e?.preventDefault();
-    setPage(1);
-    await loadCards({ targetPage: 1 });
-  }
 
   function openCard(card) {
     // First paint the modal. Price references are loaded afterwards.
@@ -311,56 +286,42 @@ export default function TCGMasterCatalogBrowser({ onNavigate }) {
     }
   }
 
-  const totalSets = summary.reduce((n, g) => n + Number(g.sets_count || 0), 0);
+  const totalSets = summary.reduce((n, g) => n + Number(g.synced_sets_count || 0), 0);
   const totalCards = summary.reduce((n, g) => n + Number(g.cards_count || 0), 0);
   const totalVariants = summary.reduce((n, g) => n + Number(g.cards_with_prices || 0), 0);
-  const recentSets = [...sets].slice(0, 4);
-  const showingSearch = Boolean(search.trim());
 
   return <div className="master-catalog-browser proposal-a-master design4-master">
     <section className="proposal-a-master-home design4-home">
       <div className="proposal-a-heading-row design4-heading">
-        <div><span className="eyebrow">TRADING CARD GAME</span><h2>Catálogo TCG</h2><p>Gestiona y sincroniza tu catálogo de cartas TCG</p></div>
-        <span className="proposal-a-sync">● Sincronizado y actualizado</span>
+        <div><span className="eyebrow">TRADING CARD GAME</span><h2>Catálogo TCG</h2><p>Consulta todo el catálogo de cartas ya descargado y guardado localmente</p></div>
+        <span className="proposal-a-sync">● Catálogo descargado</span>
       </div>
 
       <div className="design4-kpis">
         <article><i>▱</i><div><span>TCG</span><strong>{summary.length.toLocaleString('es-MX')}</strong><small>Activos</small></div></article>
-        <article><i className="green">◇</i><div><span>Expansiones</span><strong>{totalSets.toLocaleString('es-MX')}</strong><small>Totales</small></div></article>
+        <article><i className="green">◇</i><div><span>Expansiones</span><strong>{totalSets.toLocaleString('es-MX')}</strong><small>Descargadas</small></div></article>
         <article><i>▤</i><div><span>Cartas</span><strong>{totalCards.toLocaleString('es-MX')}</strong><small>Totales</small></div></article>
         <article><i className="violet">▧</i><div><span>Variantes</span><strong>{totalVariants.toLocaleString('es-MX')}</strong><small>Con referencia</small></div></article>
         <article><i className="green">$</i><div><span>Proveedores</span><strong>{summary.length.toLocaleString('es-MX')}</strong><small>Configurados</small></div></article>
       </div>
 
-      <form className="design4-filterbar" onSubmit={submitSearch}>
-        <div className="design4-search"><span>⌕</span><input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Buscar TCG, expansión o carta..." /></div>
+      <div className="design4-filterbar" style={{ gridTemplateColumns: 'minmax(320px,2fr) minmax(190px,1fr) minmax(240px,1fr)' }}>
+        <div className="design4-search"><span>⌕</span><input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Buscar carta por nombre, número o código..." /></div>
         <select value={gameCode} onChange={(e) => setGameCode(e.target.value)}>{summary.map((g) => <option key={g.game_code} value={g.game_code}>{g.game_name}</option>)}</select>
-        <select value={setCode} onChange={(e) => setSetCode(e.target.value)}><option value="">Expansión</option>{sets.map((x) => <option key={x.codigo} value={x.codigo}>{x.nombre}</option>)}</select>
-        <select value={rarity} onChange={(e) => setRarity(e.target.value)}><option value="">Estado</option>{rarities.map((x) => <option key={x.rarity} value={x.rarity}>{x.rarity}</option>)}</select>
-        <button type="button" className="secondary design4-clear" onClick={() => { setSearch(''); setSetCode(''); setRarity(''); }}>Limpiar</button>
-        <button type="submit" className="design4-filter-btn">▽ Filtros</button>
-      </form>
+        <select value={setCode} onChange={(e) => setSetCode(e.target.value)}><option value="">Todas las expansiones guardadas</option>{sets.map((x) => <option key={x.codigo} value={x.codigo}>{x.nombre}</option>)}</select>
+      </div>
 
       {message ? <div className="message proposal-a-message">{message}</div> : null}
 
-      {!showingSearch ? <section className="proposal-a-recent design4-table-card">
-        <div className="proposal-a-section-title"><strong>Expansiones recientes</strong></div>
-        <div className="table-wrap proposal-a-table"><table><thead><tr><th>Expansión</th><th>TCG</th><th>Código</th><th>Cartas</th><th>Proveedor</th><th>Estado</th><th>Actualizado</th></tr></thead>
-          <tbody>{recentSets.map((set) => <tr key={set.row_id || set.codigo}>
-            <td><strong>{set.nombre || set.codigo}</strong></td><td>{currentGame?.game_name || gameCode || '—'}</td><td>{set.codigo || '—'}</td>
-            <td>{Number(set.synced_cards || set.total_cartas || 0).toLocaleString('es-MX')}</td><td>{currentGame?.provider_name || currentGame?.catalog_provider || '—'}</td>
-            <td><span className="status active">Completo</span></td><td>{when(set.last_synced_at || set.updated_at)}</td>
-          </tr>)}</tbody></table></div>
-        {!recentSets.length && !summaryLoading ? <div className="public-empty small">No hay expansiones sincronizadas para mostrar.</div> : null}
-        <div className="design4-table-footer"><button type="button" className="secondary" onClick={() => setSearch(' ')}>Ver todas las expansiones →</button></div>
-      </section> : <section className="proposal-a-results design4-table-card">
-        <div className="proposal-a-results-head"><div><strong>Resultados</strong><span>{total.toLocaleString('es-MX')} coincidencias</span></div><button type="button" className="secondary compact" onClick={() => setSearch('')}>Cerrar resultados</button></div>
-        <div className="table-wrap proposal-a-table"><table><thead><tr><th>Carta</th><th>Expansión</th><th>Rareza</th><th>Precio mercado</th><th>Estado</th><th></th></tr></thead><tbody>{cards.map((card) => <tr key={card.row_id}>
-          <td><div className="proposal-a-card-name">{card.image_local_url || card.image_small_url || card.image_large_url ? <img src={card.image_local_url || card.image_small_url || card.image_large_url} alt="" /> : <span>TCG</span>}<div><strong>{card.name}</strong><small>#{card.collector_number || card.number || '—'}</small></div></div></td>
-          <td>{card.set_name || card.set_code}</td><td>{card.rarity || '—'}</td><td>{card.market_price || card.price_market || '—'}</td><td><span className={card.price_providers ? 'status active' : 'status warning'}>{card.price_providers ? 'Con precio' : 'Sin precio'}</span></td><td><button type="button" className="secondary compact" onClick={() => openCard(card)}>Ver</button></td>
+      <section className="proposal-a-results design4-table-card">
+        <div className="proposal-a-results-head"><div><strong>Cartas del catálogo</strong><span>{total.toLocaleString('es-MX')} cartas{currentGame?.game_name ? ` · ${currentGame.game_name}` : ''}{setCode ? ` · ${sets.find((x) => x.codigo === setCode)?.nombre || setCode}` : ''}</span></div></div>
+        <div className="table-wrap proposal-a-table"><table><thead><tr><th>Carta</th><th>Expansión</th><th>Nº</th><th>Rareza</th><th>Precio mercado</th><th>Proveedor</th><th>Actualizado</th><th></th></tr></thead><tbody>{cards.map((card) => <tr key={card.row_id}>
+          <td><div className="proposal-a-card-name">{card.image_local_url || card.image_small_url || card.image_large_url ? <img src={card.image_local_url || card.image_small_url || card.image_large_url} alt="" /> : <span>TCG</span>}<div><strong>{card.name}</strong></div></div></td>
+          <td>{card.set_name || card.set_code || '—'}</td><td>{card.collector_number || card.number || '—'}</td><td>{card.rarity || '—'}</td><td>{card.lowest_market_numeric ?? '—'}</td><td>{card.provider_code || '—'}</td><td>{when(card.last_synced_at)}</td><td><button type="button" className="secondary compact" onClick={() => openCard(card)}>Ver</button></td>
         </tr>)}</tbody></table></div>
+        {!cards.length && !busy ? <div className="public-empty small">No hay cartas descargadas que coincidan con los filtros seleccionados.</div> : null}
         <div className="proposal-a-pagination"><button disabled={page <= 1 || busy} onClick={() => loadCards({ targetPage: page - 1 })}>‹</button><span>{page} / {pages}</span><button disabled={page >= pages || busy} onClick={() => loadCards({ targetPage: page + 1 })}>›</button></div>
-      </section>}
+      </section>
 
       {currentGame ? <details className="proposal-a-advanced"><summary>Configuración avanzada de fuentes</summary><TCGSourceSelector gameCode={gameCode} onSaved={(prefs) => setSelectedPriceSources(Array.isArray(prefs?.priceSources) ? prefs.priceSources.map((x) => String(x || '').toUpperCase()) : [])} /></details> : null}
     </section>

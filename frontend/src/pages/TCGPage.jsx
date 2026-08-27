@@ -5,9 +5,13 @@ import VisionCandidatePicker from '../components/VisionCandidatePicker.jsx';
 import { visionQueries, scoreVisionCandidate } from '../utils/vision.js';
 import TCGAutoSyncPanel from '../components/tcg/TCGAutoSyncPanel.jsx';
 import TCGMasterCatalogBrowser from '../components/tcg/TCGMasterCatalogBrowser.jsx';
+import { strictTcgRuleR16, categoriesR16, categoryRuleR16, normalizeR16List, serializeClassificationR16 } from '../utils/tcgReceptionRulesR16.js';
+import { tcgReceptionPreset, mergeReceptionOptions, GMX_TCG_R12_COVERED_CODES } from '../utils/tcgReceptionPresetsR12.js';
 import '../phase_gmx_exact_views_r23.css';
 import '../phase10_6_2_3.css';
 import './TCGDesign4Exact.css';
+import '../tcgReceptionManualR4.css';
+import '../tcgReceptionIndividualR1.css';
 import '../gmx_tcg_inventory_final.css';
 import '../tcg_nav_icons_r76.css';
 const money = (v) => Number(v || 0).toLocaleString('es-MX', { style: 'currency', currency: 'MXN' });
@@ -328,6 +332,13 @@ export default function TCGPage() {
   const [entryGameFilter, setEntryGameFilter] = useState('');
   const [entrySetFilter, setEntrySetFilter] = useState('');
   const [visionOpen, setVisionOpen] = useState(false);
+  /* GMX_RECEPCION_INDIVIDUAL_R1 */
+  const [entryReceptionName, setEntryReceptionName] = useState('');
+  const [entryReceptionCode, setEntryReceptionCode] = useState('');
+  const [entryReceptionRarity, setEntryReceptionRarity] = useState('');
+  const [entryReceptionResults, setEntryReceptionResults] = useState([]);
+  const [entryReceptionSelected, setEntryReceptionSelected] = useState(null);
+  const [entryReceptionBusy, setEntryReceptionBusy] = useState(false);
   const [visionCandidates, setVisionCandidates] = useState([]);
   const [visionPickerOpen, setVisionPickerOpen] = useState(false);
   const [operationalMasterSets, setOperationalMasterSets] = useState([]);
@@ -348,6 +359,238 @@ export default function TCGPage() {
     graded: false, empresa_grading: '', grado: '', certificado: '', cantidad: 1, costo_unitario: 0,
     precio_venta: 0, precio_oferta: 0, tipo_entrada: 'COMPRA', origen_nombre: '', origen_referencia: '', documento: '', notas: ''
   });
+
+  /* GMX_TCG_RECEPCION_MANUAL_R4 */
+  const [manualReceptionR4, setManualReceptionR4] = useState({
+    nombre: '',
+    numero: '',
+    rareza: '',
+    tipo_carta: '',
+    subtipo: '',
+    artista: ''
+  });
+
+  /* GMX_TCG_RECEPCION_EXPANSIONES_R8 */
+  /* GMX_TCG_RECEPCION_R9_FIX_PANTALLA_GRIS */
+  const [manualSetNameR8, setManualSetNameR8] = useState('');
+  const [manualSetModeR8, setManualSetModeR8] = useState(false);
+  const [manualSetBusyR8, setManualSetBusyR8] = useState(false);
+
+  /* GMX_TCG_RECEPCION_BUSCADOR_EXPANSIONES_R13 */
+  const [expansionSearchR13, setExpansionSearchR13] = useState('');
+  const [expansionOpenR13, setExpansionOpenR13] = useState(false);
+  const [masterExpansionSetsR13, setMasterExpansionSetsR13] = useState([]);
+  const [masterExpansionLoadingR13, setMasterExpansionLoadingR13] = useState(false);
+  const [expansionSelectBusyR13, setExpansionSelectBusyR13] = useState(false);
+
+  /* GMX_TCG_RECEPCION_REGLAS_ESTRICTAS_R16 */
+  const [cardVariantR16, setCardVariantR16] = useState('');
+  const [cardTypeR16, setCardTypeR16] = useState('');
+  const [cardAttributeR16, setCardAttributeR16] = useState('');
+
+  /* GMX_TCG_RECEPCION_SINGLE_MANUAL_R10 */
+  const [manualFieldModeR10, setManualFieldModeR10] = useState({
+    rareza:false,
+    tipo:false,
+    subtipo:false,
+    artista:false,
+    edicion:false
+  });
+
+
+
+  /* GMX_TCG_RECEPCION_MANUAL_R5 */
+  const manualReceptionRaritiesR5 = useMemo(() => {
+    if (!entryGameFilter) return [];
+    const seen=new Set();
+    return (Array.isArray(rarities) ? rarities : [])
+      .filter((r) => String(r.id_juego || '') === String(entryGameFilter))
+      .filter((r) => r.activo !== false)
+      .sort((a,b) => Number(a.orden || 999999) - Number(b.orden || 999999) || String(a.nombre || '').localeCompare(String(b.nombre || ''), 'es'))
+      .filter((r)=>{
+        const key=`${String(r.nombre||'').trim().toLowerCase()}|${String(r.codigo||'').trim().toLowerCase()}`;
+        if(seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
+  }, [rarities, entryGameFilter]);
+
+  /* GMX_TCG_RECEPCION_CATALOGOS_DINAMICOS_R7 */
+  const manualReceptionCardsR7 = useMemo(() => {
+    if (!entryGameFilter) return [];
+    return (Array.isArray(cards) ? cards : []).filter((c) => String(c.id_juego || '') === String(entryGameFilter));
+  }, [cards, entryGameFilter]);
+
+
+  const manualReceptionTypesR7 = useMemo(() => {
+    return [...new Set(manualReceptionCardsR7.map((c)=>String(c.tipo_carta||'').trim()).filter(Boolean))]
+      .sort((a,b)=>a.localeCompare(b,'es',{sensitivity:'base'}));
+  }, [manualReceptionCardsR7]);
+
+  const manualReceptionSubtypesR7 = useMemo(() => {
+    const selectedType=String(manualReceptionR4.tipo_carta||'').trim();
+    return [...new Set(manualReceptionCardsR7
+      .filter((c)=>!selectedType || String(c.tipo_carta||'').trim()===selectedType)
+      .map((c)=>String(c.subtipo||'').trim()).filter(Boolean))]
+      .sort((a,b)=>a.localeCompare(b,'es',{sensitivity:'base'}));
+  }, [manualReceptionCardsR7, manualReceptionR4.tipo_carta]);
+
+  const manualReceptionArtistsR7 = useMemo(() => {
+    return [...new Set(manualReceptionCardsR7.map((c)=>String(c.artista||'').trim()).filter(Boolean))]
+      .sort((a,b)=>a.localeCompare(b,'es',{sensitivity:'base'}));
+  }, [manualReceptionCardsR7]);
+
+  const manualReceptionEditionsR7 = useMemo(() => {
+    const values=(Array.isArray(inventory)?inventory:[])
+      .filter((i)=>String(i.id_juego||i.card_id_juego||'')===String(entryGameFilter))
+      .map((i)=>String(i.edicion||'').trim()).filter(Boolean);
+    const cardValues=manualReceptionCardsR7.map((c)=>String(c.edicion||'').trim()).filter(Boolean);
+    return [...new Set([...values,...cardValues])]
+      .sort((a,b)=>a.localeCompare(b,'es',{sensitivity:'base'}));
+  }, [inventory, manualReceptionCardsR7, entryGameFilter]);
+  /* GMX_TCG_RECEPCION_CATALOGOS_TODOS_R12_FIX */
+  const manualReceptionGameR11 = useMemo(
+    ()=> (Array.isArray(games)?games:[]).find((g)=>String(g.id_juego||'')===String(entryGameFilter||'')) || null,
+    [games,entryGameFilter]
+  );
+
+  const strictRuleR16 = useMemo(()=>strictTcgRuleR16(manualReceptionGameR11||{}),[manualReceptionGameR11]);
+  const strictCategoriesR16 = useMemo(()=>categoriesR16(strictRuleR16),[strictRuleR16]);
+  const strictCategoryR16 = useMemo(
+    ()=>categoryRuleR16(strictRuleR16,manualReceptionR4.tipo_carta),
+    [strictRuleR16,manualReceptionR4.tipo_carta]
+  );
+  const strictVariantsR16 = useMemo(()=>normalizeR16List(strictCategoryR16.variants),[strictCategoryR16]);
+  const strictTypesR16 = useMemo(()=>normalizeR16List(strictCategoryR16.types),[strictCategoryR16]);
+  const strictAttributesR16 = useMemo(()=>normalizeR16List(strictCategoryR16.attributes),[strictCategoryR16]);
+  const strictEditionsR16 = useMemo(()=>normalizeR16List(strictRuleR16.editions),[strictRuleR16]);
+  const manualReceptionPresetR11 = useMemo(
+    ()=>tcgReceptionPreset(manualReceptionGameR11||{}),
+    [manualReceptionGameR11]
+  );
+  const manualReceptionTypesR11 = useMemo(
+    ()=>mergeReceptionOptions(manualReceptionPresetR11.types,manualReceptionTypesR7),
+    [manualReceptionPresetR11,manualReceptionTypesR7]
+  );
+  const manualReceptionSubtypesR11 = useMemo(
+    ()=>mergeReceptionOptions(manualReceptionPresetR11.subtypes,manualReceptionSubtypesR7),
+    [manualReceptionPresetR11,manualReceptionSubtypesR7]
+  );
+  const manualReceptionEditionsR11 = useMemo(
+    ()=>mergeReceptionOptions(manualReceptionPresetR11.editions,manualReceptionEditionsR7),
+    [manualReceptionPresetR11,manualReceptionEditionsR7]
+  );
+  const manualReceptionCatalogCoverageR12 = useMemo(()=>{
+    const all=(Array.isArray(games)?games:[]);
+    const unknown=all.filter((g)=>!tcgReceptionPreset(g||{}).covered);
+    return {total:all.length,covered:all.length-unknown.length,unknown,presetCodes:GMX_TCG_R12_COVERED_CODES};
+  },[games]);
+
+
+
+
+  useEffect(()=>{
+    let cancelled=false;
+
+    async function loadMasterExpansionsR13(){
+      setExpansionSearchR13('');
+      setExpansionOpenR13(false);
+      setMasterExpansionSetsR13([]);
+
+      if(!entryGameFilter) return;
+
+      const game=(Array.isArray(games)?games:[]).find(
+        (g)=>String(g.id_juego||'')===String(entryGameFilter)
+      );
+      const gameCode=String(game?.catalogo_codigo||game?.codigo||'').trim();
+      if(!gameCode) return;
+
+      try{
+        setMasterExpansionLoadingR13(true);
+        const response=await api(
+          `/api/v1/tcg-sync/master-catalog/sets?gameCode=${encodeURIComponent(gameCode)}`
+        );
+        if(cancelled) return;
+
+        const rows=Array.isArray(response?.data)
+          ? response.data
+          : Array.isArray(response?.data?.sets)
+            ? response.data.sets
+            : [];
+
+        setMasterExpansionSetsR13(rows);
+      }catch(e){
+        if(!cancelled){
+          /* El flujo manual sigue funcionando con expansiones operativas. */
+          setMasterExpansionSetsR13([]);
+          console.warn('R13 master expansions:',e);
+        }
+      }finally{
+        if(!cancelled) setMasterExpansionLoadingR13(false);
+      }
+    }
+
+    loadMasterExpansionsR13();
+    return ()=>{cancelled=true;};
+  },[entryGameFilter,games]);
+
+  async function selectExpansionR13(setRow){
+    if(!setRow || expansionSelectBusyR13) return;
+
+    try{
+      setExpansionSelectBusyR13(true);
+      const gameId=String(entryGameFilter||'').trim();
+      if(!gameId) throw new Error('Selecciona primero el TCG.');
+
+      const nombre=String(setRow.nombre||'').trim();
+      const codigo=String(setRow.codigo||setRow.set_code||'').trim();
+
+      let local=(Array.isArray(entrySets)?entrySets:[]).find((s)=>{
+        const sameCode=codigo && String(s.codigo||'').trim().toLowerCase()===codigo.toLowerCase();
+        const sameName=String(s.nombre||'').trim().toLowerCase()===nombre.toLowerCase();
+        return sameCode || sameName;
+      });
+
+      /* Si la expansión existe solo en Catálogo Maestro, se habilita
+         automáticamente en catálogo operativo al seleccionarla. */
+      if(!local?.id_set){
+        const created=await api('/api/v1/tcg/catalog/sets',{
+          method:'POST',
+          body:JSON.stringify({
+            id_juego:gameId,
+            nombre,
+            codigo,
+            logo_imagen:setRow.logo_imagen||'',
+            banner_imagen:setRow.banner_imagen||'',
+            descripcion:setRow.descripcion||'',
+            fecha_lanzamiento:setRow.fecha_lanzamiento||'',
+            total_cartas:Number(setRow.total_cartas||0),
+            activo:true,
+            orden:Number(setRow.orden||0)
+          })
+        });
+
+        const idSet=String(created?.data?.id_set||'').trim();
+        if(!idSet) throw new Error('No fue posible habilitar la expansión seleccionada.');
+
+        await loadAll();
+        local={...setRow,id_set:idSet,nombre,codigo};
+      }
+
+      setExpansionSearchR13(nombre);
+      setEntrySetFilter(String(local.id_set||''));
+      setEntry((x)=>({...x,id_carta:''}));
+      setManualSetModeR8(false);
+      setManualSetNameR8('');
+      setExpansionOpenR13(false);
+    }catch(e){
+      const msg=String(e?.message||e);
+      setMessage(msg);
+      window.tcg_store_templateNotify?.(msg,{type:'error',duration:6000});
+    }finally{
+      setExpansionSelectBusyR13(false);
+    }
+  }
 
   async function loadAll() {
     const [g, s, r, c, i, a, b, p, mg] = await Promise.all([
@@ -374,8 +617,7 @@ export default function TCGPage() {
     if (!rarityForm.id_juego && Array.isArray(g?.data) && g.data[0]) setRarityForm((x) => ({ ...x, id_juego: g.data[0].id_juego }));
     if (!cardForm.id_juego && Array.isArray(g?.data) && g.data[0]) setCardForm((x) => ({ ...x, id_juego: g.data[0].id_juego }));
     if (!entry.id_sucursal && Array.isArray(b?.data) && b.data[0]) setEntry((x) => ({ ...x, id_sucursal: b.data[0].id_sucursal }));
-    if (!entry.id_carta && Array.isArray(c?.data) && c.data[0]) setEntry((x) => ({ ...x, id_carta: c.data[0].id_carta }));
-    if (!masterGameCode && mg.data?.[0]) setMasterGameCode(mg.data[0].codigo);
+if (!masterGameCode && mg.data?.[0]) setMasterGameCode(mg.data[0].codigo);
     const initialOperationalGame = setForm.id_juego || (Array.isArray(g?.data) ? g.data[0]?.id_juego : '') || '';
     if (initialOperationalGame && !setForm.id_juego) {
       setSetForm((x) => ({ ...x, id_juego: initialOperationalGame }));
@@ -465,6 +707,53 @@ export default function TCGPage() {
     () => (Array.isArray(sets) ? sets : []).filter((x) => !entryGameFilter || x.id_juego === entryGameFilter),
     [sets, entryGameFilter]
   );
+
+  const expansionCatalogR13 = useMemo(()=>{
+    const result=[];
+    const seen=new Set();
+
+    const push=(s,source)=>{
+      const nombre=String(s?.nombre||s?.name||'').trim();
+      const codigo=String(s?.codigo||s?.set_code||s?.code||'').trim();
+      if(!nombre) return;
+
+      const key=(codigo ? `code:${codigo}` : `name:${nombre}`)
+        .normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
+
+      if(seen.has(key)) return;
+      seen.add(key);
+      result.push({
+        ...s,
+        nombre,
+        codigo,
+        _sourceR13:source,
+        _operationalR13:source==='LOCAL'
+      });
+    };
+
+    /* Operativas primero: si existe en ambos catálogos, conserva id_set real. */
+    (Array.isArray(entrySets)?entrySets:[]).forEach((s)=>push(s,'LOCAL'));
+    (Array.isArray(masterExpansionSetsR13)?masterExpansionSetsR13:[]).forEach((s)=>push(s,'MASTER'));
+
+    return result.sort((a,b)=>
+      String(a.nombre||'').localeCompare(String(b.nombre||''),'es',{sensitivity:'base'})
+    );
+  },[entrySets,masterExpansionSetsR13]);
+
+  const expansionMatchesR13 = useMemo(()=>{
+    const normalize=(v)=>String(v||'')
+      .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+      .toLocaleLowerCase('es').trim();
+
+    const q=normalize(expansionSearchR13);
+    if(!q) return [];
+
+    /* Como solicitó el usuario:
+       L -> todas las que EMPIEZAN con L
+       Lo -> todas las que EMPIEZAN con Lo
+       Lord -> todas las que EMPIEZAN con Lord */
+    return expansionCatalogR13.filter((s)=>normalize(s.nombre).startsWith(q));
+  },[expansionCatalogR13,expansionSearchR13]);
 
   const entryCards = useMemo(
     () => (Array.isArray(cards) ? cards : []).filter((x) =>
@@ -752,42 +1041,326 @@ export default function TCGPage() {
     }
   }
 
-  async function receive() {
-    async function handleVisionTcgResult(result) {
-      const queries = visionQueries(result, { max: 7 });
-      const found = new Map();
+  async function handleVisionTcgResult(result) {
+    const queries = visionQueries(result, { max: 7 });
+    const found = new Map();
 
-      for (const q of queries) {
+    for (const q of queries) {
+      try {
+        const r = await api(`/api/v1/tcg/cards?search=${encodeURIComponent(q)}&limit=40`);
+        for (const card of r.data || []) {
+          const score = scoreVisionCandidate(card, result);
+          const key = String(card.id_carta || card.row_id);
+          const previous = found.get(key);
+          if (!previous || score > previous.score) found.set(key, { ...card, key, score });
+        }
+      } catch {}
+    }
+
+    const candidates = [...found.values()].
+    filter((x) => x.score >= 0.18).
+    sort((a, b) => b.score - a.score).
+    slice(0, 10);
+
+    setVisionCandidates(candidates);
+    setVisionOpen(false);
+    setVisionPickerOpen(true);
+  }
+
+  function pickVisionTcgCard(card) {
+    if (card.id_juego) setEntryGameFilter(card.id_juego);
+    if (card.id_set) setEntrySetFilter(card.id_set);
+    setEntry((x) => ({ ...x, id_carta: card.id_carta }));
+    setTab('entry');
+    setVisionPickerOpen(false);
+    setMessage(`Carta reconocida: ${card.nombre || card.id_carta}. Confirma idioma, condición, acabado, cantidad y precio antes de recibir.`);
+  }
+
+  /* GMX_RECEPCION_INDIVIDUAL_R1_FUNCTIONS */
+  function receptionImage(card = {}) {
+    return card.image_local_url || card.image_large_url || card.image_small_url || card.image || card.imagen_url || card.imagen || '';
+  }
+
+  function receptionMarketPrice(card = {}) {
+    const rows = Array.isArray(card.internet_prices) ? card.internet_prices : [];
+    const preferred = rows.find((x) => Number.isFinite(Number(x.market))) || rows.find((x) => Number.isFinite(Number(x.mid)));
+    const value = preferred?.market ?? preferred?.mid ?? card.market_price_usd ?? card.precio_mercado ?? null;
+    return value == null || value === '' ? null : Number(value);
+  }
+
+  function receptionGameCode() {
+    const game = (games || []).find((g) => String(g.id_juego) === String(entryGameFilter));
+    return String(game?.catalogo_codigo || game?.codigo || game?.game_code || '').trim().toUpperCase();
+  }
+
+  async function searchReceptionCard() {
+    const q = String(entryReceptionName || '').trim();
+    const code = String(entryReceptionCode || '').trim();
+    const effective = [q, code].filter(Boolean).join(' ').trim();
+    if (effective.length < 2) {
+      setMessage('Escribe el nombre exacto o el numero/codigo de la carta.');
+      return;
+    }
+
+    setEntryReceptionBusy(true);
+    setEntryReceptionSelected(null);
+    try {
+      const localResponse = await api(`/api/v1/tcg/cards?search=${encodeURIComponent(effective)}&limit=40`);
+      let localRows = Array.isArray(localResponse?.data) ? localResponse.data : [];
+      if (entryGameFilter) localRows = localRows.filter((x) => String(x.id_juego || '') === String(entryGameFilter));
+      if (entrySetFilter) localRows = localRows.filter((x) => String(x.id_set || '') === String(entrySetFilter));
+      if (entryReceptionRarity) localRows = localRows.filter((x) => String(x.rareza || '').toLowerCase() === String(entryReceptionRarity).toLowerCase());
+      localRows = localRows.map((x) => ({ ...x, _gmxSource: 'CATALOGO_GMX' }));
+
+      let internetRows = [];
+      const gameCode = receptionGameCode();
+      if (gameCode && q.length >= 2) {
         try {
-          const r = await api(`/api/v1/tcg/cards?search=${encodeURIComponent(q)}&limit=40`);
-          for (const card of r.data || []) {
-            const score = scoreVisionCandidate(card, result);
-            const key = String(card.id_carta || card.row_id);
-            const previous = found.get(key);
-            if (!previous || score > previous.score) found.set(key, { ...card, key, score });
+          const external = await api(`/api/v1/external-card-beta/search?${new URLSearchParams({ game: gameCode, q })}`);
+          internetRows = (Array.isArray(external?.data?.rows) ? external.data.rows : []).map((x) => ({ ...x, _gmxSource: 'INTERNET' }));
+          if (code) {
+            const wanted = code.toUpperCase().replace(/[^A-Z0-9]/g, '');
+            const exactCode = internetRows.filter((x) => String(x.collector_number || '').toUpperCase().replace(/[^A-Z0-9]/g, '') === wanted);
+            if (exactCode.length) internetRows = exactCode;
           }
-        } catch {}
+        } catch {
+          // El formulario sigue funcionando con el catalogo GMX aunque un proveedor externo no soporte el TCG.
+        }
       }
 
-      const candidates = [...found.values()].
-      filter((x) => x.score >= 0.18).
-      sort((a, b) => b.score - a.score).
-      slice(0, 10);
+      const seen = new Set();
+      const merged = [...localRows, ...internetRows].filter((x) => {
+        const key = x.id_carta ? `LOCAL:${x.id_carta}` : `EXT:${x.source || ''}:${x.external_id || ''}:${x.collector_number || ''}`;
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      }).slice(0, 24);
 
-      setVisionCandidates(candidates);
-      setVisionOpen(false);
-      setVisionPickerOpen(true);
+      setEntryReceptionResults(merged);
+      setMessage(merged.length ? `Se encontraron ${merged.length} coincidencia(s). Selecciona la impresion correcta.` : `Sin coincidencias para "${effective}".`);
+    } catch (error) {
+      setEntryReceptionResults([]);
+      setMessage(error?.message || 'No fue posible buscar la carta.');
+    } finally {
+      setEntryReceptionBusy(false);
     }
+  }
 
-    function pickVisionTcgCard(card) {
-      if (card.id_juego) setEntryGameFilter(card.id_juego);
-      if (card.id_set) setEntrySetFilter(card.id_set);
-      setEntry((x) => ({ ...x, id_carta: card.id_carta }));
-      setTab('entry');
-      setVisionPickerOpen(false);
-      setMessage(`Carta reconocida: ${card.nombre || card.id_carta}. Confirma idioma, condición, acabado, cantidad y precio antes de recibir.`);
+  async function selectReceptionCard(card) {
+    if (!card) return;
+    setEntryReceptionBusy(true);
+    try {
+      let operational = card;
+      if (!card.id_carta && card._gmxSource === 'INTERNET') {
+        const identity = {
+          game: card.game, source: card.source, external_id: card.external_id,
+          name: card.name, set_name: card.set_name, set_code: card.set_code,
+          collector_number: card.collector_number, language: card.language || entry.idioma || 'EN',
+          rarity: card.rarity, type: card.type, description: card.description,
+          image: card.image, source_url: card.raw_hint?.source_url || '', internet_prices: card.internet_prices || []
+        };
+        const ensured = await api('/api/v1/external-card-beta/ensure-operational', {
+          method: 'POST', body: JSON.stringify({ identity })
+        });
+        operational = { ...card, ...(ensured?.data || {}), _gmxSource: 'INTERNET' };
+      }
+
+      if (!operational.id_carta) throw new Error('La carta no pudo relacionarse con un producto TCG de GMX.');
+      if (operational.id_juego) setEntryGameFilter(operational.id_juego);
+      if (operational.id_set) setEntrySetFilter(operational.id_set);
+      setEntry((current) => ({ ...current, id_carta: operational.id_carta }));
+      setEntryReceptionSelected(operational);
+      setEntryReceptionName(operational.nombre || operational.name || entryReceptionName);
+      setEntryReceptionCode(operational.numero_completo || operational.collector_number || entryReceptionCode);
+      setEntryReceptionRarity(operational.rareza || operational.rarity || entryReceptionRarity);
+      setMessage(`Carta seleccionada: ${operational.nombre || operational.name || operational.id_carta}. Revisa los datos de recepcion antes de registrar.`);
+    } catch (error) {
+      setMessage(error?.message || 'No fue posible seleccionar esta carta.');
+    } finally {
+      setEntryReceptionBusy(false);
     }
+  }
+  /* GMX_TCG_RECEPCION_EXPANSIONES_R8_FUNCTION */
+  async function createManualSetR8() {
+    try {
+      const gameId=String(entryGameFilter||'').trim();
+      const nombre=String(manualSetNameR8||'').trim();
+      if(!gameId) throw new Error('Selecciona primero el TCG.');
+      if(!nombre) throw new Error('Escribe el nombre de la expansión.');
 
+      const duplicate=(Array.isArray(entrySets)?entrySets:[]).find(
+        (s)=>String(s.nombre||'').trim().toLowerCase()===nombre.toLowerCase()
+      );
+      if(duplicate?.id_set){
+        setEntrySetFilter(duplicate.id_set);
+        setExpansionSearchR13(duplicate.nombre||nombre);
+        setExpansionOpenR13(false);
+        setManualSetModeR8(false);
+        setManualSetNameR8('');
+        setEntry((x)=>({...x,id_carta:''}));
+        setMessage(`Expansión existente seleccionada: ${duplicate.nombre}`);
+        return;
+      }
+
+      setManualSetBusyR8(true);
+      const created=await api('/api/v1/tcg/catalog/sets',{
+        method:'POST',
+        body:JSON.stringify({
+          id_juego:gameId,
+          nombre,
+          codigo:'',
+          logo_imagen:'',
+          banner_imagen:'',
+          descripcion:'',
+          fecha_lanzamiento:'',
+          total_cartas:0,
+          activo:true,
+          orden:0
+        })
+      });
+
+      const idSet=String(created?.data?.id_set||'').trim();
+      if(!idSet) throw new Error('La expansión se creó pero no se recibió su ID.');
+
+      await loadAll();
+      setEntrySetFilter(idSet);
+      setExpansionSearchR13(nombre);
+      setExpansionOpenR13(false);
+      setEntry((x)=>({...x,id_carta:''}));
+      setManualSetModeR8(false);
+      setManualSetNameR8('');
+      setMessage(`Expansión agregada: ${nombre}`);
+      window.tcg_store_templateNotify?.(`Expansión agregada: ${nombre}`,{type:'success',duration:4500});
+    } catch(e) {
+      const msg=String(e?.message||e);
+      setMessage(msg);
+      window.tcg_store_templateNotify?.(msg,{type:'error',duration:6000});
+    } finally {
+      setManualSetBusyR8(false);
+    }
+  }
+
+  /* GMX_TCG_RECEPCION_MANUAL_R4_FUNCTION */
+  /* GMX_TCG_RECEPCION_MANUAL_R5_FUNCTION */
+  async function receiveManualR4() {
+    try {
+      const gameId=String(entryGameFilter||'').trim();
+      const setId=String(entrySetFilter||'').trim();
+      const typedName=String(manualReceptionR4.nombre||'').trim();
+      const typedNumber=String(manualReceptionR4.numero||'').trim();
+
+      if(!gameId) throw new Error('Selecciona el TCG.');
+      if(!setId) throw new Error('Selecciona la expansión / set.');
+      if(!entry.id_sucursal) throw new Error('Selecciona la sucursal.');
+      if(Number(entry.cantidad||0)<1) throw new Error('La cantidad debe ser mayor a cero.');
+
+      /* GMX_TCG_RECEPCION_MANUAL_R6 */
+      let cardId=String(entry.id_carta||'').trim();
+      let createdNow=false;
+
+      const allowedRarities=(Array.isArray(rarities)?rarities:[])
+        .filter((r)=>String(r.id_juego||'')===gameId && r.activo!==false);
+      const selectedRarity=String(manualReceptionR4.rareza||'').trim();
+      const selectedType=String(manualReceptionR4.tipo_carta||'').trim();
+      const selectedSubtype=String(manualReceptionR4.subtipo||'').trim();
+      const selectedArtist=String(manualReceptionR4.artista||'').trim();
+      const selectedEdition=String(entry.edicion||'').trim();
+
+      /* R10: Tipo, subtipo, artista y edición pueden ser nuevos en recepción manual.
+         Se guardan con la carta/inventario y aparecerán en futuras listas del mismo TCG. */
+
+      if(!cardId && !selectedRarity){
+        throw new Error('Selecciona o agrega la rareza de la carta.');
+      }
+
+      if(!cardId && selectedRarity && !allowedRarities.some((r)=>String(r.nombre||'').trim().toLowerCase()===selectedRarity.toLowerCase())){
+        await api('/api/v1/tcg/catalog/rarities',{
+          method:'POST',
+          body:JSON.stringify({
+            id_juego:gameId,
+            codigo:selectedRarity,
+            nombre:selectedRarity,
+            orden:9999,
+            activo:true
+          })
+        });
+      }
+
+      if(!cardId){
+        if(!typedName) throw new Error('Captura el nombre exacto de la carta.');
+
+        const localCards=Array.isArray(cards)?cards:[];
+        const same=localCards.find((c)=>{
+          if(String(c.id_juego||'')!==gameId) return false;
+          if(String(c.id_set||'')!==setId) return false;
+          const cName=String(c.nombre||'').trim().toUpperCase();
+          const cNum=String(c.numero_completo||c.numero_carta||'').trim().toUpperCase();
+          if(typedNumber) return cNum===typedNumber.toUpperCase();
+          return cName===typedName.toUpperCase();
+        });
+
+        if(same?.id_carta){
+          cardId=String(same.id_carta);
+        }else{
+          const created=await api('/api/v1/tcg/catalog/cards',{
+            method:'POST',
+            body:JSON.stringify({
+              id_juego:gameId,
+              id_set:setId,
+              nombre:typedName,
+              numero_carta:typedNumber,
+              numero_set:'',
+              numero_completo:typedNumber,
+              rareza:String(manualReceptionR4.rareza||'').trim(),
+              tipo_carta:String(manualReceptionR4.tipo_carta||'').trim(),
+              subtipo:String(manualReceptionR4.subtipo||'').trim(),
+              artista:String(manualReceptionR4.artista||'').trim(),
+              descripcion:'',
+              estado_catalogo:'ACTIVA'
+            })
+          });
+          cardId=String(created?.data?.id_carta||'').trim();
+          if(!cardId) throw new Error('No fue posible obtener el ID de la carta creada.');
+          createdNow=true;
+        }
+      }
+
+      const r=await api('/api/v1/tcg/inventory/receive',{
+        method:'POST',
+        body:JSON.stringify({...entry,id_carta:cardId})
+      });
+
+      setEntry((x)=>({...x,id_carta:'',cantidad:1,costo_unitario:0,origen_referencia:'',notas:''}));
+      setManualReceptionR4({nombre:'',numero:'',rareza:'',tipo_carta:'',subtipo:'',artista:''});
+      setCardVariantR16('');
+      setCardTypeR16('');
+      setCardAttributeR16('');
+      setManualFieldModeR10({rareza:false,tipo:false,subtipo:false,artista:false,edicion:false});
+      if(typeof setEntryReceptionName==='function') setEntryReceptionName('');
+      if(typeof setEntryReceptionCode==='function') setEntryReceptionCode('');
+      if(typeof setEntryReceptionRarity==='function') setEntryReceptionRarity('');
+      if(typeof setEntryReceptionSelected==='function') setEntryReceptionSelected(null);
+      if(typeof setEntryReceptionResults==='function') setEntryReceptionResults([]);
+
+      setMessage(`${createdNow?'Carta creada localmente y recepción registrada':'Recepción registrada'}: ${r?.data?.id_adquisicion||'OK'} · ${r?.data?.sku||cardId}`);
+      await loadAll();
+    } catch(e) {
+      const raw=String(e?.message||e||'No se pudo completar la recepción.');
+      const friendly={
+        INVALID_ENTRY:'Faltan datos requeridos para registrar la recepción.',
+        INVALID_PRICE:'Revisa costo, precio y oferta; no pueden ser negativos.',
+        CARD_NOT_FOUND:'La carta no existe en el catálogo local.',
+        BRANCH_NOT_FOUND:'La sucursal seleccionada no existe o está inactiva.',
+        SET_NOT_FOUND:'La expansión seleccionada no existe.',
+        SET_GAME_MISMATCH:'La expansión no pertenece al TCG seleccionado.',
+        RARITY_NOT_FOUND:'La rareza seleccionada no existe para este TCG.'
+      }[raw] || raw;
+      setMessage(friendly);
+      window.tcg_store_templateNotify?.(friendly,{type:'error',duration:6500});
+    }
+  }
+
+  async function receive() {
     try {
       const r = await api('/api/v1/tcg/inventory/receive', { method: 'POST', body: JSON.stringify(entry) });
       setMessage(`Entrada registrada: ${r.data.id_adquisicion} · ${r.data.sku}`);
@@ -1051,19 +1624,276 @@ export default function TCGPage() {
         <div className="proposal-a-module-head"><div><span className="eyebrow">RECEPCIÓN</span><h2>Recepción TCG</h2></div></div>
         <div className="proposal-a-switch"><button type="button" className={entryMode==='individual'?'active':''} onClick={()=>setEntryMode('individual')}>Individual</button><button type="button" className={entryMode==='bulk'?'active':''} onClick={()=>setEntryMode('bulk')}>Masiva</button></div>
 
-        {entryMode === 'individual' ? <section className="proposal-a-reception-card">
-          <div className="proposal-a-section-title"><div><strong>Recepción individual</strong><span>Registra una carta o variante puntual.</span></div><button type="button" className="secondary compact" onClick={()=>setVisionOpen(true)}>Escanear carta</button></div>
-          <div className="proposal-a-form-grid">
-            <label>TCG<select value={entryGameFilter} onChange={(e)=>{setEntryGameFilter(e.target.value);setEntrySetFilter('');setEntry((x)=>({...x,id_carta:''}));}}><option value="">Selecciona TCG</option>{(Array.isArray(games) ? games : []).map((g)=><option key={g.row_id || g.id_juego} value={g.id_juego}>{g.nombre}</option>)}</select></label>
-            <label>Expansión<select value={entrySetFilter} onChange={(e)=>{setEntrySetFilter(e.target.value);setEntry((x)=>({...x,id_carta:''}));}}><option value="">Todas</option>{(Array.isArray(entrySets) ? entrySets : []).map((x)=><option key={x.row_id || x.id_set} value={x.id_set}>{x.nombre}</option>)}</select></label>
-            <label className="wide">Carta<select value={entry.id_carta} onChange={(e)=>setEntry((x)=>({...x,id_carta:e.target.value}))}><option value="">Buscar carta por nombre o ID...</option>{(Array.isArray(entryCards) ? entryCards : []).map((c)=><option key={c.row_id} value={c.id_carta}>{c.nombre} · {c.numero_completo||''}{c.rareza?` (${c.rareza})`:''}</option>)}</select></label>
-            <label>Proveedor / origen<input value={entry.origen_nombre} onChange={(e)=>setEntry((x)=>({...x,origen_nombre:e.target.value}))} placeholder="Proveedor / cliente"/></label>
-            <label>Condición<select value={entry.condicion} onChange={(e)=>setEntry((x)=>({...x,condicion:e.target.value}))}><option>NM</option><option>LP</option><option>MP</option><option>HP</option><option>DMG</option></select></label>
-            <label>Cantidad<input type="number" min="1" value={entry.cantidad} onChange={(e)=>setEntry((x)=>({...x,cantidad:Number(e.target.value)}))}/></label>
-            <label>Costo unitario<input type="number" min="0" step=".01" value={entry.costo_unitario} onChange={(e)=>setEntry((x)=>({...x,costo_unitario:Number(e.target.value)}))}/></label>
+        {entryMode === 'individual' ? <section className="proposal-a-reception-card gmx-manual-r4-card">
+          <div className="proposal-a-section-title">
+            <div>
+              <span className="eyebrow">RECEPCIÓN</span>
+              <strong>Recepción individual</strong>
+              <span>Registra una carta manualmente. Buscar en internet es opcional.</span>
+            </div>
+
           </div>
-          <details className="proposal-a-more"><summary>Más opciones</summary><div className="proposal-a-form-grid"><label>Sucursal<select value={entry.id_sucursal} onChange={(e)=>setEntry((x)=>({...x,id_sucursal:e.target.value}))}>{(Array.isArray(branches) ? branches : []).map((b)=><option key={b.row_id} value={b.id_sucursal}>{b.nombre_sucursal}</option>)}</select></label><label>Idioma<select value={entry.idioma} onChange={(e)=>setEntry((x)=>({...x,idioma:e.target.value}))}><option>ES</option><option>EN</option><option>JP</option></select></label><label>Acabado<select value={entry.acabado} onChange={(e)=>setEntry((x)=>({...x,acabado:e.target.value}))}><option>NORMAL</option><option>HOLO</option><option>REVERSE_HOLO</option><option>FOIL</option></select></label><label>Edición<input value={entry.edicion} onChange={(e)=>setEntry((x)=>({...x,edicion:e.target.value}))}/></label><label>Precio tienda<input type="number" min="0" step=".01" value={entry.precio_venta} onChange={(e)=>setEntry((x)=>({...x,precio_venta:Number(e.target.value)}))}/></label><label>Precio oferta<input type="number" min="0" step=".01" value={entry.precio_oferta} onChange={(e)=>setEntry((x)=>({...x,precio_oferta:Number(e.target.value)}))}/></label><label>Referencia<input value={entry.origen_referencia} onChange={(e)=>setEntry((x)=>({...x,origen_referencia:e.target.value}))}/></label><label className="check-label"><input type="checkbox" checked={entry.graded} onChange={(e)=>setEntry((x)=>({...x,graded:e.target.checked}))}/> Graded</label>{entry.graded?<><label>Empresa grading<input value={entry.empresa_grading} onChange={(e)=>setEntry((x)=>({...x,empresa_grading:e.target.value}))}/></label><label>Grado<input type="number" min="0" max="10" step=".1" value={entry.grado} onChange={(e)=>setEntry((x)=>({...x,grado:e.target.value}))}/></label><label>Certificado<input value={entry.certificado} onChange={(e)=>setEntry((x)=>({...x,certificado:e.target.value}))}/></label></>:null}</div></details>
-          <button className="proposal-a-primary-wide" onClick={receive}>Registrar recepción</button>
+
+          <div className="gmx-manual-r4-note">
+            <b>CAPTURA MANUAL</b>
+            <span>No necesitas buscar la carta en internet. Si no existe en GMX, se crea en el catálogo local al registrar la recepción.</span>
+          </div>
+
+          <div className="gmx-manual-r4-section gmx-r14-identify-section">
+            <div className="gmx-r14-section-head">
+              <div>
+                <h3>1. Identificar carta</h3>
+                <p>Selecciona el TCG y escribe el nombre de la expansión para encontrarla rápidamente.</p>
+              </div>
+            </div>
+
+            <div className="gmx-r14-expansion-help">
+              <b>BUSCADOR DE EXPANSIONES</b>
+              <span>El catálogo permanece oculto hasta que escribas. Ejemplo: <strong>L</strong> muestra las expansiones que empiezan con L; <strong>Lo</strong> reduce a las que empiezan con Lo; y así sucesivamente.</span>
+            </div>
+
+            <div className="proposal-a-form-grid gmx-manual-r4-grid gmx-r14-identify-grid">
+              <label className="gmx-r14-tcg-field">TCG *
+                <select value={entryGameFilter} onChange={(e)=>{setEntryGameFilter(e.target.value);setExpansionSearchR13('');setExpansionOpenR13(false);setEntrySetFilter('');setEntry((x)=>({...x,id_carta:''}));setManualReceptionR4((x)=>({...x,nombre:'',numero:'',rareza:'',tipo_carta:'',subtipo:'',artista:''}));setEntry((x)=>({...x,id_carta:'',edicion:''}));setCardVariantR16('');setCardTypeR16('');setCardAttributeR16('');setManualFieldModeR10({rareza:false,tipo:false,subtipo:false,artista:false,edicion:false});}}>
+                  <option value="">Selecciona TCG</option>
+                  {(Array.isArray(games)?games:[]).map((g)=><option key={g.row_id||g.id_juego} value={g.id_juego}>{g.nombre}</option>)}
+                </select>
+              </label>
+
+              <label className="gmx-r14-expansion-field">Expansión / Set *
+                <div className="gmx-r13-expansion-search">
+                  <input
+                    value={expansionSearchR13}
+                    disabled={!entryGameFilter || expansionSelectBusyR13}
+                    autoComplete="off"
+                    placeholder={
+                      !entryGameFilter
+                        ? 'Selecciona TCG primero'
+                        : masterExpansionLoadingR13
+                          ? 'Cargando expansiones...'
+                          : 'Escribe para buscar expansión'
+                    }
+                    onFocus={()=>{
+                      if(String(expansionSearchR13||'').trim()) setExpansionOpenR13(true);
+                    }}
+                    onChange={(e)=>{
+                      const value=e.target.value;
+                      setExpansionSearchR13(value);
+                      setExpansionOpenR13(Boolean(String(value||'').trim()));
+
+                      /* Al modificar la búsqueda, la expansión anterior
+                         deja de considerarse seleccionada hasta elegir
+                         una coincidencia del catálogo. */
+                      setEntrySetFilter('');
+                      setEntry((x)=>({...x,id_carta:''}));
+                      setManualSetModeR8(false);
+                      setManualSetNameR8('');
+                    }}
+                    onKeyDown={(e)=>{
+                      if(e.key==='Escape'){
+                        setExpansionOpenR13(false);
+                        e.currentTarget.blur();
+                      }
+                      if(e.key==='Enter' && expansionMatchesR13.length===1){
+                        e.preventDefault();
+                        selectExpansionR13(expansionMatchesR13[0]);
+                      }
+                    }}
+                  />
+
+                  {expansionOpenR13 && String(expansionSearchR13||'').trim() ? (
+                    <div className="gmx-r13-expansion-results">
+                      {masterExpansionLoadingR13 ? (
+                        <div className="gmx-r13-expansion-status">Cargando catálogo de expansiones...</div>
+                      ) : expansionMatchesR13.length ? (
+                        expansionMatchesR13.map((s)=>(
+                          <button
+                            type="button"
+                            key={`${s._sourceR13||''}-${s.id_set||s.row_id||s.codigo||s.nombre}`}
+                            onMouseDown={(e)=>e.preventDefault()}
+                            onClick={()=>selectExpansionR13(s)}
+                            disabled={expansionSelectBusyR13}
+                          >
+                            <span>{s.nombre}</span>
+                            {s.codigo ? <small>{s.codigo}</small> : null}
+                          </button>
+                        ))
+                      ) : (
+                        <div className="gmx-r13-expansion-status">
+                          No hay expansiones que comiencen con “{expansionSearchR13}”.
+                        </div>
+                      )}
+                    </div>
+                  ) : null}
+                </div>
+
+
+              </label>
+              <label className="wide gmx-r14-card-name">Nombre exacto de la carta *
+                <input value={manualReceptionR4.nombre} onChange={(e)=>{setManualReceptionR4((x)=>({...x,nombre:e.target.value}));setEntry((x)=>({...x,id_carta:''}));}} placeholder="Ej. D.Human"/>
+                <small>Se guarda exactamente como lo escribes. GMX no cambia ni interpreta el nombre.</small>
+              </label>
+
+              <label>Número / código
+                <input value={manualReceptionR4.numero} onChange={(e)=>{setManualReceptionR4((x)=>({...x,numero:e.target.value}));setEntry((x)=>({...x,id_carta:''}));}} placeholder="Ej. OP07-093"/>
+              </label>
+
+              <label>Rareza *
+                <select
+                  value={manualFieldModeR10.rareza?'__ADD_MANUAL__':manualReceptionR4.rareza}
+                  disabled={!entryGameFilter}
+                  onChange={(e)=>{
+                    const v=e.target.value;
+                    if(v==='__ADD_MANUAL__'){
+                      setManualFieldModeR10((x)=>({...x,rareza:true}));
+                      setManualReceptionR4((x)=>({...x,rareza:''}));
+                    }else{
+                      setManualFieldModeR10((x)=>({...x,rareza:false}));
+                      setManualReceptionR4((x)=>({...x,rareza:v}));
+                    }
+                  }}
+                >
+                  <option value="">{!entryGameFilter?'Selecciona TCG primero':'Selecciona rareza'}</option>
+                  {manualReceptionRaritiesR5.map((r)=><option key={r.row_id||r.id_rareza||r.nombre} value={r.nombre}>{r.nombre}{r.codigo && String(r.codigo)!==String(r.nombre)?` · ${r.codigo}`:''}</option>)}
+                  <option value="__ADD_MANUAL__">+ Agregar rareza manualmente</option>
+                </select>
+                {manualFieldModeR10.rareza ? <input
+                  autoFocus
+                  value={manualReceptionR4.rareza}
+                  onChange={(e)=>setManualReceptionR4((x)=>({...x,rareza:e.target.value}))}
+                  placeholder="Nombre exacto de la rareza"
+                /> : null}
+                <small>Si no existe, agrégala manualmente. Quedará asociada a este TCG.</small>
+              </label>
+
+
+              {/* GMX_TCG_RECEPCION_REGLAS_ESTRICTAS_R16 */}
+              <label>Tipo de carta
+                <select value={manualReceptionR4.tipo_carta} disabled={!entryGameFilter}
+                  onChange={(e)=>{
+                    const category=e.target.value;
+                    setCardVariantR16('');
+                    setCardTypeR16('');
+                    setCardAttributeR16('');
+                    setManualReceptionR4((x)=>({...x,tipo_carta:category,subtipo:''}));
+                  }}>
+                  <option value="">{!entryGameFilter?'Selecciona TCG primero':'Selecciona tipo de carta'}</option>
+                  {strictCategoriesR16.map((v)=><option key={v} value={v}>{v}</option>)}
+                </select>
+                <small>Solo categorías válidas para {manualReceptionGameR11?.nombre||'el TCG seleccionado'}.</small>
+              </label>
+
+              <label>Variante
+                <select
+                  value={cardVariantR16}
+                  disabled={!manualReceptionR4.tipo_carta || !strictVariantsR16.length}
+                  onChange={(e)=>{
+                    const v=e.target.value;
+                    setCardVariantR16(v);
+                    setManualReceptionR4((x)=>({...x,subtipo:serializeClassificationR16({variant:v,type:cardTypeR16,attribute:cardAttributeR16})}));
+                  }}>
+                  <option value="">{!manualReceptionR4.tipo_carta?'Selecciona tipo de carta primero':'Selecciona variante'}</option>
+                  {strictVariantsR16.map((v)=><option key={v} value={v}>{v}</option>)}
+                </select>
+                <small>Ej.: Effect Monster, Fusion Monster, Stage 1, Ground Unit, etc.</small>
+              </label>
+
+              <label>Tipo
+                <select
+                  value={cardTypeR16}
+                  disabled={!manualReceptionR4.tipo_carta || !strictTypesR16.length}
+                  onChange={(e)=>{
+                    const v=e.target.value;
+                    setCardTypeR16(v);
+                    setManualReceptionR4((x)=>({...x,subtipo:serializeClassificationR16({variant:cardVariantR16,type:v,attribute:cardAttributeR16})}));
+                  }}>
+                  <option value="">{strictTypesR16.length?'Selecciona tipo':'No aplica para esta categoría'}</option>
+                  {strictTypesR16.map((v)=><option key={v} value={v}>{v}</option>)}
+                </select>
+                <small>Relacionado estrictamente con el tipo de carta seleccionado.</small>
+              </label>
+
+              <label>Atributo
+                <select
+                  value={cardAttributeR16}
+                  disabled={!manualReceptionR4.tipo_carta || !strictAttributesR16.length}
+                  onChange={(e)=>{
+                    const v=e.target.value;
+                    setCardAttributeR16(v);
+                    setManualReceptionR4((x)=>({...x,subtipo:serializeClassificationR16({variant:cardVariantR16,type:cardTypeR16,attribute:v})}));
+                  }}>
+                  <option value="">{strictAttributesR16.length?'Selecciona atributo':'No aplica para esta categoría'}</option>
+                  {strictAttributesR16.map((v)=><option key={v} value={v}>{v}</option>)}
+                </select>
+                <small>Atributos válidos únicamente para esa categoría del TCG.</small>
+              </label>
+
+              <label>Edición
+                <select value={entry.edicion} disabled={!entryGameFilter}
+                  onChange={(e)=>setEntry((x)=>({...x,edicion:e.target.value}))}>
+                  <option value="">{!entryGameFilter?'Selecciona TCG primero':'Selecciona edición'}</option>
+                  {strictEditionsR16.map((v)=><option key={v} value={v}>{v}</option>)}
+                </select>
+                <small>Ediciones válidas para el TCG seleccionado.</small>
+              </label>
+
+            </div>
+          </div>
+
+          <div className="gmx-manual-r4-section gmx-r15-inventory-section">
+            <div className="gmx-r15-section-head">
+              <div>
+                <h3>2. Datos del ejemplar / inventario</h3>
+                <p>Captura el estado físico, cantidades, costos y datos comerciales del ejemplar que entra a inventario.</p>
+              </div>
+            </div>
+
+            <div className="proposal-a-form-grid gmx-manual-r4-grid gmx-r15-inventory-grid">
+              <label>Idioma
+                <select value={entry.idioma} onChange={(e)=>setEntry((x)=>({...x,idioma:e.target.value}))}>
+                  <option>ES</option><option>EN</option><option>JP</option>
+                </select>
+              </label>
+              <label>Condición
+                <select value={entry.condicion} onChange={(e)=>setEntry((x)=>({...x,condicion:e.target.value}))}>
+                  <option>NM</option><option>LP</option><option>MP</option><option>HP</option><option>DMG</option>
+                </select>
+              </label>
+              <label>Acabado / variante
+                <select value={entry.acabado} onChange={(e)=>setEntry((x)=>({...x,acabado:e.target.value}))}>
+                  <option>NORMAL</option><option>HOLO</option><option>REVERSE_HOLO</option><option>FOIL</option>
+                </select>
+              </label>
+              <label>Cantidad *<input type="number" min="1" value={entry.cantidad} onChange={(e)=>setEntry((x)=>({...x,cantidad:Number(e.target.value)}))}/></label>
+              <label>Costo unitario (MXN) *<input type="number" min="0" step=".01" value={entry.costo_unitario} onChange={(e)=>setEntry((x)=>({...x,costo_unitario:Number(e.target.value)}))}/></label>
+              <label>Precio tienda<input type="number" min="0" step=".01" value={entry.precio_venta} onChange={(e)=>setEntry((x)=>({...x,precio_venta:Number(e.target.value)}))}/></label>
+              <label>Precio oferta<input type="number" min="0" step=".01" value={entry.precio_oferta} onChange={(e)=>setEntry((x)=>({...x,precio_oferta:Number(e.target.value)}))}/></label>
+              <label>Sucursal
+                <select value={entry.id_sucursal} onChange={(e)=>setEntry((x)=>({...x,id_sucursal:e.target.value}))}>
+                  {(Array.isArray(branches)?branches:[]).map((b)=><option key={b.row_id||b.id_sucursal} value={b.id_sucursal}>{b.nombre_sucursal}</option>)}
+                </select>
+              </label>
+              <label>Proveedor / origen<input value={entry.origen_nombre} onChange={(e)=>setEntry((x)=>({...x,origen_nombre:e.target.value}))} placeholder="Proveedor / cliente"/></label>
+              <label>Referencia / lote<input value={entry.origen_referencia} onChange={(e)=>setEntry((x)=>({...x,origen_referencia:e.target.value}))} placeholder="Factura, lote, compra..."/></label>
+
+              <label className="check-label gmx-r15-graded-check">
+                <input type="checkbox" checked={entry.graded} onChange={(e)=>setEntry((x)=>({...x,graded:e.target.checked}))}/> Graded
+              </label>
+
+              {entry.graded ? <>
+                <label>Empresa grading<input value={entry.empresa_grading} onChange={(e)=>setEntry((x)=>({...x,empresa_grading:e.target.value}))}/></label>
+                <label>Grado<input type="number" min="0" max="10" step=".1" value={entry.grado} onChange={(e)=>setEntry((x)=>({...x,grado:e.target.value}))}/></label>
+                <label>Certificado<input value={entry.certificado} onChange={(e)=>setEntry((x)=>({...x,certificado:e.target.value}))}/></label>
+              </> : null}
+
+              <label className="wide gmx-r15-notes">Notas
+                <textarea rows="3" maxLength="250" value={entry.notas} onChange={(e)=>setEntry((x)=>({...x,notas:e.target.value}))} placeholder="Notas adicionales"/>
+              </label>
+            </div>
+
+            <button className="proposal-a-primary-wide gmx-manual-r4-register" onClick={receiveManualR4}>Registrar recepción manual</button>
+          </div>
+
         </section> : <section className="proposal-a-reception-card">
           <div className="proposal-a-section-title"><div><strong>Recepción masiva</strong><span>Importa inventario desde Excel.</span></div></div>
           <div className="proposal-a-bulk-steps"><article><b>1</b><span>Descargar plantilla</span></article><article><b>2</b><span>Completar filas</span></article><article><b>3</b><span>Validar</span></article><article><b>4</b><span>Procesar</span></article></div>
