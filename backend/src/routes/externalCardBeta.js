@@ -1,4 +1,4 @@
-import { brandText } from "../config/brand.js";import { Router } from 'express';
+﻿import { brandText } from "../config/brand.js";import { Router } from 'express';
 import { requireModule } from '../middleware/auth.js';
 import {
   ensureOperationalIdentities,
@@ -94,10 +94,112 @@ async function getJson(url, { headers = {}, timeout = 15000 } = {}) {
   return body;
 }
 
-function ygoRows(cards = []) {
+/* GMX_YUGIOH_SET_HINT_R26B */
+function r26bCompact(v='') {
+  return String(v || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+}
+
+function r26bOcrVariants(token='') {
+  const base = r26bCompact(token);
+  const vars = new Set([base]);
+
+  const maps = [
+    [/Z/g,'2'],
+    [/O/g,'0'],
+    [/[IL]/g,'1'],
+    [/S/g,'5'],
+    [/B/g,'8'],
+    [/G/g,'6']
+  ];
+
+  for (const [re,to] of maps) {
+    for (const v of [...vars]) vars.add(v.replace(re,to));
+  }
+
+  return [...vars].filter(Boolean);
+}
+
+function r26bSetPrefixScore(row, hint='') {
+  const prefix = r26bCompact(row?.set_code || '');
+  if (!prefix || prefix.length < 3) return 0;
+
+  const tokens = String(hint || '')
+    .toUpperCase()
+    .match(/[A-Z0-9]{3,12}/g) || [];
+
+  let best = 0;
+
+  for (const raw of tokens) {
+    for (const v of r26bOcrVariants(raw)) {
+      if (v === prefix) best = Math.max(best, 1000);
+      else if (v.startsWith(prefix)) best = Math.max(best, 950);
+      else if (prefix.startsWith(v) && v.length >= 3) best = Math.max(best, 850);
+      else if (v.includes(prefix)) best = Math.max(best, 800);
+    }
+  }
+
+  return best;
+}
+
+function r26bPrioritizeSetHint(rows=[], hint='') {
+  const scored = (rows || []).map((row, index) => ({
+    row,
+    index,
+    score: r26bSetPrefixScore(row, hint)
+  }));
+
+  const max = scored.reduce((m,x) => Math.max(m,x.score), 0);
+  if (max < 850) return { rows, matched:false, score:max };
+
+  const best = scored
+    .filter(x => x.score === max)
+    .sort((a,b) => a.index - b.index)
+    .map(x => x.row);
+
+  const rest = scored
+    .filter(x => x.score !== max)
+    .sort((a,b) => a.index - b.index)
+    .map(x => x.row);
+
+  return {
+    rows: [...best, ...rest],
+    matched: true,
+    score: max
+  };
+}
+
+/* GMX_YUGIOH_SET_CODE_R25 */
+function ygoRows(cards = [], identifiers = []) {
   const out = [];
+
+  const wantedIdsR25 = (identifiers || [])
+    .map(strongIdentity)
+    .filter(Boolean);
+
   for (const c of cards) {
-    const sets = Array.isArray(c.card_sets) && c.card_sets.length ? c.card_sets : [null];
+    const originalSets =
+      Array.isArray(c.card_sets) && c.card_sets.length
+        ? c.card_sets
+        : [null];
+
+    const sets = [...originalSets].sort((a, b) => {
+      const aCode = strongIdentity(a?.set_code);
+      const bCode = strongIdentity(b?.set_code);
+
+      const aExact = wantedIdsR25.some(
+        (id) => aCode === id
+      );
+
+      const bExact = wantedIdsR25.some(
+        (id) => bCode === id
+      );
+
+      if (aExact !== bExact) {
+        return aExact ? -1 : 1;
+      }
+
+      return 0;
+    });
     const img = c.card_images?.[0]?.image_url_small || c.card_images?.[0]?.image_url || '';
     const prices = c.card_prices?.[0] || {};
     for (const set of sets) {
@@ -133,7 +235,7 @@ function ygoRows(cards = []) {
   return out;
 }
 
-async function searchYgo(q) {
+async function searchYgo(q, identifiers = []) {
   /* YGO_ROBUST_VARIANTS_R12B */
 
   const variants = externalQueryVariants(q);
@@ -150,7 +252,7 @@ async function searchYgo(q) {
         `https://db.ygoprodeck.com/api/v7/cardinfo.php?${params}`
       );
 
-      const rows = ygoRows(body?.data || []);
+      const rows = ygoRows(body?.data || [], identifiers);
 
       if (rows.length) {
         return rows;
@@ -252,6 +354,446 @@ function normalized(value) {
   return clean(value, 300).normalize('NFKD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
 }
 
+/* GMX_IDENTITY_PRIORITY_R14C */
+function strongIdentity(value) {
+  return normalized(value).replace(/\s+/g, '');
+}
+function identityPriority(row, nameHint, identifiers = []) {
+  const wantedName = normalized(nameHint);
+  const rowName = normalized(row?.name);
+  let nameScore = 0;
+  if (wantedName && rowName === wantedName) nameScore = 100;
+  else if (wantedName && (rowName.startsWith(wantedName) || wantedName.startsWith(rowName))) nameScore = 85;
+  else if (wantedName && (rowName.includes(wantedName) || wantedName.includes(rowName))) nameScore = 70;
+
+  const fields = [row?.external_id,row?.set_code,row?.collector_number].map(strongIdentity).filter(Boolean);
+  const ids = identifiers.map(strongIdentity).filter(Boolean);
+  const idMatch = ids.length ? ids.some((id) => fields.some((field) => field === id || field.includes(id) || id.includes(field))) : false;
+  return { score: (idMatch ? 200 : 0) + nameScore, idMatch, nameScore };
+}
+function prioritizeIdentity(rows, nameHint, identifiers = []) {
+  const scored = rows.map((row) => ({ row, priority: identityPriority(row,nameHint,identifiers) }));
+  const idMatches = scored.filter((x) => x.priority.idMatch);
+  const pool = idMatches.length ? idMatches : scored.filter((x) => x.priority.nameScore > 0);
+  const usable = pool.length ? pool : scored;
+  usable.sort((a,b) => b.priority.score-a.priority.score);
+  const best = usable[0]?.priority.score || 0;
+  const tier = best > 0 ? usable.filter((x) => x.priority.score === best) : usable;
+  return tier.map((x) => ({ ...x.row, internet_match_score: x.priority.score }));
+}
+/* GMX_OCR_CATALOG_MATCH_R19B */
+function r19bCompact(value) {
+  return normalized(value).replace(/\s+/g, '');
+}
+
+function r19bLevenshtein(aValue,bValue){
+  const a=r19bCompact(aValue);
+  const b=r19bCompact(bValue);
+
+  if(!a)return b.length;
+  if(!b)return a.length;
+
+  const prev=Array.from({length:b.length+1},(_,i)=>i);
+  const curr=new Array(b.length+1);
+
+  for(let i=1;i<=a.length;i++){
+    curr[0]=i;
+
+    for(let j=1;j<=b.length;j++){
+      const cost=a[i-1]===b[j-1]?0:1;
+
+      curr[j]=Math.min(
+        curr[j-1]+1,
+        prev[j]+1,
+        prev[j-1]+cost
+      );
+    }
+
+    for(let j=0;j<=b.length;j++)prev[j]=curr[j];
+  }
+
+  return prev[b.length];
+}
+
+function r19bSimilarity(aValue,bValue){
+  const a=r19bCompact(aValue);
+  const b=r19bCompact(bValue);
+
+  if(!a||!b)return 0;
+  if(a===b)return 1;
+
+  if(a.includes(b)||b.includes(a)){
+    const ratio=Math.min(a.length,b.length)/Math.max(a.length,b.length);
+    return Math.max(0.80,ratio);
+  }
+
+  const distance=r19bLevenshtein(a,b);
+  return Math.max(0,1-(distance/Math.max(a.length,b.length)));
+}
+
+function r19bQueryVariants(value){
+  const literal=clean(value,180);
+
+  const normalizedText=literal
+    .replace(/[|[\]{}<>]/g,' ')
+    .replace(/\s+/g,' ')
+    .trim();
+
+  const tokens=normalizedText.split(' ').filter(Boolean);
+  const out=[
+    literal,
+    normalizedText,
+    normalizedText
+      .replace(/^[^A-Za-z0-9]+/,'')
+      .replace(/[^A-Za-z0-9]+$/,'')
+      .trim()
+  ];
+
+  // Conservative edge cleanup only.
+  if(tokens.length>=2){
+    if(tokens[tokens.length-1].replace(/[^A-Za-z0-9]/g,'').length<=3){
+      out.push(tokens.slice(0,-1).join(' '));
+    }
+
+    if(tokens[0].replace(/[^A-Za-z0-9]/g,'').length<=2){
+      out.push(tokens.slice(1).join(' '));
+    }
+  }
+
+  // Substantial individual words can be provider clues.
+  for(const token of tokens){
+    if(token.replace(/[^A-Za-z0-9]/g,'').length>=4)out.push(token);
+  }
+
+  return [...new Set(
+    out.map((x)=>clean(x,180)).filter((x)=>x.length>=2)
+  )].slice(0,8);
+}
+
+
+/* GMX_YUGIOH_EXACT_PROVIDER_CODE_R26D2
+ * OCR is only a clue.
+ * The final Yu-Gi-Oh! collector_number MUST be an exact value
+ * returned by YGOPRODeck for the detected card.
+ */
+function r26d2Normalize(value=''){
+  return String(value || '')
+    .toUpperCase()
+    .replace(/[‐‑‒–—−]/g,'-')
+    .replace(/[^A-Z0-9-]/g,'');
+}
+
+function r26d2Variants(value=''){
+  const base=r26d2Normalize(value);
+  const vars=new Set([base]);
+
+  const maps=[
+    ['Z','2'],
+    ['O','0'],
+    ['I','1'],
+    ['L','1'],
+    ['S','5'],
+    ['B','8'],
+    ['G','6']
+  ];
+
+  for(const [from,to] of maps){
+    if(base.includes(from)){
+      vars.add(base.split(from).join(to));
+    }
+  }
+
+  for(const current of [...vars]){
+    for(const [from,to] of maps){
+      if(current.includes(from)){
+        vars.add(current.split(from).join(to));
+      }
+    }
+  }
+
+  return [...vars].filter(Boolean);
+}
+
+function r26d2HintTokens(hint=''){
+  const raw=String(hint || '').toUpperCase();
+
+  const full=
+    raw.match(/\b[A-Z0-9]{2,10}-[A-Z0-9]{2,12}\b/g) || [];
+
+  const noisy=
+    raw.match(/\b[A-Z0-9]{4,12}\b/g) || [];
+
+  return [...new Set([...full,...noisy])]
+    .filter(token =>
+      /[A-Z]/.test(token) &&
+      (/\d/.test(token) || /[ZOILSBG]/.test(token))
+    );
+}
+
+function r26d2ResolveExactProviderCode(rows=[], nameHint='', ocrHint=''){
+  if(!Array.isArray(rows) || !rows.length){
+    return {
+      resolved:false,
+      rows,
+      reason:'NO_ROWS'
+    };
+  }
+
+  const wantedName=
+    String(nameHint || '').trim().toUpperCase();
+
+  const sameName=rows.filter(row =>
+    String(row?.name || '').trim().toUpperCase() === wantedName
+  );
+
+  const pool=sameName.length ? sameName : rows;
+  const tokens=r26d2HintTokens(ocrHint);
+
+  if(!tokens.length){
+    return {
+      resolved:false,
+      rows,
+      reason:'NO_OCR_SET_HINT'
+    };
+  }
+
+  const evidence=[];
+
+  for(const token of tokens){
+    for(const variant of r26d2Variants(token)){
+      for(const row of pool){
+        const collector=
+          r26d2Normalize(row?.collector_number || '');
+
+        const prefix=
+          r26d2Normalize(row?.set_code || '') ||
+          collector.split('-')[0] ||
+          '';
+
+        if(!collector || !prefix || prefix.length < 4){
+          continue;
+        }
+
+        let score=0;
+        let mode='';
+
+        if(variant === collector){
+          score=2000;
+          mode='EXACT_COLLECTOR';
+        }
+        else if(variant.includes(collector)){
+          score=1900;
+          mode='CONTAINS_COLLECTOR';
+        }
+        else if(
+          variant.startsWith(prefix) &&
+          prefix.length >= 4
+        ){
+          score=1400 + prefix.length;
+          mode='PROVIDER_PREFIX';
+        }
+        else if(
+          variant.includes(prefix) &&
+          prefix.length >= 5
+        ){
+          score=1200 + prefix.length;
+          mode='CONTAINS_PREFIX';
+        }
+
+        if(score > 0){
+          evidence.push({
+            row,
+            score,
+            mode,
+            token,
+            variant,
+            prefix,
+            collector
+          });
+        }
+      }
+    }
+  }
+
+  if(!evidence.length){
+    return {
+      resolved:false,
+      rows,
+      reason:'NO_PROVIDER_CODE_MATCH'
+    };
+  }
+
+  evidence.sort((a,b)=>b.score-a.score);
+
+  const bestScore=evidence[0].score;
+  const top=evidence.filter(item => item.score === bestScore);
+
+  const collectors=[
+    ...new Set(top.map(item => item.collector))
+  ];
+
+  if(collectors.length !== 1){
+    return {
+      resolved:false,
+      rows,
+      reason:'AMBIGUOUS_PROVIDER_CODES',
+      candidates:collectors
+    };
+  }
+
+  const exactCollector=collectors[0];
+
+  const exactRows=pool.filter(row =>
+    r26d2Normalize(row?.collector_number || '') === exactCollector
+  );
+
+  if(exactRows.length !== 1){
+    return {
+      resolved:false,
+      rows,
+      reason:'NON_UNIQUE_PROVIDER_ROW',
+      collector_number:exactCollector
+    };
+  }
+
+  const winner=exactRows[0];
+
+  const reordered=[
+    winner,
+    ...rows.filter(row =>
+      !(
+        String(row?.name || '').trim().toUpperCase() ===
+          String(winner?.name || '').trim().toUpperCase()
+        &&
+        r26d2Normalize(row?.collector_number || '') === exactCollector
+      )
+    )
+  ];
+
+  return {
+    resolved:true,
+    rows:reordered,
+    winner,
+    collector_number:exactCollector,
+    set_code:r26d2Normalize(winner?.set_code || ''),
+    set_name:String(winner?.set_name || ''),
+    score:bestScore,
+    mode:top[0]?.mode || '',
+    ocr_token:top[0]?.token || '',
+    ocr_variant:top[0]?.variant || '',
+    reason:'UNIQUE_PROVIDER_CODE'
+  };
+}
+
+/* GMX_MARKET_PRICE_MAX_R29 */
+function gmxHighestMarketPriceR29(rows = []) {
+  const list = Array.isArray(rows) ? rows : [];
+
+  const clean = (value) =>
+    String(value ?? '')
+      .trim()
+      .toUpperCase()
+      .replace(/\s+/g, ' ');
+
+  const exactKey = (row) => [
+    clean(row?.name),
+    clean(row?.collector_number || row?.external_id),
+    clean(row?.set_code),
+    clean(row?.set_name),
+    clean(row?.rarity),
+    clean(
+      row?.variant ||
+      row?.printing ||
+      row?.finish ||
+      row?.foil ||
+      row?.treatment
+    )
+  ].join('|');
+
+  const validMarket = (value) => {
+    const n = Number(value);
+    return Number.isFinite(n) && n >= 0 ? n : null;
+  };
+
+  const maxByExactIdentity = new Map();
+
+  for (const row of list) {
+    const price = validMarket(row?.market_price_usd);
+    if (price === null) continue;
+
+    const key = exactKey(row);
+    const current = maxByExactIdentity.get(key);
+
+    if (current === undefined || price > current) {
+      maxByExactIdentity.set(key, price);
+    }
+  }
+
+  return list.map((row) => {
+    const key = exactKey(row);
+    const highest = maxByExactIdentity.get(key);
+
+    if (highest === undefined) return row;
+
+    const original = validMarket(row?.market_price_usd);
+
+    return {
+      ...row,
+      market_price_usd: highest,
+      market_price_original_usd: original,
+      market_price_rule: 'MAX_MARKET_PRICE_EXACT_IDENTITY_R29'
+    };
+  });
+}
+async function r19bProviderSearch(game,variants,identifiers=[]){
+  const merged=[];
+  const seen=new Set();
+
+  for(const query of variants){
+    let rows=[];
+
+    if(game==='YUGIOH')rows=await searchYgo(query,identifiers);
+    else if(game==='POKEMON')rows=await searchPokemon(query);
+    else if(game==='MAGIC')rows=await searchMagic(query);
+
+    for(const row of rows||[]){
+      const key=[
+        row?.source,
+        row?.external_id,
+        row?.set_code,
+        row?.collector_number,
+        row?.name
+      ].map((x)=>String(x||'')).join('|');
+
+      if(seen.has(key))continue;
+      seen.add(key);
+      merged.push(row);
+
+      if(merged.length>=80)return merged;
+    }
+  }
+
+  return merged;
+}
+
+function r19bRankOfficialNames(rows,ocrClue,variants){
+  return [...rows].map((row)=>{
+    const scores=variants.map((variant)=>r19bSimilarity(variant,row?.name));
+    const best=Math.max(0,...scores);
+    const literal=r19bSimilarity(ocrClue,row?.name);
+
+    return {
+      ...row,
+      internet_match_score:Math.round(best*100),
+      ocr_catalog_similarity:best,
+      ocr_literal_similarity:literal
+    };
+  }).sort((a,b)=>
+    Number(b.ocr_catalog_similarity||0)-Number(a.ocr_catalog_similarity||0) ||
+    Number(b.ocr_literal_similarity||0)-Number(a.ocr_literal_similarity||0) ||
+    String(a.name||'').localeCompare(String(b.name||''))
+  );
+}
 function rankInternetCandidates(rows, query) {
   const wanted = normalized(query);
   return [...rows].map((row) => {
@@ -392,75 +934,258 @@ router.post('/visual-search', async (req, res) => {
   const q = clean(req.body?.q, 180);
   const imageBase64 = String(req.body?.image_base64 || req.body?.imageBase64 || '');
 
+  const identifiers = Array.isArray(req.body?.identifiers)
+    ? req.body.identifiers
+        .map((value) => clean(value, 100).toUpperCase())
+        .filter(Boolean)
+        .slice(0, 20)
+    : [];
+    const setCodeOcrHintR26B = String(req.body?.set_code_ocr_hint || '');
+
   if (!q || q.length < 2) {
     return res.status(400).json({
       success: false,
       error: 'QUERY_REQUIRED',
-      message: 'Se requiere una pista literal (nombre, set code, collector number o passcode) para consultar el proveedor. La imagen no se compara contra GMX.'
+      message: 'Se requiere una pista OCR legible para comparar contra nombres reales del catálogo.'
+    });
+  }
+
+  if (!['YUGIOH','POKEMON','MAGIC'].includes(game)) {
+    return res.status(400).json({
+      success:false,
+      error:'GAME_REQUIRED',
+      message:'Selecciona Pokémon, Yu-Gi-Oh! o Magic.'
     });
   }
 
   try {
-    let candidates = [];
-    if (game === 'YUGIOH') candidates = await searchYgo(q); else
-    if (game === 'POKEMON') candidates = await searchPokemon(q); else
-    if (game === 'MAGIC') candidates = await searchMagic(q); else
-      return res.status(400).json({ success: false, error: 'GAME_REQUIRED', message: 'Selecciona Pokémon, Yu-Gi-Oh! o Magic.' });
+    const queryVariants = r19bQueryVariants(q);
+
+    let candidates = await r19bProviderSearch(game, queryVariants, identifiers);
+    candidates = gmxHighestMarketPriceR29(candidates);
+    const setCodeOcrHintR26D2 = String(
+      req.body?.set_code_ocr_hint || ''
+    );
+
+    let r26d2ExactCode = null;
+
+    if(
+      String(game || '').toUpperCase() === 'YUGIOH' &&
+      Array.isArray(candidates) &&
+      candidates.length
+    ){
+      r26d2ExactCode =
+        r26d2ResolveExactProviderCode(
+          candidates,
+          q,
+          setCodeOcrHintR26D2
+        );
+
+      if(r26d2ExactCode?.resolved){
+        candidates = r26d2ExactCode.rows;
+      }
+    }
+
+    let setHintMatchR26B = false;
+    let setHintScoreR26B = 0;
+
+    if (
+      String(game || '').toUpperCase() === 'YUGIOH' &&
+      setCodeOcrHintR26B
+    ) {
+      const hintPriorityR26B =
+        r26bPrioritizeSetHint(candidates, setCodeOcrHintR26B);
+
+      candidates = hintPriorityR26B.rows;
+      setHintMatchR26B = hintPriorityR26B.matched;
+      setHintScoreR26B = hintPriorityR26B.score;
+    }
 
     if (!candidates.length) {
-      return res.json({ success: true, data: { game, query: q, matches: [], candidate_count: 0, compared_count: 0, identification_mode: 'INTERNET_CATALOG', message: 'Los proveedores de Internet no encontraron candidatos.' } });
-    }
-
-    let matches = rankInternetCandidates(candidates, q);
-    let comparedCount = 0;
-    let identificationMode = 'INTERNET_CATALOG_TEXT';
-
-    if (imageBase64) {
-      const vr = await fetch(`${VISUAL_SERVICE_URL}/external-rank`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          image_base64: imageBase64,
-          candidates: candidates.slice(0, 30).map((c) => ({
-            source: c.source, game: c.game, external_id: c.external_id, name: c.name,
-            set_name: c.set_name, set_code: c.set_code, collector_number: c.collector_number,
-            rarity: c.rarity, type: c.type, description: c.description, image: c.image,
-            language: c.language, market_price_usd: c.market_price_usd,
-            raw_hint: { ...(c.raw_hint || {}), internet_prices: c.internet_prices || [] }
-          })),
-          limit: Math.min(10, candidates.length)
-        }),
-        signal: AbortSignal.timeout(120000)
+      return res.json({
+        success:true,
+        data:{
+          game,
+          query:q,
+          query_variants:queryVariants,
+          matches:[],
+          candidate_count:0,
+          compared_count:0,
+          identification_mode:'OCR_CATALOG_NAMES_R19B',
+          message:'El proveedor no encontró candidatos para las pistas OCR.'
+        }
       });
-      const vp = await vr.json().catch(() => ({}));
-      if (!vr.ok) throw new Error(`VISUAL_EXTERNAL_RANK_FAILED:${vp?.detail || vr.status}`);
-      matches = (vp.matches || []).map((m) => ({
-        ...m,
-        internet_prices: m?.raw_hint?.internet_prices || [],
-        similarity: Number(m.visual_similarity || 0)
-      }));
-      comparedCount = Number(vp.compared_count || 0);
-      identificationMode = 'INTERNET_CANDIDATES_OPENCLIP';
     }
 
-    return res.json({ success: true, data: {
-      game, query: q, matches,
-      candidate_count: candidates.length,
-      compared_count: comparedCount,
-      identification_mode: identificationMode,
-      provider: candidates[0]?.source || '',
-      local_catalog_used: false
-    }});
+    let ranked = r19bRankOfficialNames(candidates,q,queryVariants);
+    if(r26d2ExactCode?.resolved){
+      const exactCollectorR26D2 =
+        r26d2Normalize(
+          r26d2ExactCode.collector_number
+        );
+
+      const exactRowsR26D2 =
+        ranked.filter(row =>
+          r26d2Normalize(
+            row?.collector_number || ''
+          ) === exactCollectorR26D2
+        );
+
+      if(exactRowsR26D2.length){
+        ranked = exactRowsR26D2;
+      }
+    }
+
+
+    const exactIdentifierMatchesR25 =
+      game === 'YUGIOH' && identifiers.length
+        ? ranked.filter(
+            (row) =>
+              identityPriority(
+                row,
+                q,
+                identifiers
+              ).idMatch
+          )
+        : [];
+
+    /*
+     * R25 strict priority:
+     * exact Yu-Gi-Oh! print/set identifier > OCR name > image.
+     * OpenCLIP is never allowed to replace an exact set-code match.
+     */
+    const rankedForIdentityR25 =
+      exactIdentifierMatchesR25.length
+        ? exactIdentifierMatchesR25
+        : ranked;
+
+    // OCR is only a clue. Official provider names are authoritative.
+    // Keep broad text matches; visual comparison breaks close ties.
+    const textCompatible = rankedForIdentityR25.filter((row)=>
+      Number(row.ocr_catalog_similarity||0) >= 0.42
+    );
+
+    const identityPool = (
+      textCompatible.length
+        ? textCompatible
+        : rankedForIdentityR25.slice(0,20)
+    ).slice(0,30);
+
+    let matches = identityPool;
+    let comparedCount = 0;
+    let identificationMode = 'OCR_CATALOG_NAMES_R19B';
+
+    if (imageBase64 && identityPool.length) {
+      const visualResponse = await fetch(`${VISUAL_SERVICE_URL}/external-rank`, {
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({
+          image_base64:imageBase64,
+          candidates:identityPool.map((c)=>({
+            source:c.source,
+            game:c.game,
+            external_id:c.external_id,
+            name:c.name,
+            set_name:c.set_name,
+            set_code:c.set_code,
+            collector_number:c.collector_number,
+            rarity:c.rarity,
+            type:c.type,
+            description:c.description,
+            image:c.image,
+            language:c.language,
+            market_price_usd:c.market_price_usd,
+            raw_hint:{
+              ...(c.raw_hint||{}),
+              internet_prices:c.internet_prices||[],
+              internet_match_score:c.internet_match_score,
+              ocr_catalog_similarity:c.ocr_catalog_similarity,
+              ocr_literal_similarity:c.ocr_literal_similarity
+            }
+          })),
+          limit:Math.min(10,identityPool.length)
+        }),
+        signal:AbortSignal.timeout(120000)
+      });
+
+      const visualPayload = await visualResponse.json().catch(()=>({}));
+
+      if (!visualResponse.ok) {
+        throw new Error(`VISUAL_EXTERNAL_RANK_FAILED:${visualPayload?.detail || visualResponse.status}`);
+      }
+
+      matches = (visualPayload.matches || []).map((m)=>({
+        ...m,
+        internet_prices:m?.raw_hint?.internet_prices||[],
+        internet_match_score:
+          m?.raw_hint?.internet_match_score ??
+          m?.internet_match_score ??
+          null,
+        ocr_catalog_similarity:
+          m?.raw_hint?.ocr_catalog_similarity ??
+          null,
+        ocr_literal_similarity:
+          m?.raw_hint?.ocr_literal_similarity ??
+          null,
+        similarity:Number(m.visual_similarity||0)
+      })).sort((a,b)=>{
+        const aText=Number(a.ocr_catalog_similarity||0);
+        const bText=Number(b.ocr_catalog_similarity||0);
+
+        // Text identity first; image only resolves close text matches.
+        const aBucket=Math.round(aText*10);
+        const bBucket=Math.round(bText*10);
+
+        if(aBucket!==bBucket)return bBucket-aBucket;
+
+        return Number(b.visual_similarity||0)-Number(a.visual_similarity||0);
+      });
+
+      comparedCount=Number(visualPayload.compared_count||0);
+      identificationMode='OCR_CATALOG_NAMES_OPENCLIP_R19B';
+    }
+
+    return res.json({
+      success:true,
+      data:{
+        game,
+        query:q,
+        query_variants:queryVariants,
+        matches,
+        candidate_count:candidates.length,
+        text_candidate_count:identityPool.length,
+        compared_count:comparedCount,
+        identification_mode:identificationMode,
+        provider:candidates[0]?.source||'',
+        identifiers,
+        exact_identifier_match:
+          exactIdentifierMatchesR25.length > 0,
+        exact_identifier_match_count:
+          exactIdentifierMatchesR25.length,
+        local_catalog_used:false
+      }
+    });
   } catch (error) {
-    console.error(brandText('[GMX][EXTERNAL_PHOTO_SEARCH]'), game, q, error);
-    const detail = String(error?.message || error);
-    const offline = /fetch failed|aborted|timeout|VISUAL_EXTERNAL_RANK_FAILED/i.test(detail);
-    return res.status(offline ? 503 : 502).json({
-      success: false,
-      error: offline ? 'INTERNET_OR_VISUAL_PROVIDER_OFFLINE' : 'EXTERNAL_PHOTO_SEARCH_FAILED',
-      message: offline ? 'No fue posible conectar con el proveedor de Internet o con OpenCLIP.' : 'No fue posible completar la identificación mediante Internet.',
-      provider_error_detail: detail.slice(0, 240)
+    console.error(brandText('[GMX][EXTERNAL_PHOTO_SEARCH_R19B]'), game, q, error);
+
+    const detail=String(error?.message||error);
+    const offline=/fetch failed|aborted|timeout|VISUAL_EXTERNAL_RANK_FAILED/i.test(detail);
+
+    return res.status(offline?503:502).json({
+      success:false,
+      error:offline
+        ?'INTERNET_OR_VISUAL_PROVIDER_OFFLINE'
+        :'EXTERNAL_PHOTO_SEARCH_FAILED',
+      message:offline
+        ?'No fue posible conectar con el proveedor de Internet o con OpenCLIP.'
+        :'No fue posible completar la identificación mediante Internet.',
+      provider_error_detail:detail.slice(0,240)
     });
   }
 });
 export default router;
+
+
+
+
+

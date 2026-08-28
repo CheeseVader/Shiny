@@ -1,147 +1,236 @@
-import { useEffect,useMemo,useState } from 'react';
-import { useSearchParams } from 'react-router';
+import { useEffect, useMemo, useState } from 'react';
+import { Link, useSearchParams } from 'react-router';
 import { publicApi } from '../../services/publicApi.js';
 import { usePublicStore } from '../../contexts/PublicStoreContext.jsx';
 import StoreSlideshow from '../../components/public/StoreSlideshow.jsx';
 import TcgCard from '../../components/public/TcgCard.jsx';
 import ProductCard from '../../components/public/ProductCard.jsx';
-import { productMatchesQuery,tcgProducts } from '../../utils/publicCatalogClassification.js';
+import PublicIcon from '../../components/public/PublicIcon.jsx';
+import { productMatchesQuery, tcgProducts } from '../../utils/publicCatalogClassification.js';
 
-export default function StoreTcgPage(){
-  const {store,liveUpdate}=usePublicStore();
-  const [params,setParams]=useSearchParams();
-  const [games,setGames]=useState([]);
-  const [rows,setRows]=useState([]);
-  const [products,setProducts]=useState([]);
-  const [loading,setLoading]=useState(true);
+const PAGE_SIZE = 12;
 
-  const gameId=params.get('gameId')||'';
-  const q=params.get('q')||'';
-  const view=params.get('view')||'all';
+function themeForGame(game = {}) {
+  const key = `${game.catalogo_codigo || game.codigo || ''} ${game.nombre || ''}`.toLowerCase();
+  if (key.includes('pokemon')) return 'pokemon';
+  if (key.includes('magic') || key.includes('mtg')) return 'magic';
+  if (key.includes('yugioh') || key.includes('yu-gi')) return 'yugioh';
+  if (key.includes('riftbound')) return 'riftbound';
+  return 'gmx';
+}
 
-  useEffect(()=>{
-    let active=true;
+export default function StoreTcgPage() {
+  const { store, liveUpdate } = usePublicStore();
+  const [params, setParams] = useSearchParams();
+  const [games, setGames] = useState([]);
+  const [rows, setRows] = useState([]);
+  const [products, setProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [availability, setAvailability] = useState('all');
+  const [setName, setSetName] = useState('');
+  const [rarity, setRarity] = useState('');
+  const [minPrice, setMinPrice] = useState('');
+  const [maxPrice, setMaxPrice] = useState('');
+  const [sort, setSort] = useState('relevance');
+  const [page, setPage] = useState(1);
+  const [filtersOpen, setFiltersOpen] = useState(false);
+
+  const gameId = params.get('gameId') || '';
+  const q = params.get('q') || '';
+  const view = params.get('view') || 'all';
+
+  useEffect(() => {
+    let active = true;
     setLoading(true);
-
     Promise.all([
       publicApi('/api/public/tcg/games'),
-      publicApi(`/api/public/tcg?limit=96&gameId=${encodeURIComponent(gameId)}&search=${encodeURIComponent(q)}`),
+      publicApi(`/api/public/tcg?limit=200&gameId=${encodeURIComponent(gameId)}&search=${encodeURIComponent(q)}`),
       publicApi('/api/public/products?limit=100')
-    ]).then(([g,t,p])=>{
-      if(!active)return;
-      setGames(g.data||[]);
-      setRows(t.data||[]);
-      setProducts(p.data||[]);
-    }).finally(()=>{
-      if(active)setLoading(false);
+    ]).then(([gameResponse, tcgResponse, productResponse]) => {
+      if (!active) return;
+      setGames(gameResponse.data || []);
+      setRows(tcgResponse.data || []);
+      setProducts(productResponse.data || []);
+    }).finally(() => {
+      if (active) setLoading(false);
     });
+    return () => { active = false; };
+  }, [gameId, q]);
 
-    return ()=>{active=false;};
-  },[gameId,q]);
-
-  useEffect(()=>{
-    if(!liveUpdate?.version)return;
-    const changes=liveUpdate.changes||[];
-
-    setRows(current=>current.map(x=>{
-      const hit=changes.find(c=>c.type==='TCG'&&String(c.id)===String(x.id_inventario));
-      return hit?{...x,stock:Number(hit.stock),stock_disponible:Number(hit.stock)}:x;
+  useEffect(() => {
+    if (!liveUpdate?.version) return;
+    const changes = liveUpdate.changes || [];
+    setRows((current) => current.map((item) => {
+      const hit = changes.find((change) => change.type === 'TCG' && String(change.id) === String(item.id_inventario));
+      return hit ? { ...item, stock: Number(hit.stock), stock_disponible: Number(hit.stock) } : item;
     }));
-
-    setProducts(current=>current.map(p=>{
-      const hit=changes.find(c=>c.type==='PRODUCT'&&String(c.id)===String(p.id));
-      return hit?{...p,stock_disponible:Number(hit.stock)}:p;
+    setProducts((current) => current.map((product) => {
+      const hit = changes.find((change) => change.type === 'PRODUCT' && String(change.id) === String(product.id));
+      return hit ? { ...product, stock_disponible: Number(hit.stock) } : product;
     }));
-  },[liveUpdate?.version]);
+  }, [liveUpdate?.version]);
 
-  const selectedGame=useMemo(
-    ()=>games.find(g=>String(g.id_juego)===String(gameId))||null,
-    [games,gameId]
-  );
+  useEffect(() => {
+    setPage(1);
+    setSetName('');
+    setRarity('');
+  }, [gameId]);
 
-  const sealed=useMemo(
-    ()=>tcgProducts(products,games,selectedGame).filter(p=>productMatchesQuery(p,q)),
-    [products,games,selectedGame,q]
-  );
+  useEffect(() => { setPage(1); }, [q, view, availability, setName, rarity, minPrice, maxPrice, sort]);
 
-  const currency=store?.settings?.['public.store.currency']||'MXN';
-  const showSingles=view==='all'||view==='singles';
-  const showSealed=view==='all'||view==='sealed';
+  const selectedGame = useMemo(() => games.find((game) => String(game.id_juego) === String(gameId)) || null, [games, gameId]);
+  const sealed = useMemo(() => tcgProducts(products, games, selectedGame).filter((product) => productMatchesQuery(product, q)), [products, games, selectedGame, q]);
+  const sets = useMemo(() => [...new Set(rows.map((item) => String(item.set_nombre || '').trim()).filter(Boolean))].sort((a, b) => a.localeCompare(b)), [rows]);
+  const rarities = useMemo(() => [...new Set(rows.map((item) => String(item.rareza || '').trim()).filter(Boolean))].sort((a, b) => a.localeCompare(b)), [rows]);
 
-  function setView(next){
-    setParams(current=>{
-      const n=new URLSearchParams(current);
-      next==='all'?n.delete('view'):n.set('view',next);
-      return n;
+  const entries = useMemo(() => {
+    const singles = rows.map((item) => ({
+      kind: 'single',
+      key: `single-${item.row_id}`,
+      item,
+      name: item.carta || '',
+      price: Number(item.precio || 0),
+      stock: Number(item.stock_disponible ?? item.stock ?? 0),
+      set: String(item.set_nombre || ''),
+      rarity: String(item.rareza || '')
+    }));
+    const sealedEntries = sealed.map((product) => ({
+      kind: 'sealed',
+      key: `product-${product.row_id}`,
+      product,
+      name: product.nombre || '',
+      price: Number(product.precio || 0),
+      stock: Number(product.stock_disponible ?? product.stock ?? 0),
+      set: '',
+      rarity: ''
+    }));
+    let result = [...(view === 'sealed' ? [] : singles), ...(view === 'singles' ? [] : sealedEntries)];
+    const minimum = minPrice === '' ? null : Number(minPrice);
+    const maximum = maxPrice === '' ? null : Number(maxPrice);
+    result = result.filter((entry) =>
+      (availability !== 'stock' || entry.stock > 0)
+      && (availability !== 'out' || entry.stock <= 0)
+      && (!setName || entry.set === setName)
+      && (!rarity || entry.rarity === rarity)
+      && (minimum === null || entry.price >= minimum)
+      && (maximum === null || entry.price <= maximum)
+    );
+    if (sort === 'price-asc') result.sort((a, b) => a.price - b.price);
+    if (sort === 'price-desc') result.sort((a, b) => b.price - a.price);
+    if (sort === 'name') result.sort((a, b) => a.name.localeCompare(b.name));
+    if (sort === 'stock') result.sort((a, b) => b.stock - a.stock);
+    return result;
+  }, [rows, sealed, view, availability, setName, rarity, minPrice, maxPrice, sort]);
+
+  const title = selectedGame?.nombre || 'Trading Card Games';
+  const theme = themeForGame(selectedGame || {});
+  const currency = store?.settings?.['public.store.currency'] || 'MXN';
+  const pageCount = Math.max(1, Math.ceil(entries.length / PAGE_SIZE));
+  const currentPage = Math.min(page, pageCount);
+  const pageEntries = entries.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
+
+  function updateParam(name, value) {
+    setParams((current) => {
+      const next = new URLSearchParams(current);
+      value && value !== 'all' ? next.set(name, value) : next.delete(name);
+      return next;
     });
   }
 
-  const title=selectedGame?.nombre||'Trading Card Games';
+  function clearFilters() {
+    updateParam('q', '');
+    updateParam('view', 'all');
+    setAvailability('all');
+    setSetName('');
+    setRarity('');
+    setMinPrice('');
+    setMaxPrice('');
+    setSort('relevance');
+  }
 
-  return <main className="public-page tcg-public-page">
-    <StoreSlideshow slides={store?.zones?.TCG_TOP||[]} settings={store?.settings||{}} variant="wide"/>
+  return <main className="public-page gmx-catalog-page tcg-public-page">
+    <section className="gmx-catalog-hero" data-game-theme={theme}>
+      <div className="gmx-catalog-hero-copy">
+        <span className="gmx-breadcrumb"><Link to="/tienda">Inicio</Link> / {title}</span>
+        <h1>{title}</h1>
+        <p>{selectedGame?.descripcion || 'Cartas individuales, producto sellado y accesorios para jugar y coleccionar.'}</p>
+        <div className="gmx-catalog-stats"><span><PublicIcon name="package" size={18}/><b>{rows.length + sealed.length}</b> productos</span><span><PublicIcon name="check" size={18}/>Stock actualizado</span></div>
+      </div>
+      <div className="gmx-catalog-art gmx-tcg-art" aria-hidden="true"><div className="gmx-art-deck"/><div className="gmx-art-box"/><div className="gmx-art-card"/></div>
+    </section>
 
-    <div className="public-page-head">
-      <small>TRADING CARD GAMES</small>
-      <h1>{title}</h1>
-      <p>Singles, producto sellado y artículos relacionados con este TCG.</p>
+    {store?.zones?.TCG_TOP?.length ? <div className="gmx-managed-banner"><StoreSlideshow slides={store.zones.TCG_TOP} settings={store?.settings || {}} variant="wide"/></div> : null}
+
+    <div className="gmx-subcategory-tabs">
+      <button className={view === 'all' ? 'active' : ''} onClick={() => updateParam('view', 'all')}>Todas</button>
+      <button className={view === 'singles' ? 'active' : ''} onClick={() => updateParam('view', 'singles')}>Cartas individuales</button>
+      <button className={view === 'sealed' ? 'active' : ''} onClick={() => updateParam('view', 'sealed')}>Sellado y accesorios</button>
+      <button onClick={() => setAvailability('stock')}>En stock</button>
     </div>
 
-    <div className="catalog-toolbar">
-      <input
-        value={q}
-        onChange={e=>setParams(x=>{
-          const n=new URLSearchParams(x);
-          e.target.value?n.set('q',e.target.value):n.delete('q');
-          return n;
-        })}
-        placeholder="Buscar carta, producto, SKU o número"
-      />
-      <select
-        value={gameId}
-        onChange={e=>setParams(x=>{
-          const n=new URLSearchParams(x);
-          e.target.value?n.set('gameId',e.target.value):n.delete('gameId');
-          return n;
-        })}
-      >
-        <option value="">Todos los TCG</option>
-        {games.map(g=><option key={g.id_juego} value={g.id_juego}>{g.nombre}</option>)}
-      </select>
+    <div className="gmx-mobile-catalog-tools">
+      <button onClick={() => setFiltersOpen((value) => !value)}><PublicIcon name="filter" size={17}/>Filtros</button>
+      <span>{entries.length} resultados</span>
     </div>
 
-    <div className="gmx-public-tcg-tabs" role="tablist" aria-label="Tipo de catálogo TCG">
-      <button type="button" className={view==='all'?'active':''} onClick={()=>setView('all')}>Todo</button>
-      <button type="button" className={view==='singles'?'active':''} onClick={()=>setView('singles')}>Singles</button>
-      <button type="button" className={view==='sealed'?'active':''} onClick={()=>setView('sealed')}>Sellado y accesorios</button>
-    </div>
+    <div className="gmx-catalog-layout">
+      <aside className={'gmx-filter-panel ' + (filtersOpen ? 'is-open' : '')}>
+        <div className="gmx-filter-title"><b>Filtros</b><button onClick={() => setFiltersOpen(false)} aria-label="Cerrar filtros"><PublicIcon name="close" size={18}/></button></div>
+        <section>
+          <h3>Juego</h3>
+          <select className="gmx-filter-select" value={gameId} onChange={(event) => updateParam('gameId', event.target.value)}>
+            <option value="">Todos los TCG</option>
+            {games.map((game) => <option key={game.id_juego} value={game.id_juego}>{game.nombre}</option>)}
+          </select>
+        </section>
+        <section>
+          <h3>Buscar</h3>
+          <label className="gmx-filter-search"><PublicIcon name="search" size={16}/><input value={q} onChange={(event) => updateParam('q', event.target.value)} placeholder="Carta, SKU o número"/></label>
+        </section>
+        <section>
+          <h3>Disponibilidad</h3>
+          <label><input type="radio" name="tcg-stock" checked={availability === 'all'} onChange={() => setAvailability('all')}/>Todos <span>{rows.length + sealed.length}</span></label>
+          <label><input type="radio" name="tcg-stock" checked={availability === 'stock'} onChange={() => setAvailability('stock')}/>En stock <span>{[...rows, ...sealed].filter((item) => Number(item.stock_disponible ?? item.stock ?? 0) > 0).length}</span></label>
+          <label><input type="radio" name="tcg-stock" checked={availability === 'out'} onChange={() => setAvailability('out')}/>Agotado</label>
+        </section>
+        {sets.length ? <section>
+          <h3>Expansión</h3>
+          <label className="gmx-filter-search"><PublicIcon name="search" size={16}/><select value={setName} onChange={(event) => setSetName(event.target.value)}><option value="">Todas las expansiones</option>{sets.map((item) => <option key={item} value={item}>{item}</option>)}</select></label>
+          {sets.slice(0, 5).map((item) => <label key={item}><input type="radio" name="tcg-set" checked={setName === item} onChange={() => setSetName(item)}/>{item}<span>{rows.filter((row) => String(row.set_nombre || '') === item).length}</span></label>)}
+        </section> : null}
+        {rarities.length ? <section>
+          <h3>Rareza</h3>
+          <select className="gmx-filter-select" value={rarity} onChange={(event) => setRarity(event.target.value)}><option value="">Todas las rarezas</option>{rarities.map((item) => <option key={item} value={item}>{item}</option>)}</select>
+        </section> : null}
+        <section>
+          <h3>Precio</h3>
+          <div className="gmx-price-inputs"><input type="number" min="0" value={minPrice} onChange={(event) => setMinPrice(event.target.value)} placeholder="Mínimo"/><i>–</i><input type="number" min="0" value={maxPrice} onChange={(event) => setMaxPrice(event.target.value)} placeholder="Máximo"/></div>
+        </section>
+        <button className="gmx-clear-filters" onClick={clearFilters}><PublicIcon name="refresh" size={17}/>Limpiar filtros</button>
+      </aside>
 
-    {loading?<div className="public-empty">Cargando catálogo TCG…</div>:null}
-
-    {!loading&&showSingles?
-      <section className="gmx-public-tcg-section">
-        <div className="public-section-head">
-          <div><small>CARTAS INDIVIDUALES</small><h2>Singles</h2></div>
-          <span className="gmx-public-result-count">{rows.length} resultado{rows.length===1?'':'s'}</span>
+      <section className="gmx-catalog-results">
+        <div className="gmx-results-toolbar">
+          <div><b>Mostrando {entries.length ? (currentPage - 1) * PAGE_SIZE + 1 : 0}–{Math.min(currentPage * PAGE_SIZE, entries.length)}</b> de {entries.length} productos</div>
+          <label>Ordenar por:
+            <select value={sort} onChange={(event) => setSort(event.target.value)}>
+              <option value="relevance">Relevancia</option><option value="price-asc">Precio: menor a mayor</option><option value="price-desc">Precio: mayor a menor</option><option value="name">Nombre A–Z</option><option value="stock">Mayor disponibilidad</option>
+            </select>
+          </label>
         </div>
-        {rows.length
-          ?<div className="public-products-grid">{rows.map(x=><TcgCard key={x.row_id} item={x} currency={currency}/>)}</div>
-          :<div className="public-empty gmx-public-empty-compact">No hay singles disponibles con estos filtros.</div>}
-      </section>
-      :null
-    }
 
-    {!loading&&showSealed?
-      <section className="gmx-public-tcg-section">
-        <div className="public-section-head">
-          <div><small>PRODUCTO TCG</small><h2>Sellado y accesorios</h2></div>
-          <span className="gmx-public-result-count">{sealed.length} resultado{sealed.length===1?'':'s'}</span>
-        </div>
-        {sealed.length
-          ?<div className="public-products-grid">{sealed.map(p=><ProductCard key={`product-${p.row_id}`} product={p} currency={currency}/>)}</div>
-          :<div className="public-empty gmx-public-empty-compact">No hay producto sellado o accesorios relacionados disponibles.</div>}
+        {loading
+          ? <div className="gmx-catalog-loading"><span/><span/><span/><span/></div>
+          : pageEntries.length
+            ? <div className="public-products-grid gmx-catalog-grid">{pageEntries.map((entry) => entry.kind === 'single' ? <TcgCard key={entry.key} item={entry.item} currency={currency}/> : <ProductCard key={entry.key} product={entry.product} currency={currency}/>)}</div>
+            : <div className="gmx-empty-state"><div className="gmx-empty-icon"><PublicIcon name="search" size={29}/></div><h2>No encontramos productos</h2><p>Prueba con otros filtros o selecciona otro TCG.</p><button onClick={clearFilters}>Limpiar filtros</button></div>}
+
+        {pageCount > 1 ? <nav className="gmx-pagination" aria-label="Paginación">
+          <button disabled={currentPage === 1} onClick={() => setPage(currentPage - 1)}>‹</button>
+          {Array.from({ length: pageCount }, (_, index) => index + 1).filter((number) => number === 1 || number === pageCount || Math.abs(number - currentPage) <= 1).map((number, index, array) => <span key={number}>{index > 0 && number - array[index - 1] > 1 ? <i>…</i> : null}<button className={number === currentPage ? 'active' : ''} onClick={() => setPage(number)}>{number}</button></span>)}
+          <button disabled={currentPage === pageCount} onClick={() => setPage(currentPage + 1)}>›</button>
+        </nav> : null}
       </section>
-      :null
-    }
+    </div>
   </main>;
 }
