@@ -14,6 +14,53 @@ function when(v) {
 }
 
 export default function TCGMasterCatalogBrowser({ onNavigate }) {
+  /* GMX_TCGPLAYER_CATALOG_UI_R5 */
+  const [catalogFxR5,setCatalogFxR5]=useState({
+    rate:null,
+    source:'',
+    rate_date:null
+  });
+
+  useEffect(()=>{
+    let active=true;
+
+    const applyFx=(payload)=>{
+      const direct=payload?.data||payload||{};
+      const effective=direct?.effective||direct||{};
+      const rate=Number(effective?.rate||0);
+
+      if(!Number.isFinite(rate)||rate<=0){
+        throw new Error('FX_RATE_NOT_AVAILABLE');
+      }
+
+      if(active){
+        setCatalogFxR5({
+          rate,
+          source:String(effective?.source||''),
+          rate_date:effective?.rate_date||null
+        });
+      }
+    };
+
+    api('/api/v1/buylist/fx/status',{cache:'no-store'})
+      .then(applyFx)
+      .catch(()=>{
+        return api('/api/v1/content/finance/fx',{cache:'no-store'})
+          .then(applyFx);
+      })
+      .catch(()=>{
+        if(active){
+          setCatalogFxR5({
+            rate:null,
+            source:'',
+            rate_date:null
+          });
+        }
+      });
+
+    return()=>{active=false;};
+  },[]);
+
   const [summary, setSummary] = useState([]);
   const [gameCode, setGameCode] = useState('');
   const [sets, setSets] = useState([]);
@@ -314,10 +361,24 @@ export default function TCGMasterCatalogBrowser({ onNavigate }) {
       {message ? <div className="message proposal-a-message">{message}</div> : null}
 
       <section className="proposal-a-results design4-table-card">
-        <div className="proposal-a-results-head"><div><strong>Cartas del catálogo</strong><span>{total.toLocaleString('es-MX')} cartas{currentGame?.game_name ? ` · ${currentGame.game_name}` : ''}{setCode ? ` · ${sets.find((x) => x.codigo === setCode)?.nombre || setCode}` : ''}</span></div></div>
-        <div className="table-wrap proposal-a-table"><table><thead><tr><th>Carta</th><th>Expansión</th><th>Nº</th><th>Rareza</th><th>Precio mercado</th><th>Proveedor</th><th>Actualizado</th><th></th></tr></thead><tbody>{cards.map((card) => <tr key={card.row_id}>
+        <div className="proposal-a-results-head"><div><strong>Cartas del catálogo</strong><span>{total.toLocaleString('es-MX')} cartas{currentGame?.game_name ? ` · ${currentGame.game_name}` : ''}{setCode ? ` · ${sets.find((x) => x.codigo === setCode)?.nombre || setCode}` : ''}</span></div><span className="gmx-catalog-fx-r5" style={{fontSize:11,opacity:.75}}>
+          {Number(catalogFxR5.rate||0)>0
+            ?`TC ${Number(catalogFxR5.rate).toFixed(4)} MXN/USD${catalogFxR5.source?` - ${catalogFxR5.source}`:''}`
+            :'TC no disponible'}
+        </span></div>
+        <div className="table-wrap proposal-a-table"><table><thead><tr><th>Carta</th><th>Expansión</th><th>Nº</th><th>Rareza</th><th>Mercado USD</th><th>Mercado MXN</th><th>Precio tienda MXN</th><th>Proveedor precio</th><th>Actualizado</th><th></th></tr></thead><tbody>{cards.map((card) => <tr key={card.row_id}>
           <td><div className="proposal-a-card-name">{card.image_local_url || card.image_small_url || card.image_large_url ? <img src={card.image_local_url || card.image_small_url || card.image_large_url} alt="" /> : <span>TCG</span>}<div><strong>{card.name}</strong></div></div></td>
-          <td>{card.set_name || card.set_code || '—'}</td><td>{card.collector_number || card.number || '—'}</td><td>{card.rarity || '—'}</td><td>{card.lowest_market_numeric ?? '—'}</td><td>{card.provider_code || '—'}</td><td>{when(card.last_synced_at)}</td><td><button type="button" className="secondary compact" onClick={() => openCard(card)}>Ver</button></td>
+          <td>{card.set_name || card.set_code || '—'}</td><td>{card.collector_number || card.number || '—'}</td><td>{card.rarity || '—'}</td><td><strong>{Number(card.tcgplayer_market_usd||0)>0
+            ?Number(card.tcgplayer_market_usd).toLocaleString('en-US',{style:'currency',currency:'USD'})
+            :'\u2014'}</strong></td>
+          <td><strong>{Number(card.tcgplayer_market_usd||0)>0&&Number(catalogFxR5.rate||0)>0
+            ?(Number(card.tcgplayer_market_usd)*Number(catalogFxR5.rate)).toLocaleString('es-MX',{style:'currency',currency:'MXN',minimumFractionDigits:2,maximumFractionDigits:2})
+            :'\u2014'}</strong></td>
+          <td>{Number(card.store_price_mxn||0)>0
+            ?Number(card.store_price_mxn).toLocaleString('es-MX',{style:'currency',currency:'MXN',minimumFractionDigits:2,maximumFractionDigits:2})
+            :'No configurado'}</td>
+          <td><strong>{Number(card.tcgplayer_market_usd||0)>0?'TCGplayer':'TCGplayer - sin precio'}</strong></td>
+          <td>{when(card.tcgplayer_price_updated_at||card.last_synced_at)}</td><td><button type="button" className="secondary compact" onClick={() => openCard(card)}>Ver</button></td>
         </tr>)}</tbody></table></div>
         {!cards.length && !busy ? <div className="public-empty small">No hay cartas descargadas que coincidan con los filtros seleccionados.</div> : null}
         <div className="proposal-a-pagination"><button disabled={page <= 1 || busy} onClick={() => loadCards({ targetPage: page - 1 })}>‹</button><span>{page} / {pages}</span><button disabled={page >= pages || busy} onClick={() => loadCards({ targetPage: page + 1 })}>›</button></div>

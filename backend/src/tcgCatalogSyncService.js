@@ -346,7 +346,7 @@ async function mapTcgdexSetId(setCode) {
     if (exact?.id) return exact.id;
   } catch {}
 
-  // If the primary Pokémon API and TCGdex use different IDs, map by the
+  // If the primary PokÃ©mon API and TCGdex use different IDs, map by the
   // master set name instead of guessing.
   const master = await query(`SELECT nombre FROM gmx.tcg_master_sets
     WHERE id_juego='POKEMON' AND codigo=$1 LIMIT 1`, [setCode]);
@@ -450,10 +450,10 @@ async function pokemonSets() {
       total: Number(x.total || x.printedTotal || 0),
       sourceUrl: `https://api.pokemontcg.io/v2/sets/${encodeURIComponent(x.id)}`
     }));
-    sets._gmxSource = 'Pokémon TCG API';
+    sets._gmxSource = 'PokÃ©mon TCG API';
     return sets;
   } catch (primaryError) {
-    // Fallback: TCGdex is an open Pokémon catalog API and does not require an API key.
+    // Fallback: TCGdex is an open PokÃ©mon catalog API and does not require an API key.
     try {
       const all = await fetchJson('https://api.tcgdex.net/v2/en/sets', { timeout: 30000 });
       const sets = (Array.isArray(all) ? all : []).map((x) => ({
@@ -506,7 +506,7 @@ async function pokemonCards(setCode, { downloadImages = false, syncPrices = true
         metadata: { hp: x.hp, types: x.types, legalities: x.legalities, regulationMark: x.regulationMark }
       });
     }
-    cards._gmxSource = 'Pokémon TCG API';
+    cards._gmxSource = 'PokÃ©mon TCG API';
     return cards;
   } catch (primaryError) {
     try {
@@ -615,13 +615,13 @@ async function yugiohCards(setCode, { downloadImages = false, syncPrices = true 
 const SOURCE_REGISTRY = {
   POKEMON: {
     catalog: [
-    { code: 'AUTO', name: 'Automático', description: 'Pokémon TCG API con TCGdex como respaldo' },
-    { code: 'POKEMON_TCG_API', name: 'Pokémon TCG API', description: 'Forzar Pokémon TCG API' },
+    { code: 'AUTO', name: 'AutomÃ¡tico', description: 'PokÃ©mon TCG API con TCGdex como respaldo' },
+    { code: 'POKEMON_TCG_API', name: 'PokÃ©mon TCG API', description: 'Forzar PokÃ©mon TCG API' },
     { code: 'TCGDEX', name: 'TCGdex', description: 'Forzar TCGdex' }],
 
     images: [
-    { code: 'AUTO', name: 'Automático', description: 'Usar la imagen de la fuente de catálogo elegida' },
-    { code: 'CATALOG', name: 'Fuente de catálogo', description: 'Usar la imagen entregada por la fuente de catálogo' }],
+    { code: 'AUTO', name: 'AutomÃ¡tico', description: 'Usar la imagen de la fuente de catÃ¡logo elegida' },
+    { code: 'CATALOG', name: 'Fuente de catÃ¡logo', description: 'Usar la imagen entregada por la fuente de catÃ¡logo' }],
 
     prices: [
     { code: 'TCGPLAYER', name: 'TCGplayer' },
@@ -630,7 +630,7 @@ const SOURCE_REGISTRY = {
 
   },
   MAGIC: {
-    catalog: [{ code: 'SCRYFALL', name: 'Scryfall', description: 'Catálogo disponible para Magic' }],
+    catalog: [{ code: 'SCRYFALL', name: 'Scryfall', description: 'CatÃ¡logo disponible para Magic' }],
     images: [{ code: 'SCRYFALL', name: 'Scryfall' }],
     prices: [
     { code: 'SCRYFALL', name: 'Scryfall' },
@@ -638,7 +638,7 @@ const SOURCE_REGISTRY = {
 
   },
   YUGIOH: {
-    catalog: [{ code: 'YGOPRODECK', name: 'YGOPRODeck', description: 'Catálogo disponible para Yu-Gi-Oh!' }],
+    catalog: [{ code: 'YGOPRODECK', name: 'YGOPRODeck', description: 'CatÃ¡logo disponible para Yu-Gi-Oh!' }],
     images: [{ code: 'YGOPRODECK', name: 'YGOPRODeck' }],
     prices: [
     { code: 'TCGPLAYER', name: 'TCGplayer' },
@@ -724,7 +724,7 @@ async function pokemonSetsByPreference(prefs) {
       total: Number(x.total || x.printedTotal || 0),
       sourceUrl: `https://api.pokemontcg.io/v2/sets/${encodeURIComponent(x.id)}`
     }));
-    sets._gmxSource = 'Pokémon TCG API';
+    sets._gmxSource = 'PokÃ©mon TCG API';
     return sets;
   }
   return pokemonSets();
@@ -766,7 +766,7 @@ async function pokemonCardsByPreference(setCode, opts, prefs) {
         metadata: { hp: x.hp, types: x.types, legalities: x.legalities, regulationMark: x.regulationMark }
       });
     }
-    cards._gmxSource = 'Pokémon TCG API';
+    cards._gmxSource = 'PokÃ©mon TCG API';
   } else {
     cards = await pokemonCards(setCode, opts);
   }
@@ -881,7 +881,7 @@ export async function syncGameSets(gameCode) {
     await clearProviderError(gameCode);
     return {
       gameCode, mode: 'REMOTE_API', sets: sets.length, provider: provider.provider_name,
-      sourceUsed, warning: primaryError ? `Fuente principal no disponible; se utilizó ${sourceUsed}.` : null
+      sourceUsed, warning: primaryError ? `Fuente principal no disponible; se utilizÃ³ ${sourceUsed}.` : null
     };
   } catch (e) {
     await query(`UPDATE gmx.tcg_sync_providers SET last_error=$2,status='ERROR' WHERE game_code=$1`, [gameCode, String(e.message || e).slice(0, 500)]);
@@ -919,7 +919,7 @@ export async function syncSelectedCards(gameCode, { setCodes = [], downloadImage
         ...payload
       });} catch {}
   };
-  await notify({ phase: 'starting', setCode: null, message: 'Preparando sincronización de cartas…' });
+  await notify({ phase: 'starting', setCode: null, message: 'Preparando sincronizaciÃ³n de cartasâ€¦' });
   const invalid = selected.filter((x) => !valid.has(x));
   if (invalid.length) throw new Error(`UNKNOWN_SET:${invalid.join(',')}`);
 
@@ -933,7 +933,7 @@ export async function syncSelectedCards(gameCode, { setCodes = [], downloadImage
         phase: 'fetching_set',
         setCode,
         setEstimatedCards: Number(estimatedBySet.get(setCode) || 0),
-        message: `Descargando ${setCode}…`
+        message: `Descargando ${setCode}â€¦`
       });
       const effectiveDownloadImages = gameCode === 'YUGIOH' ? true : downloadImages;
       let cards;
@@ -954,7 +954,7 @@ export async function syncSelectedCards(gameCode, { setCodes = [], downloadImage
         phase: 'saving_cards',
         setCode,
         setActualCards: cards.length,
-        message: `Guardando ${cards.length} carta(s) de ${setCode}…`
+        message: `Guardando ${cards.length} carta(s) de ${setCode}â€¦`
       });
       const client = await pool.connect();
       let setCards = 0,setPrices = 0;
@@ -1015,7 +1015,7 @@ export async function syncSelectedCards(gameCode, { setCodes = [], downloadImage
   await markProvider(gameCode, 'last_cards_sync_at', { error: result.errors.length ? JSON.stringify(result.errors.slice(0, 5)) : null });
   if (syncPrices) await markProvider(gameCode, 'last_prices_sync_at', { error: result.errors.length ? JSON.stringify(result.errors.slice(0, 5)) : null });
   if (!result.errors.length) await clearProviderError(gameCode);
-  await notify({ phase: 'sync_complete', message: 'Sincronización de cartas terminada.' });
+  await notify({ phase: 'sync_complete', message: 'SincronizaciÃ³n de cartas terminada.' });
   return result;
 }
 
@@ -1317,7 +1317,44 @@ export async function browseMasterCatalogCards({
       s.nombre AS set_name,s.fecha_lanzamiento,
       COUNT(p.row_id)::bigint AS price_rows,
       COUNT(DISTINCT p.price_provider)::bigint AS price_providers,
-      MIN(p.market) FILTER (WHERE p.market IS NOT NULL) AS lowest_market_numeric
+      MIN(p.market) FILTER (WHERE p.market IS NOT NULL) AS lowest_market_numeric,
+
+      /* GMX_TCGPLAYER_CATALOG_R3
+         Precio de referencia principal para Catalogo Maestro:
+         TCGplayer en USD. El precio interno de tienda permanece separado.
+      */
+      COALESCE(
+        MIN(NULLIF(p.market,0)) FILTER (
+          WHERE UPPER(COALESCE(p.price_provider,''))='TCGPLAYER'
+            AND UPPER(COALESCE(p.currency,''))='USD'
+        ),
+        MIN(NULLIF(p.trend,0)) FILTER (
+          WHERE UPPER(COALESCE(p.price_provider,''))='TCGPLAYER'
+            AND UPPER(COALESCE(p.currency,''))='USD'
+        ),
+        MIN(NULLIF(p.mid,0)) FILTER (
+          WHERE UPPER(COALESCE(p.price_provider,''))='TCGPLAYER'
+            AND UPPER(COALESCE(p.currency,''))='USD'
+        ),
+        MIN(NULLIF(p.low,0)) FILTER (
+          WHERE UPPER(COALESCE(p.price_provider,''))='TCGPLAYER'
+            AND UPPER(COALESCE(p.currency,''))='USD'
+        )
+      ) AS tcgplayer_market_usd,
+
+      MAX(COALESCE(p.provider_updated_at,p.fetched_at)) FILTER (
+        WHERE UPPER(COALESCE(p.price_provider,''))='TCGPLAYER'
+          AND UPPER(COALESCE(p.currency,''))='USD'
+      ) AS tcgplayer_price_updated_at,
+
+      (
+        SELECT MIN(NULLIF(i.precio,0))
+        FROM gmx.tcg_cartas lc
+        JOIN gmx.tcg_inventario i
+          ON i.id_carta=lc.id_carta
+        WHERE lc.master_card_id=c.row_id
+          AND COALESCE(i.precio,0)>0
+      ) AS store_price_mxn
     FROM gmx.tcg_master_cards c
     LEFT JOIN gmx.tcg_master_sets s
       ON s.id_juego=c.game_code AND s.codigo=c.set_code
