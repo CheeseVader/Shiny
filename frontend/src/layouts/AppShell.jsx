@@ -42,9 +42,38 @@ export default function AppShell() {
   const [alertChecking, setAlertChecking] = useState(false);
   const [alertDockExpanded, setAlertDockExpanded] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [title, subtitle] = pageMeta[location.pathname] || [brandText("TCG_STORE_TEMPLATE"), 'LOCAL'];
+  const [title, staticSubtitle] = pageMeta[location.pathname] || [brandText("TCG_STORE_TEMPLATE"), 'LOCAL'];
+  const [dashboardBranchLabelR54D,setDashboardBranchLabelR54D]=useState(
+    localStorage.getItem('GMX_DASHBOARD_BRANCH_NAME') || 'Todas las sucursales'
+  ); // GMX_DASHBOARD_BRANCH_ID_R54D
+  const subtitle = location.pathname==='/admin/dashboard' ? dashboardBranchLabelR54D : staticSubtitle;
   const currentUser = (() => {try {return JSON.parse(localStorage.getItem('GMX_AUTH_USER') || '{}');} catch {return {};}})();
   const operatorMode = String(currentUser?.rol || '').toUpperCase() === 'OPERADOR';
+
+  useEffect(()=>{
+    if(location.pathname!=='/admin/dashboard')return;
+
+    const refreshDashboardBranchLabelR54D=()=>{
+      setDashboardBranchLabelR54D(
+        localStorage.getItem('GMX_DASHBOARD_BRANCH_NAME') || 'Todas las sucursales'
+      );
+    };
+
+    const onChanged=(event)=>{
+      const branchName=String(event?.detail?.branchName||'').trim();
+      if(branchName){
+        localStorage.setItem('GMX_DASHBOARD_BRANCH_NAME',branchName);
+      }
+      refreshDashboardBranchLabelR54D();
+    };
+
+    refreshDashboardBranchLabelR54D();
+    window.addEventListener('gmx:dashboard-branch-changed',onChanged);
+
+    return()=>{
+      window.removeEventListener('gmx:dashboard-branch-changed',onChanged);
+    };
+  },[location.pathname]);
 
   async function checkHealth() {
     try {

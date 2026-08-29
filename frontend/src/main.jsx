@@ -125,3 +125,5 @@ import './phase_gmx_visual_r20.css';
 import './phase_gmx_visual_r21.css';
 import './gmx_recommendations_dashboards_v4.css';
 import './gmx_work_exact_r25.css';
+
+import './gmx_ui_autofit_r54.css';

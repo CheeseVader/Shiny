@@ -37,6 +37,11 @@ const tabs=[
   ['tcg','TCG'],['alerts','Alertas'],['integrity','Auditoría de integridad']
 ];
 
+function gmxHeadlineKpiFontR54K(value){
+  const s=String(value??'');
+  const extra=Math.max(0,s.length-7);
+  return `${Math.max(10.5,22-(extra*1.25))}px`;
+}
 export default function ReportsPage(){
   const now=new Date(),first=new Date(now.getFullYear(),now.getMonth(),1),iso=d=>d.toISOString().slice(0,10);
   const [tab,setTab]=useState('summary'),[branches,setBranches]=useState([]),[branchId,setBranchId]=useState('');
@@ -120,7 +125,17 @@ export default function ReportsPage(){
     <section className="reports-v3-kpis">
       {headlineKpis.map(k=><article key={k.label}>
         <div className={`reports-v3-kpi-icon ${k.tone}`}>{k.icon}</div>
-        <div><span>{k.label}</span><strong>{k.value}</strong><small>Datos del período seleccionado</small></div>
+        <div><span>{k.label}</span><strong
+  title={String(k.value??'')}
+  style={{
+    fontSize:gmxHeadlineKpiFontR54K(k.value),
+    lineHeight:1.05,
+    letterSpacing:'-.05em',
+    whiteSpace:'nowrap',
+    overflow:'visible',
+    textOverflow:'clip'
+  }}
+>{k.value}</strong><small>Datos del período seleccionado</small></div>
       </article>)}
     </section>
 

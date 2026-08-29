@@ -205,7 +205,7 @@ const opsRecent=useMemo(()=>movements.slice(0,8),[movements]);
     cardLabel,
     v.sku,
     v.id_inventario,
-    [v.idioma, v.condicion, v.acabado, v.edicion].filter(Boolean).join(' Â· '),
+    [v.idioma, v.condicion, v.acabado, v.edicion].filter(Boolean).join(' · '),
     `Stock ${Number(v.stock || 0)}`].
     filter(Boolean).join(' â ');
   }
@@ -284,7 +284,7 @@ const opsRecent=useMemo(()=>movements.slice(0,8),[movements]);
       `<div class="barcode">${code128Svg(v.id_inventario || v.sku || '')}</div>`}
         <div class="label-info"><strong>${escapeHtml(v.carta || '')}</strong>
         <span>${escapeHtml(v.sku || '')}</span>
-        <span>${escapeHtml([v.rareza, v.idioma, v.condicion, v.edicion].filter(Boolean).join(' Â· '))}</span>
+        <span>${escapeHtml([v.rareza, v.idioma, v.condicion, v.edicion].filter(Boolean).join(' · '))}</span>
         ${showPrice ? `<b>${escapeHtml(money(Number(v.precio_oferta || 0) > 0 ? v.precio_oferta : v.precio))}</b>` : ''}
         <small class="label-payload">${escapeHtml(payload)}</small></div></div>`);
     }
@@ -335,7 +335,7 @@ const opsRecent=useMemo(()=>movements.slice(0,8),[movements]);
 
   async function closeCount(apply) {
     if (!(await window.tcg_store_templateConfirm(
-      apply ? 'Â¿Cerrar y aplicar diferencias al inventario?' : 'Â¿Cerrar sin aplicar diferencias?',
+      apply ? '¿Cerrar y aplicar diferencias al inventario?' : '¿Cerrar sin aplicar diferencias?',
       { title: apply ? 'Aplicar conteo' : 'Cerrar conteo', confirmText: apply ? 'Aplicar diferencias' : 'Cerrar sin aplicar' }
     ))) return;
     try {
@@ -387,7 +387,7 @@ const opsRecent=useMemo(()=>movements.slice(0,8),[movements]);
       quantity: Number(r.quantity || r.Cantidad || 1),
       targetStock: r.targetStock === '' ? undefined : Number(r.targetStock || r.StockObjetivo),
       reference: r.reference || r.Referencia || 'BULK',
-      reason: r.reason || r.Motivo || 'OperaciÃ³n masiva'
+      reason: r.reason || r.Motivo || 'Operación masiva'
     }));
     setBulkRows(rows);
   }
@@ -395,7 +395,7 @@ const opsRecent=useMemo(()=>movements.slice(0,8),[movements]);
   async function runBulk() {
     try {
       const r = await api('/api/v1/tcg-ops/bulk', { method: 'POST', body: JSON.stringify({ rows: bulkRows }) });
-      setMessage(`OperaciÃ³n masiva: ${r.data.ok} correctas, ${r.data.failed} fallidas.`);
+      setMessage(`Operación masiva: ${r.data.ok} correctas, ${r.data.failed} fallidas.`);
       await loadOperational();
     } catch (e) {setMessage(e.message);}
   }
@@ -403,7 +403,7 @@ const opsRecent=useMemo(()=>movements.slice(0,8),[movements]);
   function bulkTemplate() {
     downloadText(
       'TCG_STORE_TEMPLATE_TCG_MOVIMIENTOS_TEMPLATE.csv',
-      'operation,branchId,originBranchId,destBranchId,code,quantity,targetStock,reference,reason\r\nTRANSFER,,SUC-001,SUC-002,TCG-SKU,1,,REF-002,Transferencia\r\nADJUST,SUC-001,,,TCG-SKU,1,10,REF-003,Ajuste fÃ­sico'
+      'operation,branchId,originBranchId,destBranchId,code,quantity,targetStock,reference,reason\r\nTRANSFER,,SUC-001,SUC-002,TCG-SKU,1,,REF-002,Transferencia\r\nADJUST,SUC-001,,,TCG-SKU,1,10,REF-003,Ajuste físico'
     );
   }
 
@@ -541,7 +541,7 @@ const opsRecent=useMemo(()=>movements.slice(0,8),[movements]);
       </div>
 
       <div className="gmx-ops-final-nav">
-        <button type="button" onClick={()=>setOpsPanel('dashboard')}>â Resumen</button>
+        <button type="button" onClick={()=>setOpsPanel('dashboard')}>{'\u2190 Resumen'}</button>
         <button
           type="button"
           className={tab==='move'?'active':''}
@@ -561,7 +561,7 @@ const opsRecent=useMemo(()=>movements.slice(0,8),[movements]);
           className={tab==='count'?'active':''}
           onClick={()=>{setTab('count');setOpsPanel('module');}}
         >
-          Conteo fÃ­sico
+          Conteo físico
         </button>
       </div>
 {tab === 'move' ? <div className="tcgops-body">
@@ -590,7 +590,7 @@ const opsRecent=useMemo(()=>movements.slice(0,8),[movements]);
 
           <section className="ops-card">
             <h3>Ajuste controlado</h3>
-            <p>Para correcciones fÃ­sicas justificadas. Selecciona una variante existente.</p>
+            <p>Para correcciones físicas justificadas. Selecciona una variante existente.</p>
             <label>Buscar variante<input value={adjustSearch} onChange={(e) => setAdjustSearch(e.target.value)} placeholder="Carta, SKU, rareza, condiciÃ³nâ¦" /></label>
             <label>Variante
               <select value={adjust.code} onChange={(e) => {
@@ -611,7 +611,7 @@ const opsRecent=useMemo(()=>movements.slice(0,8),[movements]);
 
         <section className="tcgops-movement-history">
           <div className="section-head compact">
-            <div><h3>Historial de movimientos</h3><p>Transferencias, recepciones, ajustes, ventas y conciliaciones quedan visibles aquÃ­.</p></div>
+            <div><h3>Historial de movimientos</h3><p>Transferencias, recepciones, ajustes, ventas y conciliaciones quedan visibles aquí.</p></div>
           </div>
           <div className="table-wrap"><table>
             <thead><tr><th>Fecha</th><th>Tipo</th><th>SKU</th><th>Origen</th><th>Destino</th><th>Cantidad</th><th>Referencia</th></tr></thead>
@@ -624,7 +624,7 @@ const opsRecent=useMemo(()=>movements.slice(0,8),[movements]);
 
         <details className="tcgops-advanced">
           <summary>Operaciones masivas avanzadas</summary>
-          <p>Solo para transferencias y ajustes por lote. Las entradas normales deben registrarse mediante RecepciÃ³n.</p>
+          <p>Solo para transferencias y ajustes por lote. Las entradas normales deben registrarse mediante Recepción.</p>
           <div className="actions">
             <button className="secondary" onClick={bulkTemplate}>Descargar plantilla</button>
             <label className="file-btn">Cargar CSV<input type="file" accept=".csv,text/csv" onChange={(e) => e.target.files[0] && importBulk(e.target.files[0])} /></label>
@@ -636,14 +636,14 @@ const opsRecent=useMemo(()=>movements.slice(0,8),[movements]);
 
       {tab === 'labels' ? <div className="tcgops-body">
         <div className="tcgops-purpose-note">
-          <strong>Etiquetado de variantes fÃ­sicas.</strong> AquÃ­ sÃ­ se conserva una funciÃ³n TCG especÃ­fica porque cada variante puede cambiar por idioma, condiciÃ³n, acabado o ediciÃ³n.
+          <strong>Etiquetado de variantes físicas.</strong> Aquí sí se conserva una función TCG específica porque cada variante puede cambiar por idioma, condición, acabado o edición.
         </div>
         <div className="label-controls label-controls-improved">
           <input className="label-search" value={labelSearch} onChange={(e) => setLabelSearch(e.target.value)} placeholder="Buscar carta, SKU, ID, rarezaâ¦" />
           <select value={labelSize} onChange={(e) => setLabelSize(e.target.value)}><option value="50x30">50 Ã 30 mm</option><option value="60x40">60 Ã 40 mm</option></select>
           <select value={labelCodeType} onChange={(e) => setLabelCodeType(e.target.value)}>
-            <option value="QR">CÃ³digo QR</option>
-            <option value="BARCODE">CÃ³digo de barras</option>
+            <option value="QR">Código QR</option>
+            <option value="BARCODE">Código de barras</option>
           </select>
           <label className="check-label"><input type="checkbox" checked={showPrice} onChange={(e) => setShowPrice(e.target.checked)} />Mostrar precio</label>
           <button className="secondary" onClick={() => setLabelSelection(Object.fromEntries(labelVariants.filter((v) => Number(v.stock || 0) > 0).map((v) => [v.id_inventario, 1])))}>Seleccionar con stock</button>
@@ -664,7 +664,7 @@ const opsRecent=useMemo(()=>movements.slice(0,8),[movements]);
 
       {tab === 'count' ? <div className="tcgops-body">
         <div className="tcgops-purpose-note">
-          <strong>Conteo fÃ­sico.</strong> La plantilla es el mÃ©todo principal para inventarios grandes; el conteo manual por fila queda como alternativa para inventarios pequeÃ±os.
+          <strong>Conteo físico.</strong> La plantilla es el método principal para inventarios grandes; el conteo manual por fila queda como alternativa para inventarios pequeños.
         </div>
         {!activeCount ? <>
           <div className="actions"><button onClick={newCount}>Nuevo conteo ciego</button></div>
@@ -676,12 +676,12 @@ const opsRecent=useMemo(()=>movements.slice(0,8),[movements]);
             </tr>)}</tbody>
           </table></div>
         </> : <section className="count-box">
-          <div className="section-head"><div><div className="eyebrow">CONTEO CIEGO</div><h3>{activeCount.id_conteo} Â· {activeCount.sucursal}</h3></div><button className="secondary compact" onClick={() => setActiveCount(null)}>Cerrar vista</button></div>
+          <div className="section-head"><div><div className="eyebrow">CONTEO CIEGO</div><h3>{activeCount.id_conteo} · {activeCount.sucursal}</h3></div><button className="secondary compact" onClick={() => setActiveCount(null)}>Cerrar vista</button></div>
           {activeCount.estado === 'ABIERTO' ? <>
             <div className="count-template-primary">
               <div>
-                <strong>MÃ©todo recomendado: plantilla de conteo</strong>
-                <p>Descarga la plantilla generada desde el inventario actual, captura Ãºnicamente la cantidad fÃ­sica y vuelve a importarla.</p>
+                <strong>Método recomendado: plantilla de conteo</strong>
+                <p>Descarga la plantilla generada desde el inventario actual, captura únicamente la cantidad física y vuelve a importarla.</p>
               </div>
               <div className="actions">
                 <button className="secondary" onClick={downloadBlindCount}>1. Descargar plantilla</button>
@@ -693,14 +693,14 @@ const opsRecent=useMemo(()=>movements.slice(0,8),[movements]);
               <p>Ãsalo cuando el conteo sea pequeÃ±o o no sea prÃ¡ctico trabajar con archivo. Escribe la cantidad fÃ­sica directamente en cada variante.</p>
             </details>
             <div className="table-wrap"><table>
-              <thead><tr><th>Carta</th><th>SKU</th><th>Rareza</th><th>CondiciÃ³n</th><th>Cantidad fÃ­sica</th></tr></thead>
+              <thead><tr><th>Carta</th><th>SKU</th><th>Rareza</th><th>Condición</th><th>Cantidad física</th></tr></thead>
               <tbody>{(activeCount.details || []).map((d) => <tr key={d.row_id}>
                 <td>{d.carta}</td><td>{d.sku}</td><td>{d.rareza || 'â'}</td><td>{d.condicion}</td>
                 <td><input className="qty-small" type="number" min="0" value={d.cantidad_fisica ?? ''} onBlur={(e) => e.target.value !== '' && setPhysical(d, e.target.value)} onChange={(e) => setActiveCount((c) => ({ ...c, details: c.details.map((x) => x.row_id === d.row_id ? { ...x, cantidad_fisica: e.target.value } : x) }))} /></td>
               </tr>)}</tbody>
             </table></div>
             <div className="count-footer"><button className="secondary" onClick={() => closeCount(false)}>Cerrar sin ajustes</button><button onClick={() => closeCount(true)}>Cerrar y conciliar inventario</button></div>
-          </> : <div className="message">Conteo {activeCount.estado}. Sistema: {activeCount.unidades_sistema} Â· fÃ­sico: {activeCount.unidades_fisicas} Â· diferencia: {activeCount.diferencia_unidades}</div>}
+          </> : <div className="message">Conteo {activeCount.estado}. Sistema: {activeCount.unidades_sistema} · físico: {activeCount.unidades_fisicas} · diferencia: {activeCount.diferencia_unidades}</div>}
         </section>}
       </div> : null}
     </section>

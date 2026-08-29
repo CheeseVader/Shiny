@@ -409,8 +409,28 @@ export default function ProductsPage() {
       <article><i aria-hidden="true">✓</i><div><span>Activos</span><strong>{Number(stats.activos || 0).toLocaleString('es-MX')}</strong><small>Disponibles para operar</small></div></article>
       <article className={Number(stats.stock_bajo || 0) > 0 ? 'warn' : ''}><i aria-hidden="true">△</i><div><span>Stock bajo</span><strong>{Number(stats.stock_bajo || 0).toLocaleString('es-MX')}</strong><small>Requieren atención</small></div></article>
       <article><i aria-hidden="true">◇</i><div><span>Unidades</span><strong>{Number(stats.unidades || 0).toLocaleString('es-MX')}</strong><small>Existencia total</small></div></article>
-      <article><i aria-hidden="true">$</i><div><span>Valor inventario</span><strong>{money(stats.valor_costo)}</strong><small>Costo registrado</small></div></article>
-      <article><i aria-hidden="true">↗</i><div><span>Venta potencial</span><strong>{money(stats.valor_venta)}</strong><small>Ingreso estimado</small></div></article>
+      <article><i aria-hidden="true">$</i><div><span>Valor inventario</span><strong
+  title={money(stats.valor_costo)}
+  style={{
+    fontSize:`${Math.max(11.5,25-Math.max(0,String(money(stats.valor_costo)).length-7)*1.65)}px`,
+    lineHeight:1.05,
+    letterSpacing:'-.05em',
+    whiteSpace:'nowrap',
+    overflow:'visible',
+    textOverflow:'clip'
+  }}
+>{money(stats.valor_costo)}</strong><small>Costo registrado</small></div></article>
+      <article><i aria-hidden="true">↗</i><div><span>Venta potencial</span><strong
+  title={money(stats.valor_venta)}
+  style={{
+    fontSize:`${Math.max(11.5,25-Math.max(0,String(money(stats.valor_venta)).length-7)*1.65)}px`,
+    lineHeight:1.05,
+    letterSpacing:'-.05em',
+    whiteSpace:'nowrap',
+    overflow:'visible',
+    textOverflow:'clip'
+  }}
+>{money(stats.valor_venta)}</strong><small>Ingreso estimado</small></div></article>
     </section>
 
     <section className="r23-visual-grid r23-products-overview r25-products-overview" aria-label="Análisis visual del catálogo">

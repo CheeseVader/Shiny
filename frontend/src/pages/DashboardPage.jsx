@@ -199,24 +199,31 @@ export default function DashboardPage(){
   return <div className="dashboard-v1 admin-stack work-dashboard dash-premium-r36">
     <section className="premium36-head">
       <div>
-        <h2>Â¡Bienvenido de regreso! <span aria-hidden="true">ðŸ‘‹</span></h2>
+        <h2>¡Bienvenido de regreso! <span aria-hidden="true">👋</span></h2>
         <p>Resumen general de tu negocio.</p>
       </div>
       <div className="premium36-controls">
         <label className="premium36-branch">
           <span>Sucursal:</span>
-          <select value={branchId} onChange={e=>setBranchId(e.target.value)}>
+          <select value={branchId} onChange={(e)=>{
+          const id=e.target.value;
+          const branchName=e.target.options[e.target.selectedIndex]?.text || 'Todas las sucursales';
+          setBranchId(id);
+          localStorage.setItem('GMX_DASHBOARD_BRANCH_ID',id);
+          localStorage.setItem('GMX_DASHBOARD_BRANCH_NAME',branchName);
+          window.dispatchEvent(new CustomEvent('gmx:dashboard-branch-changed',{detail:{branchId:id,branchName}}));
+        }}>
             <option value="">{access?.branchScope?.all?'Todas las sucursales':'Sucursales permitidas'}</option>
             {(data?.branches||[]).map(b=><option key={b.id_sucursal} value={b.id_sucursal}>{b.nombre_sucursal}</option>)}
           </select>
         </label>
 
         <label className="premium36-period">
-          <span>â—«</span>
+          <span>◫</span>
           <select value={period} onChange={e=>setPeriod(e.target.value)}>
             <option value="TODAY">Hoy</option>
-            <option value="7D">7 dÃ­as</option>
-            <option value="30D">30 dÃ­as</option>
+            <option value="7D">7 días</option>
+            <option value="30D">30 días</option>
             <option value="MONTH">Este mes</option>
             <option value="CUSTOM">Personalizado</option>
           </select>
@@ -228,7 +235,7 @@ export default function DashboardPage(){
         </div>:null}
 
         <button type="button" className="premium36-refresh" onClick={load} disabled={loading}>
-          {loading?'Actualizandoâ€¦':'Actualizar'}
+          {loading?'Actualizando…':'Actualizar'}
         </button>
       </div>
     </section>
@@ -237,8 +244,8 @@ export default function DashboardPage(){
 
     <section className="premium36-kpis">
       <article className="violet">
-        <div className="premium36-kpi-icon">â†—</div>
-        <span>Ventas del dÃ­a</span>
+        <div className="premium36-kpi-icon">↗</div>
+        <span>Ventas del día</span>
         <strong>{money.format(k.ventas||0)}</strong>
         <small>{changeText}</small>
         <svg viewBox="0 0 100 32" preserveAspectRatio="none" aria-hidden="true">
@@ -247,7 +254,7 @@ export default function DashboardPage(){
       </article>
 
       <article className="blue">
-        <div className="premium36-kpi-icon">â–£</div>
+        <div className="premium36-kpi-icon">▣</div>
         <span>Pedidos</span>
         <strong>{integer.format(k.pedidos||0)}</strong>
         <small>{integer.format(k.clientesNuevos||0)} clientes nuevos</small>
@@ -257,7 +264,7 @@ export default function DashboardPage(){
       </article>
 
       <article className="green">
-        <div className="premium36-kpi-icon">âŒ˜</div>
+        <div className="premium36-kpi-icon">⌘</div>
         <span>Productos vendidos</span>
         <strong>{integer.format(premiumTop.reduce((sum,x)=>sum+Number(x.unidades||0),0))}</strong>
         <small>{premiumTop.length} productos destacados</small>
@@ -267,7 +274,7 @@ export default function DashboardPage(){
       </article>
 
       <article className="orange">
-        <div className="premium36-kpi-icon">â—Ž</div>
+        <div className="premium36-kpi-icon">◎</div>
         <span>Ticket promedio</span>
         <strong>{money.format(k.ticketPromedio||0)}</strong>
         <small>{percent.format(k.margenBruto||0)}% de margen bruto</small>
@@ -281,16 +288,16 @@ export default function DashboardPage(){
       <article className="premium36-card premium36-sales">
         <header>
           <div>
-            <h3>Ventas <span>(Ãšltimos 7 dÃ­as)</span></h3>
+            <h3>Ventas <span>(Últimos 7 días)</span></h3>
           </div>
-          <button type="button" className="premium36-mini-button" onClick={()=>setPeriod('7D')}>SemanaâŒ„</button>
+          <button type="button" className="premium36-mini-button" onClick={()=>setPeriod('7D')}>Semana⌄</button>
         </header>
-        {loading&&!data?<Empty>Cargando indicadoresâ€¦</Empty>:<SalesTrendChart rows={trend.slice(-7)}/>}
+        {loading&&!data?<Empty>Cargando indicadores…</Empty>:<SalesTrendChart rows={trend.slice(-7)}/>}
       </article>
 
       <article className="premium36-card premium36-products">
         <header>
-          <h3>Productos mÃ¡s vendidos</h3>
+          <h3>Productos más vendidos</h3>
         </header>
 
         {premiumTop.length?<div className="premium36-product-grid">
@@ -306,31 +313,31 @@ export default function DashboardPage(){
           </article>)}
         </div>:<Empty/>}
 
-        <div className="premium36-footer-link">Ver catÃ¡logo completo</div>
+        <div className="premium36-footer-link">Ver catálogo completo</div>
       </article>
 
       <article className="premium36-card premium36-alerts">
         <header><h3>Alertas</h3></header>
         <div className="premium36-alert-list">
           <button type="button" onClick={()=>openDetail('stock-low')}>
-            <i className="stock">â–³</i>
+            <i className="stock">△</i>
             <span><strong>Stock bajo</strong><small>{integer.format(premiumLow)} productos con stock bajo</small></span>
             <b>{integer.format(premiumLow)}</b>
-            <em>â€º</em>
+            <em>›</em>
           </button>
 
           <button type="button" onClick={()=>openDetail('no-movement')}>
-            <i className="movement">â—·</i>
+            <i className="movement">◷</i>
             <span><strong>Sin movimientos</strong><small>{integer.format(premiumPending)} productos sin movimiento</small></span>
             <b>{integer.format(premiumPending)}</b>
-            <em>â€º</em>
+            <em>›</em>
           </button>
 
           <button type="button" onClick={()=>openDetail('alerts')}>
             <i className="alerts">!</i>
-            <span><strong>Alertas abiertas</strong><small>{integer.format(premiumCritical)} crÃ­ticas</small></span>
+            <span><strong>Alertas abiertas</strong><small>{integer.format(premiumCritical)} críticas</small></span>
             <b>{integer.format(premiumAlerts)}</b>
-            <em>â€º</em>
+            <em>›</em>
           </button>
         </div>
 
@@ -345,7 +352,7 @@ export default function DashboardPage(){
           <div className="premium36-cash">
             <span>Flujo de caja abierta</span>
             <strong>{money.format(cashIn-cashOut)}</strong>
-            <small>Ingresos {money.format(cashIn)} Â· Egresos {money.format(cashOut)}</small>
+            <small>Ingresos {money.format(cashIn)} · Egresos {money.format(cashOut)}</small>
           </div>
         </div>
       </article>
@@ -353,32 +360,32 @@ export default function DashboardPage(){
 
     <section className="premium36-secondary-grid">
       <article className="premium36-card">
-        <header><h3>DesempeÃ±o de productos</h3></header>
+        <header><h3>Desempeño de productos</h3></header>
         <div className="dash-performance-grid premium36-performance-grid">
-          <PerformanceCard eyebrow="MÃS VENDIDO" title={most?.producto} tone="green" lines={most?[`${integer.format(most.unidades)} unidades`,money.format(most.ventas)]:[]}/>
+          <PerformanceCard eyebrow="MÁS VENDIDO" title={most?.producto} tone="green" lines={most?[`${integer.format(most.unidades)} unidades`,money.format(most.ventas)]:[]}/>
           <PerformanceCard eyebrow="MENOS VENDIDO" title={least?.producto} tone="orange" lines={least?[`${integer.format(least.unidades)} unidades`,money.format(least.ventas)]:[]}/>
           <PerformanceCard eyebrow="MAYOR UTILIDAD" title={bestProfit?.producto} tone="blue" lines={bestProfit?[`${money.format(bestProfit.utilidad)} de utilidad`,`${percent.format(bestProfit.margen||0)}% de margen`]:[]}/>
-          <PerformanceCard eyebrow="CAPITAL DETENIDO" title={`${integer.format(performance.sinMovimiento||0)} producto(s)`} tone="red" lines={[money.format(performance.capitalDetenido||0),'30 dÃ­as o mÃ¡s sin venta']} onClick={()=>openDetail('no-movement')}/>
+          <PerformanceCard eyebrow="CAPITAL DETENIDO" title={`${integer.format(performance.sinMovimiento||0)} producto(s)`} tone="red" lines={[money.format(performance.capitalDetenido||0),'30 días o más sin venta']} onClick={()=>openDetail('no-movement')}/>
         </div>
       </article>
 
       <article className="premium36-card">
-        <header><h3>RotaciÃ³n alta y baja</h3></header>
+        <header><h3>Rotación alta y baja</h3></header>
         <div className="premium36-rotation-grid">
           <div>
-            <span>MÃ¡s vendidos</span>
+            <span>Más vendidos</span>
             <ProductBarChart rows={data?.topProducts||[]} tone="green"/>
           </div>
           <div>
             <span>Menos vendidos</span>
-            <ProductBarChart rows={data?.leastProducts||[]} tone="orange" empty="No hay productos vendidos en el perÃ­odo seleccionado."/>
+            <ProductBarChart rows={data?.leastProducts||[]} tone="orange" empty="No hay productos vendidos en el período seleccionado."/>
           </div>
         </div>
       </article>
     </section>
 
     <div className="premium36-footnote">
-      Ãšltima actualizaciÃ³n: {data?.generatedAt?new Date(data.generatedAt).toLocaleString('es-MX'):'â€”'} Â· Los indicadores respetan el alcance de sucursal del usuario.
+      Última actualización: {data?.generatedAt?new Date(data.generatedAt).toLocaleString('es-MX'):'—'} · Los indicadores respetan el alcance de sucursal del usuario.
     </div>
 
     <DetailModal kind={detailKind} data={detailData} loading={detailLoading} error={detailError} search={detailSearch} onSearch={setDetailSearch} onClose={closeDetail}/>
