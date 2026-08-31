@@ -1,0 +1,51 @@
+/* SHINY_COMMERCIAL_QUOTE_ACTIONS_R63 */
+.commercial-page .row-actions,
+.r23-commercial .row-actions{
+  display:flex !important;
+  align-items:center !important;
+  justify-content:flex-start !important;
+  gap:6px !important;
+  flex-wrap:wrap !important;
+}
+.commercial-page .row-actions .compact,
+.r23-commercial .row-actions .compact{
+  min-height:34px !important;
+  margin:0 !important;
+  white-space:nowrap;
+}
+.commercial-page .quote-view-button-r63,
+.r23-commercial .quote-view-button-r63{
+  min-width:58px;
+}
+.quote-view-modal-r63{
+  width:min(920px,94vw) !important;
+  max-height:88vh;
+  overflow:auto;
+}
+.quote-view-summary-r63{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(150px,1fr));
+  gap:10px;
+  margin:14px 0;
+}
+.quote-view-summary-r63 span{
+  display:flex;
+  flex-direction:column;
+  gap:4px;
+  padding:12px;
+  border:1px solid #e5e7eb;
+  border-radius:10px;
+}
+.quote-view-items-r63{
+  overflow-x:auto;
+}
+.quote-view-items-r63 table{
+  width:100%;
+  border-collapse:collapse;
+}
+.quote-view-items-r63 th,
+.quote-view-items-r63 td{
+  padding:9px;
+  border-bottom:1px solid #e5e7eb;
+  text-align:left;
+}

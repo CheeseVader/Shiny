@@ -94,10 +94,15 @@ export default function DualAppearanceDesigner({ settings, setSettings, media = 
             logoText: get('admin', 'logo_text', 'Shiny'),
             descriptor: get('admin', 'brand_descriptor', 'LOCAL')
           }));
+        /* SHINY_LOGIN_APPEARANCE_R63 */
         localStorage.setItem('SHINY_LOGIN_APPEARANCE_R55', JSON.stringify({
           design: get('admin', 'login_background_design', 'network4'),
-          glow: get('admin', 'login_background_glow', 'violet')
+          glow: get('admin', 'login_background_glow', 'violet'),
+          mediaId: get('admin', 'login_background_media_id', ''),
+          opacity: get('admin', 'login_background_opacity', '1'),
+          fit: get('admin', 'login_background_fit', 'cover')
         }));
+
         } catch {}
         window.dispatchEvent(new Event('tcg_store_template-theme-changed'));
       }
@@ -167,7 +172,7 @@ export default function DualAppearanceDesigner({ settings, setSettings, media = 
                 setRuntime(r.data || { zones: {}, promotions: [], settings: {} });
               } catch {}
             }} />
-          
+
           <StorePreview device={device} style={publicStyle} settings={settings} get={get} runtime={runtime} heroOnly onOpenFull={() => setFullPreview(true)} />
         </div>
       </section> : null}
@@ -220,6 +225,58 @@ function AuthenticatedMediaPreview({ mediaId, className = '', alt = '' }) {
 }
 
 function ThemeForm({ title, scope, get, set, media }) {
+  /* SHINY_LOGIN_CUSTOM_IMAGE_R63M */
+  const [loginUploadBusy,setLoginUploadBusy]=useState(false);
+  const [loginUploadMessage,setLoginUploadMessage]=useState('');
+
+  async function uploadLoginBackground(file){
+    if(!file)return;
+    if(!String(file.type||'').startsWith('image/')){
+      setLoginUploadMessage('Selecciona un archivo de imagen valido.');
+      return;
+    }
+    if(file.size>20*1024*1024){
+      setLoginUploadMessage('La imagen debe pesar maximo 20 MB.');
+      return;
+    }
+
+    setLoginUploadBusy(true);
+    setLoginUploadMessage('');
+    try{
+      const token=localStorage.getItem('SHINY_AUTH_TOKEN')||localStorage.getItem('Shiny_AUTH_TOKEN')||'';
+      const response=await fetch('/api/v1/content/media/upload',{
+        method:'POST',
+        headers:{
+          'Content-Type':'application/octet-stream',
+          Authorization:`Bearer ${token}`,
+          'X-SHINY-File-Name':encodeURIComponent(file.name),
+          'X-SHINY-File-Type':file.type||'application/octet-stream',
+          'X-SHINY-Category':'LOGIN_BACKGROUND'
+        },
+        body:file
+      });
+      const body=await response.json().catch(()=>({}));
+      if(!response.ok || body.success===false){
+        throw new Error(body.message||body.error||`HTTP ${response.status}`);
+      }
+      const mediaId=
+        body.data?.id_media||
+        body.data?.media?.id_media||
+        body.data?.row?.id_media||
+        body.id_media||
+        '';
+      if(!mediaId)throw new Error('La biblioteca multimedia no devolvio id_media.');
+
+      set(scope,'login_background_media_id',String(mediaId));
+      set(scope,'login_background_design','custom');
+      setLoginUploadMessage('Imagen cargada. Guarda ADMIN para publicarla en el login.');
+      window.dispatchEvent(new CustomEvent('tcg_store_template-media-library-updated'));
+    }catch(error){
+      setLoginUploadMessage(error?.message||'No fue posible subir la imagen.');
+    }finally{
+      setLoginUploadBusy(false);
+    }
+  }
   const client = scope === 'client';
   return <article className="contentmk-card theme-form">
     <h3>{title}</h3>
@@ -232,6 +289,7 @@ function ThemeForm({ title, scope, get, set, media }) {
             <option value="network4">Diseno 4 - Red de conexiones</option>
             <option value="gradient">Gradiente limpio</option>
             <option value="solid">Fondo solido</option>
+            <option value="custom">Imagen personalizada</option>
           </select>
         </label>
         <label>Resplandor del login
@@ -239,6 +297,67 @@ function ThemeForm({ title, scope, get, set, media }) {
             <option value="violet">Violeta / azul</option>
             <option value="blue">Azul</option>
             <option value="soft">Suave</option>
+          </select>
+        </label>
+        <label className="span2 shiny-login-custom-media-r63m">Imagen personalizada del login
+          <select
+            value={get(scope,'login_background_media_id','')}
+            onChange={(e)=>{
+              set(scope,'login_background_media_id',e.target.value);
+              if(e.target.value)set(scope,'login_background_design','custom');
+            }}>
+            <option value="">Sin imagen personalizada</option>
+            {(media||[])
+              .filter((m)=>m.activo!==false && (m.tipo==='IMAGE'||String(m.mime_type||'').startsWith('image/')))
+              .map((m)=><option key={m.id_media} value={m.id_media}>{m.nombre||m.nombre_archivo||m.id_media}</option>)}
+          </select>
+
+          <span className="shiny-login-upload-row-r63m">
+            <label className="shiny-login-upload-button-r63m">
+              {loginUploadBusy?'Subiendo...':'Seleccionar / subir imagen'}
+              <input
+                type="file"
+                accept="image/*"
+                disabled={loginUploadBusy}
+                onChange={async(e)=>{
+                  const file=e.target.files?.[0];
+                  await uploadLoginBackground(file);
+                  e.target.value='';
+                }}
+              />
+            </label>
+            <small>Recomendado 1920 x 1080 Â· JPG, PNG o WEBP Â· max. 20 MB.</small>
+          </span>
+
+          {get(scope,'login_background_media_id','') ?
+            <div className="shiny-login-custom-preview-r63m">
+              <AuthenticatedMediaPreview
+                mediaId={get(scope,'login_background_media_id','')}
+                className="shiny-login-custom-preview-image-r63m"
+                alt="Vista previa del fondo del login"
+              />
+            </div> : null}
+
+          {loginUploadMessage?<small className="shiny-login-upload-message-r63m">{loginUploadMessage}</small>:null}
+        </label>
+
+        <label>Opacidad imagen login
+          <input
+            type="range"
+            min="0.2"
+            max="1"
+            step="0.05"
+            value={get(scope,'login_background_opacity','1')}
+            onChange={(e)=>set(scope,'login_background_opacity',e.target.value)}
+          />
+          <span>{Math.round(Number(get(scope,'login_background_opacity','1'))*100)}%</span>
+        </label>
+
+        <label>Ajuste imagen login
+          <select value={get(scope,'login_background_fit','cover')} onChange={(e)=>set(scope,'login_background_fit',e.target.value)}>
+            <option value="cover">Cubrir pantalla</option>
+            <option value="contain">Mostrar completa</option>
+            <option value="fill">Estirar</option>
           </select>
         </label>
       </> : null}
@@ -300,7 +419,7 @@ function StorePreview({ device, style, get, runtime, heroOnly = false, onOpenFul
           variant="hero"
           fallbackTitle="Tu tienda geek y TCG"
           fallbackSubtitle="Explora singles, productos sellados, accesorios y promociones." />
-        
+
 
         {!heroOnly && showFeatured ? <PreviewCarousel
           device={device}

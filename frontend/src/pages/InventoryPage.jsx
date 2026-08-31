@@ -7,8 +7,11 @@ import InventoryAdjustModal from '../components/InventoryAdjustModal.jsx';
 import TransferModal from '../components/TransferModal.jsx';
 import { R23BarList } from '../components/VisualKitR23.jsx';
 import '../phase_shiny_exact_views_r23.css';
-import '../phase_inventory_inv_b_r31.css';
+import '../phase_inventory_inv_b_r31.css';
+
+
 import '../shiny_inventory_option_b_color_final.css';
+import './InventoryPageR63.css';
 const PAGE_SIZE = 50;
 
 export default function InventoryPage() {
@@ -508,6 +511,51 @@ export default function InventoryPage() {
     a.remove();
     URL.revokeObjectURL(url);
   }
+  /* SHINY_INVENTORY_XLSX_FRONT_R63L */
+  async function shinyInventoryExportXlsxR63(){
+    try{
+      const params=new URLSearchParams({
+        branchId:String(branchId||''),
+        search:String(search||''),
+        category:String(category||''),
+        stockStatus:String(stockStatus||'all'),
+        productStatus:String(productStatus||''),
+        sort:String(sort||'name'),
+        direction:String(direction||'asc')
+      });
+
+      const token=localStorage.getItem('SHINY_AUTH_TOKEN')||'';
+      const response=await fetch(`/api/v1/inventory/export.xlsx?${params.toString()}`,{
+        headers:{Authorization:`Bearer ${token}`},
+        cache:'no-store'
+      });
+
+      if(!response.ok){
+        let detail='INVENTORY_XLSX_FAILED';
+        try{
+          const body=await response.json();
+          detail=body?.message||body?.error||detail;
+        }catch{}
+        throw new Error(detail);
+      }
+
+      const blob=await response.blob();
+      const url=URL.createObjectURL(blob);
+      const a=document.createElement('a');
+      a.href=url;
+      a.download=`SHINY_Inventario_${new Date().toISOString().slice(0,10)}.xlsx`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+
+      setMessage('Inventario exportado en Excel.');
+    }catch(error){
+      const msg=error?.message||'No fue posible exportar el inventario en Excel.';
+      setMessage(msg);
+      window.shinyNotify?.(msg,{type:'error',duration:5000});
+    }
+  }
 
 
 
@@ -520,7 +568,7 @@ export default function InventoryPage() {
           <p>Consulta y control de inventario</p>
         </div>
         <div className="shiny-inv-final-head-actions">
-          <button type="button" onClick={shinyFinalExport}>
+          <button type="button" onClick={shinyInventoryExportXlsxR63}>
             <svg viewBox="0 0 24 24"><path d="M12 3v12m0 0 4-4m-4 4-4-4M5 17v3h14v-3"/></svg>
             Exportar
           </button>

@@ -819,7 +819,7 @@ if (!masterGameCode && mg.data?.[0]) setMasterGameCode(mg.data[0].codigo);
 
   async function downloadDynamicTemplate() {
     try {
-      const token = localStorage.getItem('Shiny_AUTH_TOKEN') || '';
+      const token = localStorage.getItem('SHINY_AUTH_TOKEN') || '';
       const response = await fetch('/api/v1/tcg/template.xlsx', {
         headers: { Authorization: `Bearer ${token}` },
         cache: 'no-store'
@@ -911,7 +911,7 @@ if (!masterGameCode && mg.data?.[0]) setMasterGameCode(mg.data[0].codigo);
 
   async function downloadReceiptTemplate() {
     try {
-      const token = localStorage.getItem('Shiny_AUTH_TOKEN') || '';
+      const token = localStorage.getItem('SHINY_AUTH_TOKEN') || '';
       const response = await fetch('/api/v1/tcg/inventory/receipt-template.xlsx', {
         headers: { Authorization: `Bearer ${token}` }, cache: 'no-store'
       });
@@ -1887,5 +1887,3 @@ if (!masterGameCode && mg.data?.[0]) setMasterGameCode(mg.data[0].codigo);
     </section>
   </div>;
 }
-
-

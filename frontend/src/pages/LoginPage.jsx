@@ -1,8 +1,9 @@
-import { brandText } from "../config/brand.js";import { useState } from 'react';
+import { brandText } from "../config/brand.js";import { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router';
 import { api } from '../services/api.js';
 import BrandLogo from '../components/BrandLogo.jsx';
 
+import './LoginPageR63.css';
 export default function LoginPage() {
   const nav = useNavigate();
   const location = useLocation();
@@ -10,17 +11,44 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const [loginAppearance] = useState(() => {
+  const [loginAppearance,setLoginAppearance] = useState(() => {
     try {
-      const cached = JSON.parse(localStorage.getItem('SHINY_LOGIN_APPEARANCE_R55') || '{}');
+      const cached=JSON.parse(localStorage.getItem('SHINY_LOGIN_APPEARANCE_R55')||'{}');
       return {
-        design: String(cached.design || 'network4'),
-        glow: String(cached.glow || 'violet')
+        design:String(cached.design||'network4'),
+        glow:String(cached.glow||'violet'),
+        mediaId:String(cached.mediaId||''),
+        opacity:Math.max(0,Math.min(1,Number(cached.opacity??1)||1)),
+        fit:['cover','contain','fill'].includes(String(cached.fit||''))?String(cached.fit):'cover'
       };
     } catch {
-      return { design: 'network4', glow: 'violet' };
+      return {design:'network4',glow:'violet',mediaId:'',opacity:1,fit:'cover'};
     }
   });
+
+  useEffect(() => {
+    let alive=true;
+    fetch('/api/auth/login-appearance',{cache:'no-store'})
+      .then(async(r)=>{
+        if(!r.ok)throw new Error(`HTTP ${r.status}`);
+        return r.json();
+      })
+      .then((body)=>{
+        if(!alive)return;
+        const x=body?.data||{};
+        const next={
+          design:String(x.design||'network4'),
+          glow:String(x.glow||'violet'),
+          mediaId:String(x.mediaId||''),
+          opacity:Math.max(0,Math.min(1,Number(x.opacity??1)||1)),
+          fit:['cover','contain','fill'].includes(String(x.fit||''))?String(x.fit):'cover'
+        };
+        setLoginAppearance(next);
+        try{localStorage.setItem('SHINY_LOGIN_APPEARANCE_R55',JSON.stringify(next));}catch{}
+      })
+      .catch(()=>{});
+    return ()=>{alive=false;};
+  },[]);
 
   async function submit(e) {
     e.preventDefault();setLoading(true);setError('');
@@ -54,6 +82,17 @@ export default function LoginPage() {
   }
 
   return <main className={`login-page shiny-login-r55 design-${loginAppearance.design}`} data-login-glow={loginAppearance.glow}>
+      {loginAppearance.design==='custom' && loginAppearance.mediaId ?
+        <img
+          className="shiny-login-custom-background-r63m"
+          src={`/api/auth/login-background?v=${encodeURIComponent(loginAppearance.mediaId)}`}
+          alt=""
+          aria-hidden="true"
+          style={{
+            opacity:loginAppearance.opacity,
+            objectFit:loginAppearance.fit
+          }}
+        /> : null}
     <div className="shiny-login-network-r55" aria-hidden="true">
       <span className="shiny-login-orb-r55 orb-a" />
       <span className="shiny-login-orb-r55 orb-b" />

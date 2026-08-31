@@ -1,0 +1,6 @@
+cd C:\Users\igarcia\Videos\Shiny
+
+Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
+
+.\INICIALIZAR-SHINY-DE-CERO-R1.ps1 `
+  -ProjectRoot "C:\Users\igarcia\Videos\Shiny"

@@ -9,6 +9,7 @@ import '../commercial_returns_r73.css';
 
 import '../commercial_returns_standalone_r74.css';
 import '../return_pin_authorization_r77.css';
+import './CommercialPageR63.css';
 const money = (v) => Number(v || 0).toLocaleString('es-MX', { style: 'currency', currency: 'MXN' });
 const asArray = (v) => Array.isArray(v) ? v : [];
 
@@ -65,6 +66,8 @@ export default function CommercialPage() {
   const [quoteClientOpen, setQuoteClientOpen] = useState(false);
   const [quoteProductOpen, setQuoteProductOpen] = useState(false);
   const [quoteConvert, setQuoteConvert] = useState(null);
+  /* SHINY_QUOTE_VIEW_R63 */
+  const [quoteView, setQuoteView] = useState(null);
   const [quoteConvertBranch, setQuoteConvertBranch] = useState('');
   const [quotePage, setQuotePage] = useState(1);
   const [quoteWizardOpen, setQuoteWizardOpen] = useState(false);
@@ -356,6 +359,14 @@ export default function CommercialPage() {
   async function quoteStatus(rowId, status) {
     try {await run(() => api(`/api/v1/commercial/quotes/${rowId}/status`, { method: 'POST', body: JSON.stringify({ status }) }), () => `Cotización actualizada a ${status}.`);} catch {}
   }
+  async function openQuoteView(q) {
+    try {
+      const r=await api(`/api/v1/commercial/quotes/${q.row_id}`);
+      setQuoteView(r.data||q);
+    } catch (error) {
+      setMessage(error?.message||'No fue posible abrir la cotizaciÃ³n.');
+    }
+  }
   function openQuoteConvert(q) {
     setQuoteConvert(q);
     setQuoteConvertBranch(branches[0]?.id_sucursal || '');
@@ -602,7 +613,7 @@ export default function CommercialPage() {
       {message ? <div className="commercial-alert">{message}</div> : null}
       {failedCount ? <section className="commercial-errors"><strong>Diagnóstico de carga</strong><div>{Object.entries(errors).map(([k, v]) => <span key={k}><b>{k}</b>: {v}</span>)}</div></section> : null}
 
-      <div className="purchase-context-note commercial-r71-context">Cotizaciones, devoluciones, proveedores, cuentas por pagar y gastos dentro de un mismo flujo operativo.</div>
+      <div className="purchase-context-note commercial-r71-context">Cotizaciones, proveedores, cuentas por pagar y gastos dentro de un mismo flujo operativo.</div>
 
       <div className="commercial-r71-overview">
         <article className="commercial-r71-metric blue"><CommercialIcon name="quote" /><div><span>Cotizaciones</span><strong>{quotes.length}</strong><small>{money(commercialOp3Metrics.quoteTotal)}</small></div></article>
@@ -615,7 +626,6 @@ export default function CommercialPage() {
       <nav className="commercial-r71-tabs" role="tablist" aria-label="Secciones de Gestión Comercial">
         {[
           ['quotes','Cotizaciones','Ofertas y seguimiento','quote',quotes.length,'blue'],
-          ['returns','Devoluciones','Ventas y reembolsos','return',returns.length,'violet'],
           ['providers','Proveedores','Directorio maestro','provider',commercialOp3Metrics.activeProviders,'amber'],
           ['payables','Cuentas por pagar','Compras y obligaciones','payable',commercialOp3Metrics.pendingPayables,'orange'],
           ['expenses','Gastos / Egresos','Movimientos financieros','expense',expenses.length,'green']
@@ -665,6 +675,7 @@ export default function CommercialPage() {
             <td><Status value={q.estado} /></td>
             <td>
               <div className="row-actions">
+              <button type="button" className="secondary compact quote-view-button-r63" onClick={() => openQuoteView(q)}>Ver</button>
                 {q.estado === 'BORRADOR' ? <button className="secondary compact" disabled={!q.email} title={!q.email ? 'La cotización no tiene email de cliente' : 'Enviar cotización por correo'} onClick={() => sendQuote(q)}>Enviar por correo</button> : null}
                 {q.estado === 'ENVIADA' ? <button className="secondary compact" disabled={!q.email} onClick={() => sendQuote(q)}>Reenviar correo</button> : null}
                 {q.estado === 'ENVIADA' ? <button className="secondary compact" onClick={() => quoteStatus(q.row_id, 'ACEPTADA')}>Marcar aceptada</button> : null}
@@ -878,6 +889,49 @@ export default function CommercialPage() {
         </div>
       </div> : null}
     </section> : null}
+    {quoteView ? <div className="modal-backdrop" onMouseDown={() => setQuoteView(null)}>
+      <div className="modal quote-view-modal-r63" onMouseDown={(e) => e.stopPropagation()}>
+        <div className="modal-head">
+          <div>
+            <div className="eyebrow">COTIZACIÃ“N</div>
+            <h2>{quoteView.id||'Detalle'}</h2>
+            <p>{quoteView.cliente||'Cliente'}</p>
+          </div>
+          <button className="icon-btn" onClick={() => setQuoteView(null)}>Ã—</button>
+        </div>
+
+        <div className="quote-view-summary-r63">
+          <span>Fecha<strong>{quoteView.fecha?new Date(quoteView.fecha).toLocaleDateString('es-MX'):'â€”'}</strong></span>
+          <span>Estado<strong>{quoteView.estado||'â€”'}</strong></span>
+          <span>Email<strong>{quoteView.email||'â€”'}</strong></span>
+          <span>TelÃ©fono<strong>{quoteView.telefono||'â€”'}</strong></span>
+          <span>Subtotal<strong>{money(quoteView.subtotal)}</strong></span>
+          <span>Descuento<strong>{money(quoteView.descuento||quoteView.discount)}</strong></span>
+          <span>Total<strong>{money(quoteView.total)}</strong></span>
+        </div>
+
+        {Array.isArray(quoteView.detalles||quoteView.items) && (quoteView.detalles||quoteView.items).length ?
+          <div className="quote-view-items-r63">
+            <table>
+              <thead><tr><th>Producto</th><th>SKU</th><th>Cant.</th><th>Precio</th><th>Subtotal</th></tr></thead>
+              <tbody>
+                {(quoteView.detalles||quoteView.items).map((x,i)=><tr key={x.row_id||x.id||i}>
+                  <td>{x.producto||x.nombre||x.descripcion||'â€”'}</td>
+                  <td>{x.sku||'â€”'}</td>
+                  <td>{x.cantidad??'â€”'}</td>
+                  <td>{money(x.precio_unitario??x.precio)}</td>
+                  <td>{money(x.subtotal)}</td>
+                </tr>)}
+              </tbody>
+            </table>
+          </div> : null}
+
+        {quoteView.notas ? <div className="finance-rule-note">{quoteView.notas}</div> : null}
+        <div className="modal-actions">
+          <button onClick={() => setQuoteView(null)}>Cerrar</button>
+        </div>
+      </div>
+    </div> : null}
 {quoteConvert ? <div className="modal-backdrop" onMouseDown={() => setQuoteConvert(null)}>
       <div className="modal quote-convert-modal" onMouseDown={(e) => e.stopPropagation()}>
         <div className="modal-head">

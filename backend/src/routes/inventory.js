@@ -1,4 +1,5 @@
 import { brandText } from "../config/brand.js";import { Router } from 'express';
+import * as XLSX from 'xlsx';
 import {
   listInventory,
   listMovements,
@@ -69,6 +70,78 @@ router.post('/import-entries', requirePermission('INVENTARIO', 'edit'), async (r
   }
 });
 
+
+/* SHINY_INVENTORY_XLSX_R63 */
+router.get('/export.xlsx', async (req,res)=>{
+  try{
+    const branchId=String(req.query.branchId||'').trim();
+    const search=String(req.query.search||'').trim();
+    const category=String(req.query.category||'').trim();
+    const stockStatus=String(req.query.stockStatus||'all').trim().toLowerCase();
+    const productStatus=String(req.query.productStatus||'').trim();
+    const sort=String(req.query.sort||'name').trim().toLowerCase();
+    const direction=String(req.query.direction||'asc').trim().toLowerCase();
+
+    const pageSize=200;
+    let offset=0;
+    let total=0;
+    const all=[];
+
+    do{
+      const part=await listInventory({
+        branchId,search,category,stockStatus,productStatus,sort,direction,
+        limit:pageSize,offset
+      });
+      const partRows=Array.isArray(part.rows)?part.rows:[];
+      if(offset===0)total=Number(part.total||part.rowCount||0);
+      all.push(...partRows);
+      offset+=partRows.length;
+      if(!partRows.length)break;
+    }while(offset<total && offset<100000);
+
+    const visible=safeInventoryRows(all,isSuperadmin(req));
+    const rows=visible.map((item)=>({
+      Producto:item.producto||item.nombre||item.id_producto||'',
+      Expansion:item.expansion||item.set_nombre||item.edicion||'',
+      Rareza:item.rareza||'',
+      Condicion:item.condicion||'',
+      Idioma:item.idioma||'',
+      SKU:item.sku||'',
+      Sucursal:item.sucursal||item.id_sucursal||'',
+      Unidades:Number(item.stock||0),
+      Valor_Unitario:Number(item.precio||0),
+      Valor_Total:Number(item.stock||0)*Number(item.precio||0),
+      Estado:Number(item.stock||0)===0?'Sin stock':
+        Number(item.stock||0)<=Number(item.stock_minimo||0)?'Stock bajo':'Disponible'
+    }));
+
+    const headers=[
+      'Producto','Expansion','Rareza','Condicion','Idioma','SKU',
+      'Sucursal','Unidades','Valor_Unitario','Valor_Total','Estado'
+    ];
+    const wb=XLSX.utils.book_new();
+    const ws=XLSX.utils.json_to_sheet(rows,{header:headers});
+    ws['!cols']=[
+      {wch:34},{wch:24},{wch:16},{wch:14},{wch:10},{wch:22},
+      {wch:24},{wch:12},{wch:16},{wch:16},{wch:14}
+    ];
+    XLSX.utils.book_append_sheet(wb,ws,'Inventario');
+
+    const buffer=XLSX.write(wb,{type:'buffer',bookType:'xlsx',compression:true});
+    const date=new Date().toISOString().slice(0,10);
+    res.setHeader('Content-Type','application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition',`attachment; filename="SHINY_Inventario_${date}.xlsx"`);
+    res.setHeader('Cache-Control','no-store');
+    res.send(buffer);
+  }catch(error){
+    console.error('[Shiny][INVENTORY_XLSX_R63]',error);
+    res.status(500).json({
+      success:false,
+      error:'INVENTORY_XLSX_FAILED',
+      message:error.message
+    });
+  }
+});
 router.get('/movements', async (req, res) => {
   try {
     const branchId = String(req.query.branchId || '').trim();

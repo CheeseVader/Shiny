@@ -1,3 +1,4 @@
+import fs from 'node:fs';
 import { Router } from 'express';
 import { query } from '../db.js';
 import { hashToken,newToken,verifyPassword } from '../security.js';
@@ -46,6 +47,61 @@ router.post('/reset-password',rateLimit({keyPrefix:'ADMIN_RESET',max:8}),async(r
   }
 });
 
+/* SHINY_LOGIN_PUBLIC_APPEARANCE_R63M */
+router.get('/login-appearance',async(_req,res)=>{
+  try{
+    const keys=[
+      'admin.appearance.login_background_design',
+      'admin.appearance.login_background_glow',
+      'admin.appearance.login_background_media_id',
+      'admin.appearance.login_background_opacity',
+      'admin.appearance.login_background_fit'
+    ];
+    const r=await query(
+      `SELECT parametro,valor FROM shiny.configuracion WHERE parametro = ANY($1::text[])`,
+      [keys]
+    );
+    const cfg=Object.fromEntries((r.rows||[]).map((x)=>[x.parametro,x.valor]));
+    const value=(key,fallback='')=>String(cfg[`admin.appearance.${key}`]??fallback);
+    res.setHeader('Cache-Control','no-store');
+    res.json({
+      success:true,
+      data:{
+        design:value('login_background_design','network4'),
+        glow:value('login_background_glow','violet'),
+        mediaId:value('login_background_media_id',''),
+        opacity:Math.max(0,Math.min(1,Number(value('login_background_opacity','1'))||1)),
+        fit:['cover','contain','fill'].includes(value('login_background_fit','cover'))?value('login_background_fit','cover'):'cover'
+      }
+    });
+  }catch(error){
+    res.status(500).json({success:false,error:'LOGIN_APPEARANCE_FAILED',message:error.message});
+  }
+});
+
+router.get('/login-background',async(_req,res)=>{
+  try{
+    const r=await query(`
+      SELECT m.ruta,m.mime_type,m.nombre_archivo
+      FROM shiny.configuracion c
+      JOIN shiny.multimedia m ON m.id_media=c.valor
+      WHERE c.parametro='admin.appearance.login_background_media_id'
+        AND COALESCE(m.activo,true)=true
+      ORDER BY m.row_id DESC
+      LIMIT 1
+    `);
+    const m=r.rows?.[0];
+    if(!m?.ruta || !fs.existsSync(m.ruta)){
+      return res.status(404).json({success:false,error:'LOGIN_BACKGROUND_NOT_FOUND'});
+    }
+    res.setHeader('Cache-Control','no-store');
+    res.setHeader('Content-Type',m.mime_type||'image/jpeg');
+    res.setHeader('Content-Disposition','inline');
+    fs.createReadStream(m.ruta).pipe(res);
+  }catch(error){
+    res.status(500).json({success:false,error:'LOGIN_BACKGROUND_FAILED',message:error.message});
+  }
+});
 router.post('/login',rateLimit({keyPrefix:'ADMIN_LOGIN',max:10}),async(req,res)=>{
   try{
     const username=String(req.body?.username||'').trim().toLowerCase();
