@@ -1,8 +1,8 @@
 
-/* GMX 10.6.2.3.8 — real progress details */
-.gmx-operation-meta{
+/* Shiny 10.6.2.3.8 — real progress details */
+.shiny-operation-meta{
   display:flex;gap:12px;flex-wrap:wrap;margin-top:10px;padding:10px 12px;
   border-radius:10px;background:#f8fafc;color:#475467;font-size:11px
 }
-.gmx-operation-meta span{display:inline-flex;gap:4px;align-items:center}
-.gmx-operation-meta strong{color:#101828}
+.shiny-operation-meta span{display:inline-flex;gap:4px;align-items:center}
+.shiny-operation-meta strong{color:#101828}

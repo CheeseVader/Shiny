@@ -7,7 +7,7 @@ let pendingImmediate = null;
 let rerunRequested = false;
 
 async function settings() {
-  const r = await query(`SELECT parametro,valor FROM gmx.configuracion
+  const r = await query(`SELECT parametro,valor FROM shiny.configuracion
     WHERE parametro IN ('alerts.auto_generate_enabled','alerts.auto_generate_minutes')`);
   return Object.fromEntries(r.rows.map((x) => [x.parametro, x.valor]));
 }
@@ -24,7 +24,7 @@ async function tick(reason = 'SCHEDULED') {
       await generateAlerts({ email: 'SISTEMA' }, { scope: null });
     }
   } catch (e) {
-    console.error(brandText(`[GMX] Alert refresh (${reason}):`), e.message);
+    console.error(brandText(`[Shiny] Alert refresh (${reason}):`), e.message);
   } finally {
     running = false;
     if (rerunRequested) {
@@ -80,5 +80,5 @@ export async function startAlertScheduler() {
   } catch {}
   setTimeout(() => tick('STARTUP'), 8000);
   timer = setInterval(() => tick('SCHEDULED'), minutes * 60 * 1000);
-  console.log(brandText(`[GMX] Alert scheduler: every ${minutes} min + event-driven refresh`));
+  console.log(brandText(`[Shiny] Alert scheduler: every ${minutes} min + event-driven refresh`));
 }

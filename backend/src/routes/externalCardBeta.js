@@ -1,4 +1,4 @@
-﻿import { brandText } from "../config/brand.js";import { Router } from 'express';
+import { brandText } from "../config/brand.js";import { Router } from 'express';
 import { requireModule } from '../middleware/auth.js';
 import {
   ensureOperationalIdentities,
@@ -7,7 +7,9 @@ import {
 } from '../externalCardVisualAdapter.js';
 
 const router = Router();
-const VISUAL_SERVICE_URL = String(process.env.GMX_VISUAL_BETA_URL || 'http://127.0.0.1:8011').replace(/\/$/, '');
+// SHINY_FEATURE_EXTERNAL_BETA_GATE_R1
+router.use((req,res,next)=>process.env.SHINY_FEATURE_EXTERNAL_BETA==='true'?next():res.status(404).json({success:false,error:'FEATURE_DISABLED'}));
+const VISUAL_SERVICE_URL = String(process.env.SHINY_VISUAL_BETA_URL || 'http://127.0.0.1:8011').replace(/\/$/, '');
 
 function clean(v, max = 500) {
   return String(v ?? '').replace(/[\u0000-\u001f\u007f]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, max);
@@ -94,7 +96,7 @@ async function getJson(url, { headers = {}, timeout = 15000 } = {}) {
   return body;
 }
 
-/* GMX_YUGIOH_SET_HINT_R26B */
+/* SHINY_YUGIOH_SET_HINT_R26B */
 function r26bCompact(v='') {
   return String(v || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
 }
@@ -168,7 +170,7 @@ function r26bPrioritizeSetHint(rows=[], hint='') {
   };
 }
 
-/* GMX_YUGIOH_SET_CODE_R25 */
+/* SHINY_YUGIOH_SET_CODE_R25 */
 function ygoRows(cards = [], identifiers = []) {
   const out = [];
 
@@ -261,7 +263,7 @@ async function searchYgo(q, identifiers = []) {
       /*
        * YGOPRODeck returns HTTP 400 when no card matches fname.
        * For OCR searches this is a normal "no match" condition,
-       * not a GMX system failure.
+       * not a Shiny system failure.
        */
       if (Number(error?.status || 0) === 400) {
         continue;
@@ -276,7 +278,7 @@ async function searchYgo(q, identifiers = []) {
 
 async function searchPokemon(q) {
   const headers = {};
-  if (process.env.GMX_POKEMON_TCG_API_KEY) headers['X-Api-Key'] = process.env.GMX_POKEMON_TCG_API_KEY;
+  if (process.env.SHINY_POKEMON_TCG_API_KEY) headers['X-Api-Key'] = process.env.SHINY_POKEMON_TCG_API_KEY;
   try {
     const escaped = clean(q, 120).replace(/["\\]/g, ' ');
     const params = new URLSearchParams({ q: `name:"${escaped}"`, pageSize: '30', orderBy: '-set.releaseDate' });
@@ -296,7 +298,7 @@ async function searchPokemon(q) {
       };
     });
   } catch (error) {
-    console.warn(brandText('[GMX][INTERNET_POKEMON_PRIMARY]'), String(error?.message || error));
+    console.warn(brandText('[Shiny][INTERNET_POKEMON_PRIMARY]'), String(error?.message || error));
   }
 
   const params = new URLSearchParams({ name: q });
@@ -354,7 +356,7 @@ function normalized(value) {
   return clean(value, 300).normalize('NFKD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
 }
 
-/* GMX_IDENTITY_PRIORITY_R14C */
+/* SHINY_IDENTITY_PRIORITY_R14C */
 function strongIdentity(value) {
   return normalized(value).replace(/\s+/g, '');
 }
@@ -381,7 +383,7 @@ function prioritizeIdentity(rows, nameHint, identifiers = []) {
   const tier = best > 0 ? usable.filter((x) => x.priority.score === best) : usable;
   return tier.map((x) => ({ ...x.row, internet_match_score: x.priority.score }));
 }
-/* GMX_OCR_CATALOG_MATCH_R19B */
+/* SHINY_OCR_CATALOG_MATCH_R19B */
 function r19bCompact(value) {
   return normalized(value).replace(/\s+/g, '');
 }
@@ -471,7 +473,7 @@ function r19bQueryVariants(value){
 }
 
 
-/* GMX_YUGIOH_EXACT_PROVIDER_CODE_R26D2
+/* SHINY_YUGIOH_EXACT_PROVIDER_CODE_R26D2
  * OCR is only a clue.
  * The final Yu-Gi-Oh! collector_number MUST be an exact value
  * returned by YGOPRODeck for the detected card.
@@ -685,8 +687,8 @@ function r26d2ResolveExactProviderCode(rows=[], nameHint='', ocrHint=''){
   };
 }
 
-/* GMX_MARKET_PRICE_MAX_R29 */
-function gmxHighestMarketPriceR29(rows = []) {
+/* SHINY_MARKET_PRICE_MAX_R29 */
+function shinyHighestMarketPriceR29(rows = []) {
   const list = Array.isArray(rows) ? rows : [];
 
   const clean = (value) =>
@@ -816,7 +818,7 @@ router.get('/health', (_req, res) => {
       local_visual_model: false,
       tcgplayer: {
         direct_client: false,
-        pricing_source: 'EXISTING_INTERNET_PROVIDERS_WITH_GMX_CACHE_FALLBACK',
+        pricing_source: 'EXISTING_INTERNET_PROVIDERS_WITH_SHINY_CACHE_FALLBACK',
         scraping: false
       },
       batch_limits: visualTcgLimits,
@@ -836,7 +838,7 @@ function adapterError(res, error) {
     'INSTALL_BATCH_TOO_LARGE', 'MASTER_CARD_NOT_FOUND', 'MASTER_GAME_NOT_FOUND'
   ]);
   const schemaUnavailable = error?.code === '42P01' || error?.code === '42703';
-  console.error(brandText('[GMX][VISUAL_TCG_ADAPTER]'), code, error?.code || '');
+  console.error(brandText('[Shiny][VISUAL_TCG_ADAPTER]'), code, error?.code || '');
   return res.status(schemaUnavailable ? 503 : clientErrors.has(code) ? 400 : 500).json({
     success: false,
     error: schemaUnavailable ? 'TCG_MASTER_CATALOG_NOT_AVAILABLE' : code,
@@ -846,7 +848,7 @@ function adapterError(res, error) {
   });
 }
 
-router.post('/resolve-gmx', async (req, res) => {
+router.post('/resolve-shiny', async (req, res) => {
   try {
     const rows = await resolveVisualIdentities([req.body?.identity || req.body || {}]);
     return res.json({ success: true, data: rows[0] || null });
@@ -855,7 +857,7 @@ router.post('/resolve-gmx', async (req, res) => {
   }
 });
 
-router.post('/bulk-resolve-gmx', async (req, res) => {
+router.post('/bulk-resolve-shiny', async (req, res) => {
   try {
     const identities = Array.isArray(req.body?.identities) ? req.body.identities : [];
     const rows = await resolveVisualIdentities(identities);
@@ -916,7 +918,7 @@ router.get('/search', async (req, res) => {
       }
     });
   } catch (error) {
-    console.error(brandText("[GMX][EXTERNAL_CARD_BETA]"), game, q, error);
+    console.error(brandText("[Shiny][EXTERNAL_CARD_BETA]"), game, q, error);
     const status = Number(error?.status || 0);
     res.status(status === 429 ? 429 : 502).json({
       success: false,
@@ -962,7 +964,7 @@ router.post('/visual-search', async (req, res) => {
     const queryVariants = r19bQueryVariants(q);
 
     let candidates = await r19bProviderSearch(game, queryVariants, identifiers);
-    candidates = gmxHighestMarketPriceR29(candidates);
+    candidates = shinyHighestMarketPriceR29(candidates);
     const setCodeOcrHintR26D2 = String(
       req.body?.set_code_ocr_hint || ''
     );
@@ -1166,7 +1168,7 @@ router.post('/visual-search', async (req, res) => {
       }
     });
   } catch (error) {
-    console.error(brandText('[GMX][EXTERNAL_PHOTO_SEARCH_R19B]'), game, q, error);
+    console.error(brandText('[Shiny][EXTERNAL_PHOTO_SEARCH_R19B]'), game, q, error);
 
     const detail=String(error?.message||error);
     const offline=/fetch failed|aborted|timeout|VISUAL_EXTERNAL_RANK_FAILED/i.test(detail);

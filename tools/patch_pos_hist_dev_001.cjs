@@ -3,7 +3,7 @@ const fs=require('fs');
 const path=require('path');
 const {spawnSync}=require('child_process');
 
-const root=process.argv[2]||'C:\\Users\\SrsGarciaEspinoza\\Videos\\GMX';
+const root=process.argv[2]||'C:\\Users\\SrsGarciaEspinoza\\Videos\\Shiny';
 const orders=path.join(root,'frontend','src','pages','OrdersPage.jsx');
 const commercial=path.join(root,'backend','src','repositories','commercialRepository.js');
 
@@ -43,32 +43,32 @@ function rep(src,a,b,label){
 // BACKEND: enriquecer listado de devoluciones con resumen
 // ======================================================
 let back=fs.readFileSync(commercial,'utf8');
-if(!back.includes('GMX_POS_HIST_DEV_001')){
+if(!back.includes('SHINY_POS_HIST_DEV_001')){
   backup(commercial,'POS_HIST_DEV_001');
 
   const oldFn=`export async function listReturns({limit=300}={}){
-  return query(\`SELECT * FROM gmx.devoluciones ORDER BY fecha DESC NULLS LAST,row_id DESC LIMIT $1\`,
+  return query(\`SELECT * FROM shiny.devoluciones ORDER BY fecha DESC NULLS LAST,row_id DESC LIMIT $1\`,
     [Math.min(Math.max(i(limit)||300,1),1000)]);
 }`;
 
   const newFn=`export async function listReturns({limit=300}={}){
-  // GMX_POS_HIST_DEV_001
+  // SHINY_POS_HIST_DEV_001
   // Incluye resumen por pedido para que Historial POS distinga devolución parcial/total.
   return query(\`
     SELECT d.*,
       COALESCE((
         SELECT SUM(dp.cantidad)
-        FROM gmx.detalle_pedidos dp
+        FROM shiny.detalle_pedidos dp
         WHERE dp.id_pedido=d.referencia
       ),0)::bigint AS unidades_vendidas_pedido,
       COALESCE((
         SELECT SUM(dd.cantidad)
-        FROM gmx.devoluciones_detalle dd
-        JOIN gmx.devoluciones dx ON dx.id=dd.id_devolucion
+        FROM shiny.devoluciones_detalle dd
+        JOIN shiny.devoluciones dx ON dx.id=dd.id_devolucion
         WHERE dx.referencia=d.referencia
           AND UPPER(COALESCE(dx.estado,''))<>'CANCELADA'
       ),0)::bigint AS unidades_devueltas_pedido
-    FROM gmx.devoluciones d
+    FROM shiny.devoluciones d
     ORDER BY d.fecha DESC NULLS LAST,d.row_id DESC
     LIMIT $1
   \`,[Math.min(Math.max(i(limit)||300,1),1000)]);
@@ -84,7 +84,7 @@ if(!back.includes('GMX_POS_HIST_DEV_001')){
 // FRONTEND: combinar pedidos + estado comercial devolución
 // ======================================================
 let front=fs.readFileSync(orders,'utf8');
-if(!front.includes('GMX_POS_HIST_DEV_001')){
+if(!front.includes('SHINY_POS_HIST_DEV_001')){
   backup(orders,'POS_HIST_DEV_001');
 
   const oldLoad=`  async function loadOrders(term = orderSearch) {
@@ -97,7 +97,7 @@ if(!front.includes('GMX_POS_HIST_DEV_001')){
   }`;
 
   const newLoad=`  async function loadOrders(term = orderSearch) {
-    // GMX_POS_HIST_DEV_001
+    // SHINY_POS_HIST_DEV_001
     const params = new URLSearchParams({
       limit: '200',
       search: term

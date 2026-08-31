@@ -1,4 +1,4 @@
-﻿import fs from "node:fs";
+import fs from "node:fs";
 import path from "node:path";
 import pg from "pg";
 import { fileURLToPath } from "node:url";
@@ -77,13 +77,13 @@ try {
     SELECT
       (
         SELECT COUNT(*)
-        FROM gmx.pedidos
+        FROM shiny.pedidos
         WHERE pos_idempotency_key LIKE 'LOYALTY007-%'
       )::bigint AS pedidos,
 
       (
         SELECT COUNT(*)
-        FROM gmx.clientes
+        FROM shiny.clientes
         WHERE
           nombre LIKE 'CLIENTES LOYALTY007 TEST %'
           OR email LIKE 'clientes.loyalty007.%@example.invalid'

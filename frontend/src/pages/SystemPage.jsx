@@ -1,7 +1,7 @@
 import { brandText } from "../config/brand.js";import { useEffect, useState } from 'react';
 import { useOutletContext } from 'react-router';
 import { api } from '../services/api.js';
-import '../phase_gmx_exact_views_r23.css';
+import '../phase_shiny_exact_views_r23.css';
 import '../system_sys_h_r2.css';
 
 export default function SystemPage() {
@@ -14,7 +14,7 @@ export default function SystemPage() {
     'public.payment.transfer.instructions': 'Usa tu número de comprobante como referencia.'
   });
   const [message, setMessage] = useState('');
-  const currentAdmin = (() => {try {return JSON.parse(localStorage.getItem('TCG_STORE_TEMPLATE_AUTH_USER') || '{}');} catch {return {};}})();
+  const currentAdmin = (() => {try {return JSON.parse(localStorage.getItem('Shiny_AUTH_USER') || '{}');} catch {return {};}})();
   const isSuperadmin = String(currentAdmin.rol || '').toUpperCase() === 'SUPERADMIN';
   const [technical, setTechnical] = useState(null);
   const [technicalBusy, setTechnicalBusy] = useState(false);
@@ -34,7 +34,7 @@ export default function SystemPage() {
   const [fxBusy, setFxBusy] = useState(false);
   const [smtp, setSmtp] = useState({
     enabled: true, provider: 'GMAIL', host: 'smtp.gmail.com', port: 587, secure: false,
-    user: '', password: '', fromEmail: '', fromName: brandText("TCG_STORE_TEMPLATE")
+    user: '', password: '', fromEmail: '', fromName: brandText("Shiny")
   });
   const [smtpStatus, setSmtpStatus] = useState({ configured: false, passwordConfigured: false });
   const [smtpTestEmail, setSmtpTestEmail] = useState('');
@@ -127,7 +127,7 @@ export default function SystemPage() {
       user: d.user || '',
       password: '',
       fromEmail: d.fromEmail || '',
-      fromName: d.fromName || brandText("TCG_STORE_TEMPLATE")
+      fromName: d.fromName || brandText("Shiny")
     }));
     if (!smtpTestEmail && d.fromEmail) setSmtpTestEmail(d.fromEmail);
   }
@@ -354,7 +354,7 @@ export default function SystemPage() {
       {!technical ? <div className="technical-empty">Los datos técnicos se cargan únicamente cuando SUPERADMIN los solicita.</div> : <>
         <div className="technical-kpis">
           <article><span>Base PostgreSQL</span><strong>{technical.database?.database || '—'}</strong><small>{technical.database?.size || '—'}</small></article>
-          <article><span>{brandText("Schema TCG_STORE_TEMPLATE")}</span><strong>{technical.schema?.size || '—'}</strong><small>tablas + índices</small></article>
+          <article><span>{brandText("Schema Shiny")}</span><strong>{technical.schema?.size || '—'}</strong><small>tablas + índices</small></article>
           <article><span>Node</span><strong>{technical.runtime?.node || '—'}</strong><small>{technical.runtime?.platform || '—'}</small></article>
           <article><span>Uptime API</span><strong>{technical.runtime?.uptimeSeconds != null ? `${technical.runtime.uptimeSeconds}s` : '—'}</strong><small>PID {technical.runtime?.pid || '—'}</small></article>
         </div>
@@ -470,7 +470,7 @@ export default function SystemPage() {
         <article className="smtp-card">
           <h3>Remitente</h3>
           <label>Nombre visible
-            <input value={smtp.fromName} onChange={(e) => setSmtp((x) => ({ ...x, fromName: e.target.value }))} placeholder={brandText("TCG_STORE_TEMPLATE")} />
+            <input value={smtp.fromName} onChange={(e) => setSmtp((x) => ({ ...x, fromName: e.target.value }))} placeholder={brandText("Shiny")} />
           </label>
           <label>Correo remitente
             <input type="email" value={smtp.fromEmail} onChange={(e) => setSmtp((x) => ({ ...x, fromEmail: e.target.value }))} placeholder="ventas@dominio.com" />
@@ -514,7 +514,7 @@ export default function SystemPage() {
         <div>
           <div className="eyebrow">FINANZAS · TIPO DE CAMBIO</div>
           <h2>USD → MXN</h2>
-          <p className="section-copy">Configuración global utilizada por Buylist y disponible para Compras, costos y reportes.</p>
+          <p className="section-copy">Tipo de cambio financiero global para operaciones no TCG. Catálogo Maestro y Buylist TCG usan el TDC configurado por cada juego.</p>
         </div>
         <div className="finance-effective-rate">
           <span>TC efectivo</span>

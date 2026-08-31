@@ -1,5 +1,5 @@
 
-/* GMX 10.6.2.3.10 — Master Catalog Browser */
+/* Shiny 10.6.2.3.10 — Master Catalog Browser */
 .master-catalog-browser{display:grid;gap:14px}.master-catalog-summary,.master-catalog-controls,.master-catalog-content{padding:18px;border:1px solid #eaecf0;border-radius:14px;background:#fff}
 .master-game-cards{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}.master-game-cards button{display:grid;gap:4px;padding:12px;border:1px solid #eaecf0;border-radius:10px;background:#f9fafb;text-align:left;color:#101828;cursor:pointer}.master-game-cards button.active{border-color:#84adff;background:#eff4ff}.master-game-cards span,.master-game-cards small{color:#667085}
 .master-catalog-kpis{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px}.master-catalog-kpis>div{display:grid;gap:4px;padding:10px;border-radius:10px;background:#f9fafb}.master-catalog-kpis span{font-size:10px;color:#667085}.master-catalog-kpis strong{font-size:13px;overflow-wrap:anywhere}

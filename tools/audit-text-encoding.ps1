@@ -3,7 +3,7 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
-Write-Host "GMX - Auditoria de textos y codificacion UTF-8" -ForegroundColor Cyan
+Write-Host "Shiny - Auditoria de textos y codificacion UTF-8" -ForegroundColor Cyan
 Write-Host "Raiz: $Root"
 
 $extensions = @(".js",".jsx",".ts",".tsx",".html",".css",".sql",".md",".txt",".ps1")

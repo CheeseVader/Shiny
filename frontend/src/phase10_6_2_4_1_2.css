@@ -1,40 +1,40 @@
-/* GMX 10.6.2.4.1.2 */
-body > .gmx-portal-backdrop > .gmx-branch-modal{
+/* Shiny 10.6.2.4.1.2 */
+body > .shiny-portal-backdrop > .shiny-branch-modal{
   width:min(1120px,calc(100vw - 48px)) !important;
   max-height:calc(100dvh - 48px) !important;
   overflow:auto !important;
 }
-.gmx-branch-modal .branch-form{display:grid;gap:18px}
-.gmx-branch-modal .branch-core-grid{display:grid;grid-template-columns:220px 220px minmax(280px,1fr);gap:12px}
-.gmx-branch-modal .branch-core-grid label,.gmx-branch-modal .branch-contact-grid label{
+.shiny-branch-modal .branch-form{display:grid;gap:18px}
+.shiny-branch-modal .branch-core-grid{display:grid;grid-template-columns:220px 220px minmax(280px,1fr);gap:12px}
+.shiny-branch-modal .branch-core-grid label,.shiny-branch-modal .branch-contact-grid label{
   display:grid;align-content:start;gap:6px;min-width:0;font-size:12px;font-weight:800;color:#344054
 }
-.gmx-branch-modal input,.gmx-branch-modal select{
+.shiny-branch-modal input,.shiny-branch-modal select{
   box-sizing:border-box;width:100%;min-width:0;height:44px !important;min-height:44px !important;max-height:44px !important
 }
-.gmx-branch-modal .branch-phone-input{display:block !important;resize:none !important;padding:0 11px !important}
-.gmx-branch-modal .admin-geo-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
-.gmx-branch-modal .admin-geo-address{grid-column:span 2}
-.gmx-branch-modal .branch-contact-grid{
+.shiny-branch-modal .branch-phone-input{display:block !important;resize:none !important;padding:0 11px !important}
+.shiny-branch-modal .admin-geo-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+.shiny-branch-modal .admin-geo-address{grid-column:span 2}
+.shiny-branch-modal .branch-contact-grid{
   display:grid;grid-template-columns:minmax(220px,.7fr) minmax(300px,1fr) minmax(250px,.8fr);gap:12px;align-items:end
 }
-.gmx-branch-modal .branch-active-toggle{
+.shiny-branch-modal .branch-active-toggle{
   display:flex !important;align-items:center !important;gap:10px !important;min-height:44px;padding:8px 12px;
   border:1px solid #e4e7ec;border-radius:10px;background:#f9fafb
 }
-.gmx-branch-modal .branch-active-toggle input{width:18px !important;height:18px !important;min-height:18px !important;flex:0 0 auto}
-.gmx-branch-modal .branch-active-toggle span{display:grid;gap:2px}
-.gmx-branch-modal .branch-active-toggle small{color:#667085;font-weight:500}
-.gmx-branch-modal .branch-form-error{
+.shiny-branch-modal .branch-active-toggle input{width:18px !important;height:18px !important;min-height:18px !important;flex:0 0 auto}
+.shiny-branch-modal .branch-active-toggle span{display:grid;gap:2px}
+.shiny-branch-modal .branch-active-toggle small{color:#667085;font-weight:500}
+.shiny-branch-modal .branch-form-error{
   padding:11px 13px;border:1px solid #fecdca;border-radius:10px;background:#fef3f2;color:#b42318;font-size:13px;font-weight:750
 }
-.gmx-branch-modal .branch-modal-actions{margin-top:0;padding-top:16px;border-top:1px solid #eaecf0}
-.gmx-branch-modal button:disabled{opacity:.55;cursor:not-allowed}
+.shiny-branch-modal .branch-modal-actions{margin-top:0;padding-top:16px;border-top:1px solid #eaecf0}
+.shiny-branch-modal button:disabled{opacity:.55;cursor:not-allowed}
 @media(max-width:900px){
-  .gmx-branch-modal .branch-core-grid,.gmx-branch-modal .branch-contact-grid,.gmx-branch-modal .admin-geo-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
-  .gmx-branch-modal .admin-geo-address{grid-column:1/-1}
+  .shiny-branch-modal .branch-core-grid,.shiny-branch-modal .branch-contact-grid,.shiny-branch-modal .admin-geo-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .shiny-branch-modal .admin-geo-address{grid-column:1/-1}
 }
 @media(max-width:620px){
-  .gmx-branch-modal .branch-core-grid,.gmx-branch-modal .branch-contact-grid,.gmx-branch-modal .admin-geo-grid{grid-template-columns:1fr}
-  .gmx-branch-modal .admin-geo-address{grid-column:auto}
+  .shiny-branch-modal .branch-core-grid,.shiny-branch-modal .branch-contact-grid,.shiny-branch-modal .admin-geo-grid{grid-template-columns:1fr}
+  .shiny-branch-modal .admin-geo-address{grid-column:auto}
 }

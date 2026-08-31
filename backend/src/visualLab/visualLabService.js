@@ -8,10 +8,10 @@ const HERE = path.dirname(fileURLToPath(import.meta.url));
 const BACKEND_SRC = path.dirname(HERE);
 const BACKEND_DIR = path.dirname(BACKEND_SRC);
 const TCG_IMAGE_ROOT = path.resolve(BACKEND_DIR, 'storage', 'tcg-images');
-const VISUAL_SERVICE_URL = String(process.env.GMX_VISUAL_BETA_URL || 'http://127.0.0.1:8011').replace(/\/$/, '');
+const VISUAL_SERVICE_URL = String(process.env.SHINY_VISUAL_BETA_URL || 'http://127.0.0.1:8011').replace(/\/$/, '');
 const SESSION_TTL_MS = 2 * 60 * 60 * 1000;
-const MIN_SIMILARITY = Math.max(0.45, Math.min(0.95, Number(process.env.GMX_VISUAL_LAB_MIN_SIMILARITY || 0.70)));
-const MIN_GAP = Math.max(0, Math.min(0.25, Number(process.env.GMX_VISUAL_LAB_MIN_GAP || 0.025)));
+const MIN_SIMILARITY = Math.max(0.45, Math.min(0.95, Number(process.env.SHINY_VISUAL_LAB_MIN_SIMILARITY || 0.70)));
+const MIN_GAP = Math.max(0, Math.min(0.25, Number(process.env.SHINY_VISUAL_LAB_MIN_GAP || 0.025)));
 const sessions = new Map();
 
 const GAME_CODES = new Set(['YUGIOH', 'POKEMON', 'MAGIC']);
@@ -47,8 +47,8 @@ async function masterCatalog(gameCode) {
            c.number,c.collector_number,c.rarity,c.card_type,c.subtype,c.language,
            c.image_small_url,c.image_large_url,c.image_local_url,c.source_refs,c.last_synced_at,
            s.nombre AS set_name
-    FROM gmx.tcg_master_cards c
-    LEFT JOIN gmx.tcg_master_sets s
+    FROM shiny.tcg_master_cards c
+    LEFT JOIN shiny.tcg_master_sets s
       ON s.id_juego=c.game_code AND s.codigo=c.set_code
     WHERE c.game_code=$1
       AND COALESCE(c.image_local_url,'')<>''
@@ -87,13 +87,13 @@ export async function labHealth() {
     SELECT game_code,
            COUNT(*)::int AS master_cards,
            COUNT(*) FILTER (WHERE COALESCE(image_local_url,'')<>'')::int AS local_images
-    FROM gmx.tcg_master_cards
+    FROM shiny.tcg_master_cards
     WHERE game_code IN ('YUGIOH','POKEMON','MAGIC')
     GROUP BY game_code
     ORDER BY game_code
   `);
   return {
-    module: 'GMX Visual Lab R2',
+    module: 'Shiny Visual Lab R2',
     read_only: true,
     visual_service: await visualHealth(),
     catalogs: counts.rows || [],
@@ -108,12 +108,12 @@ async function enrichMasterCard(masterCardId) {
     SELECT c.*, s.nombre AS set_name,
            op.row_id AS operational_row_id,op.id_carta AS operational_id,
            op.estado_catalogo AS operational_status
-    FROM gmx.tcg_master_cards c
-    LEFT JOIN gmx.tcg_master_sets s
+    FROM shiny.tcg_master_cards c
+    LEFT JOIN shiny.tcg_master_sets s
       ON s.id_juego=c.game_code AND s.codigo=c.set_code
     LEFT JOIN LATERAL (
       SELECT row_id,id_carta,estado_catalogo
-      FROM gmx.tcg_cartas
+      FROM shiny.tcg_cartas
       WHERE master_card_id=c.row_id
       ORDER BY row_id
       LIMIT 1
@@ -126,7 +126,7 @@ async function enrichMasterCard(masterCardId) {
   const prices = await query(`
     SELECT row_id,price_provider,variant,currency,low,mid,high,market,trend,
            source_url,provider_updated_at,fetched_at
-    FROM gmx.tcg_card_price_current
+    FROM shiny.tcg_card_price_current
     WHERE master_card_id=$1
     ORDER BY CASE WHEN UPPER(price_provider)='TCGPLAYER' THEN 0 ELSE 1 END,
              currency,price_provider,variant
@@ -242,8 +242,8 @@ export async function identifyCard({ imageBase64, gameCode = 'YUGIOH', limit = 6
       catalog_ms: catalogMs,
       visual_ms: visualMs,
       total_ms: Date.now() - startedAt,
-      source_identity: 'GMX_MASTER_LOCAL_IMAGE_OPENCLIP',
-      source_pricing: 'GMX_TCG_CARD_PRICE_CURRENT_CACHE'
+      source_identity: 'SHINY_MASTER_LOCAL_IMAGE_OPENCLIP',
+      source_pricing: 'SHINY_TCG_CARD_PRICE_CURRENT_CACHE'
     }
   };
 }

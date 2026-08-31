@@ -15,7 +15,7 @@ const round = (v) => Number(Number(v || 0).toFixed(4));
 
 export async function getPublicStorefront() {
   const runtime = await storefrontRuntime({ preview: false });
-  const extra = await query(`SELECT parametro,valor FROM gmx.configuracion
+  const extra = await query(`SELECT parametro,valor FROM shiny.configuracion
     WHERE parametro LIKE 'public.store.%' OR parametro LIKE 'loyalty.%'`);
   return {
     ...runtime,
@@ -28,7 +28,7 @@ export async function getPublicStorefront() {
 
 export async function listPublicBranches() {
   return query(`SELECT id_sucursal,nombre_sucursal,ciudad,estado,direccion
-    FROM gmx.sucursales
+    FROM shiny.sucursales
     WHERE COALESCE(activa,true)=true
     ORDER BY nombre_sucursal,row_id`);
 }
@@ -51,9 +51,9 @@ export async function listPublicProducts({ search = '', category = '', limit = 2
         COALESCE(SUM(CASE WHEN COALESCE(s.activa,true)=true THEN GREATEST(0,COALESCE(inv.stock,0)) ELSE 0 END),0),
         COALESCE(p.stock,0)
       )::bigint AS stock_disponible
-    FROM gmx.productos p
-    LEFT JOIN gmx.inventario_sucursales inv ON inv.id_producto=p.id
-    LEFT JOIN gmx.sucursales s ON s.id_sucursal=inv.id_sucursal
+    FROM shiny.productos p
+    LEFT JOIN shiny.inventario_sucursales inv ON inv.id_producto=p.id
+    LEFT JOIN shiny.sucursales s ON s.id_sucursal=inv.id_sucursal
     WHERE ${f.join(' AND ')}
     GROUP BY p.row_id,p.stock
     ORDER BY p.nombre,p.row_id
@@ -65,8 +65,8 @@ export async function getPublicProduct(rowId) {
   const r = await query(`
     SELECT p.row_id,p.id,p.sku,p.nombre,p.descripcion,p.precio,p.categoria,p.imagen,p.estado,
       GREATEST(COALESCE(SUM(GREATEST(0,COALESCE(inv.stock,0))),0),COALESCE(p.stock,0))::bigint AS stock_disponible
-    FROM gmx.productos p
-    LEFT JOIN gmx.inventario_sucursales inv ON inv.id_producto=p.id
+    FROM shiny.productos p
+    LEFT JOIN shiny.inventario_sucursales inv ON inv.id_producto=p.id
     WHERE p.row_id=$1 AND UPPER(COALESCE(p.estado,'ACTIVO')) IN ('ACTIVO','ACTIVE') AND COALESCE(p.precio,0)>0
     GROUP BY p.row_id,p.stock
   `, [rowId]);
@@ -75,7 +75,7 @@ export async function getPublicProduct(rowId) {
 
 export async function listPublicCategories() {
   return query(`SELECT categoria,COUNT(*)::bigint total
-    FROM gmx.productos
+    FROM shiny.productos
     WHERE UPPER(COALESCE(estado,'ACTIVO')) IN ('ACTIVO','ACTIVE')
       AND NULLIF(TRIM(COALESCE(categoria,'')),'') IS NOT NULL
     GROUP BY categoria ORDER BY categoria`);
@@ -92,7 +92,7 @@ export async function listPublicTcgGames() {
           NULLIF(TRIM(id_juego),'')
         ))
       ) j.*
-      FROM gmx.tcg_juegos j
+      FROM shiny.tcg_juegos j
       WHERE COALESCE(activo,true)=true
         AND COALESCE(visible_portal,true)=true
         AND LOWER(TRIM(COALESCE(nombre,'')))<>'conosmon'
@@ -128,11 +128,11 @@ export async function listPublicTcg({ gameId = '', setId = '', search = '', limi
       c.nombre AS carta,c.numero_completo,c.rareza,c.imagen_principal,
       c.id_juego,c.id_set,j.nombre AS juego,s.nombre AS set_nombre,
       COALESCE(SUM(GREATEST(0,COALESCE(si.stock,0)-COALESCE(si.stock_reservado,0))),0)::bigint AS stock_disponible
-    FROM gmx.tcg_inventario i
-    JOIN gmx.tcg_cartas c ON c.id_carta=i.id_carta
-    LEFT JOIN gmx.tcg_juegos j ON j.id_juego=c.id_juego
-    LEFT JOIN gmx.tcg_sets s ON s.id_set=c.id_set
-    LEFT JOIN gmx.tcg_inventario_sucursales si ON si.id_inventario=i.id_inventario
+    FROM shiny.tcg_inventario i
+    JOIN shiny.tcg_cartas c ON c.id_carta=i.id_carta
+    LEFT JOIN shiny.tcg_juegos j ON j.id_juego=c.id_juego
+    LEFT JOIN shiny.tcg_sets s ON s.id_set=c.id_set
+    LEFT JOIN shiny.tcg_inventario_sucursales si ON si.id_inventario=i.id_inventario
     WHERE ${f.join(' AND ')}
     GROUP BY i.row_id,c.row_id,j.nombre,s.nombre
     HAVING COALESCE(SUM(GREATEST(0,COALESCE(si.stock,0)-COALESCE(si.stock_reservado,0))),0)>0
@@ -160,11 +160,11 @@ export async function getPublicTcgItem(rowId) {
       c.nombre AS carta,c.numero_completo,c.rareza,c.imagen_principal,c.descripcion,
       c.id_juego,c.id_set,j.nombre AS juego,s.nombre AS set_nombre,
       COALESCE(SUM(GREATEST(0,COALESCE(si.stock,0)-COALESCE(si.stock_reservado,0))),0)::bigint AS stock_disponible
-    FROM gmx.tcg_inventario i
-    JOIN gmx.tcg_cartas c ON c.id_carta=i.id_carta
-    LEFT JOIN gmx.tcg_juegos j ON j.id_juego=c.id_juego
-    LEFT JOIN gmx.tcg_sets s ON s.id_set=c.id_set
-    LEFT JOIN gmx.tcg_inventario_sucursales si ON si.id_inventario=i.id_inventario
+    FROM shiny.tcg_inventario i
+    JOIN shiny.tcg_cartas c ON c.id_carta=i.id_carta
+    LEFT JOIN shiny.tcg_juegos j ON j.id_juego=c.id_juego
+    LEFT JOIN shiny.tcg_sets s ON s.id_set=c.id_set
+    LEFT JOIN shiny.tcg_inventario_sucursales si ON si.id_inventario=i.id_inventario
     WHERE i.row_id=$1
       AND UPPER(COALESCE(i.estado_venta,'DISPONIBLE'))='DISPONIBLE'
       AND COALESCE(NULLIF(i.precio_oferta,0),i.precio,0)>0
@@ -228,7 +228,7 @@ async function findOrCreateCustomer(client, input) {
   const existingId = resolveExistingClient(owners);
 
   if (existingId) {
-    const r = await client.query(`SELECT * FROM gmx.clientes WHERE id_cliente=$1 ORDER BY row_id LIMIT 1 FOR UPDATE`, [existingId]);
+    const r = await client.query(`SELECT * FROM shiny.clientes WHERE id_cliente=$1 ORDER BY row_id LIMIT 1 FOR UPDATE`, [existingId]);
     if (!r.rowCount) throw new Error('CUSTOMER_IDENTITY_INCONSISTENT');
 
     const existing = r.rows[0];
@@ -243,7 +243,7 @@ async function findOrCreateCustomer(client, input) {
   }
 
   const id = `CLI-WEB-${Date.now()}-${crypto.randomBytes(3).toString('hex').toUpperCase()}`;
-  const r = await client.query(`INSERT INTO gmx.clientes(
+  const r = await client.query(`INSERT INTO shiny.clientes(
     id_cliente,nombre,telefono,email,direccion,ciudad,estado,cp,pais,fecha_registro,fecha_actualizacion)
     VALUES($1,$2,NULLIF($3,''),NULLIF($4,''),NULLIF($5,''),NULLIF($6,''),NULLIF($7,''),NULLIF($8,''),'México',NOW(),NOW())
     RETURNING *`, [
@@ -253,7 +253,7 @@ async function findOrCreateCustomer(client, input) {
 }
 
 async function branchInfo(client, branchId) {
-  const r = await client.query(`SELECT id_sucursal,nombre_sucursal FROM gmx.sucursales
+  const r = await client.query(`SELECT id_sucursal,nombre_sucursal FROM shiny.sucursales
     WHERE id_sucursal=$1 AND COALESCE(activa,true)=true ORDER BY row_id LIMIT 1`, [branchId]);
   return r.rows[0] || null;
 }
@@ -272,8 +272,8 @@ async function preparePublicItems(client, branchId, items) {
       const r = await client.query(`SELECT p.id,p.sku,p.nombre,p.precio,p.estado,
           GREATEST(COALESCE(inv.stock,0),COALESCE(p.stock,0)) disponible,
           inv.id_registro
-        FROM gmx.productos p
-        LEFT JOIN gmx.inventario_sucursales inv ON inv.id_producto=p.id AND inv.id_sucursal=$2
+        FROM shiny.productos p
+        LEFT JOIN shiny.inventario_sucursales inv ON inv.id_producto=p.id AND inv.id_sucursal=$2
         WHERE p.id=$1 AND UPPER(COALESCE(p.estado,'ACTIVO')) IN ('ACTIVO','ACTIVE')
         ORDER BY inv.row_id LIMIT 1`, [txt(raw.id), branchId]);
       if (!r.rowCount) throw new Error(`PRODUCT_NOT_AVAILABLE:${txt(raw.id)}`);
@@ -287,9 +287,9 @@ async function preparePublicItems(client, branchId, items) {
       const r = await client.query(`SELECT i.id_inventario,i.sku,COALESCE(NULLIF(i.precio_oferta,0),i.precio) precio,
           c.nombre carta,c.numero_completo,c.rareza,
           COALESCE(si.stock,0)-COALESCE(si.stock_reservado,0) disponible
-        FROM gmx.tcg_inventario i
-        JOIN gmx.tcg_cartas c ON c.id_carta=i.id_carta
-        LEFT JOIN gmx.tcg_inventario_sucursales si ON si.id_inventario=i.id_inventario AND si.id_sucursal=$2
+        FROM shiny.tcg_inventario i
+        JOIN shiny.tcg_cartas c ON c.id_carta=i.id_carta
+        LEFT JOIN shiny.tcg_inventario_sucursales si ON si.id_inventario=i.id_inventario AND si.id_sucursal=$2
         WHERE i.id_inventario=$1 AND UPPER(COALESCE(i.estado_venta,'DISPONIBLE'))='DISPONIBLE'
         ORDER BY si.row_id LIMIT 1`, [txt(raw.id), branchId]);
       if (!r.rowCount) throw new Error(`TCG_NOT_AVAILABLE:${txt(raw.id)}`);
@@ -328,7 +328,7 @@ export async function createPublicOrder(input) {
 
     let customer;
     if (input.clientUser?.id_cliente) {
-      const known = await client.query(`SELECT * FROM gmx.clientes
+      const known = await client.query(`SELECT * FROM shiny.clientes
         WHERE id_cliente=$1 ORDER BY row_id LIMIT 1 FOR UPDATE`, [input.clientUser.id_cliente]);
       if (!known.rowCount) throw new Error('CLIENT_ACCOUNT_CUSTOMER_NOT_FOUND');
 
@@ -365,10 +365,10 @@ export async function createPublicOrder(input) {
     if (fulfillment === 'DELIVERY' && !txt(input.customer?.address) && !txt(customer.direccion)) throw new Error('DELIVERY_ADDRESS_REQUIRED');
     const accountId = txt(input.clientUser?.id_cuenta) || null;
 
-    const cfg = await client.query(`SELECT valor FROM gmx.configuracion WHERE parametro='public.store.order_expiration_hours'`);
+    const cfg = await client.query(`SELECT valor FROM shiny.configuracion WHERE parametro='public.store.order_expiration_hours'`);
     const hours = Math.max(1, i(cfg.rows[0]?.valor || 48));
 
-    const ins = await client.query(`INSERT INTO gmx.pedidos(
+    const ins = await client.query(`INSERT INTO shiny.pedidos(
       id_pedido,fecha,id_cliente,nombre_cliente,telefono,email,direccion,ciudad,estado,cp,
       metodo_pago,subtotal,envio,total,estado_pedido,notas,fecha_actualizacion,
       inventario_liberado,id_admin_venta,vendedor,id_sucursal,sucursal,canal_venta,venta_confirmada,
@@ -419,8 +419,8 @@ export async function createPublicOrder(input) {
           s.id_sucursal,
           COALESCE(s.stock,0)::bigint AS branch_stock,
           COALESCE(s.stock_reservado,0)::bigint AS branch_reserved
-        FROM gmx.tcg_inventario g
-        JOIN gmx.tcg_inventario_sucursales s
+        FROM shiny.tcg_inventario g
+        JOIN shiny.tcg_inventario_sucursales s
           ON s.id_inventario=g.id_inventario
          AND s.id_sucursal=$2
         WHERE g.id_inventario=$1
@@ -455,7 +455,7 @@ export async function createPublicOrder(input) {
       const branchReservedNew = branchReserved + qty;
 
       await client.query(`
-        UPDATE gmx.tcg_inventario_sucursales
+        UPDATE shiny.tcg_inventario_sucursales
         SET
           stock_reservado=$1,
           ultima_actualizacion=NOW()
@@ -463,7 +463,7 @@ export async function createPublicOrder(input) {
       `, [branchReservedNew, inv.branch_row_id]);
 
       await client.query(`
-        UPDATE gmx.tcg_inventario
+        UPDATE shiny.tcg_inventario
         SET
           stock_reservado=$1,
           ultima_actualizacion=NOW()
@@ -471,7 +471,7 @@ export async function createPublicOrder(input) {
       `, [globalReservedNew, inv.global_row_id]);
 
       await client.query(`
-        INSERT INTO gmx.auditoria(
+        INSERT INTO shiny.auditoria(
           fecha,
           modulo,
           accion,
@@ -496,7 +496,7 @@ export async function createPublicOrder(input) {
     let line = 0;
     for (const x of prepared.items) {
       line++;
-      await client.query(`INSERT INTO gmx.detalle_pedidos(
+      await client.query(`INSERT INTO shiny.detalle_pedidos(
         id_pedido,id_producto,producto,cantidad,precio,subtotal,id_detalle,sku,precio_unitario,tipo,id_inventario,detalle)
         VALUES($1,$2,$3,$4,$5,$6,$7,$8,$5,$9,$10,$11)`, [
       orderId, x.type === 'PRODUCT' ? x.id : null, x.name, x.quantity, x.price, x.subtotal,
@@ -504,13 +504,13 @@ export async function createPublicOrder(input) {
       );
     }
 
-    await client.query(`INSERT INTO gmx.auditoria(fecha,modulo,accion,referencia,detalle,usuario)
+    await client.query(`INSERT INTO shiny.auditoria(fecha,modulo,accion,referencia,detalle,usuario)
       VALUES(NOW(),'PORTAL_PUBLICO','CREAR_PEDIDO',$1,$2,'PUBLIC')`, [
     orderId, `Total ${total} · ${customer.email || customer.telefono || customer.nombre}`]
     );
     await client.query('COMMIT');
 
-    const baseUrl = String(process.env.GMX_PUBLIC_BASE_URL || input.baseUrl || 'http://127.0.0.1:5173').replace(/\/$/, '');
+    const baseUrl = String(process.env.SHINY_PUBLIC_BASE_URL || input.baseUrl || 'http://127.0.0.1:5173').replace(/\/$/, '');
     const receiptUrl = `${baseUrl}/tienda/comprobante/${ins.rows[0].public_token}`;
     const orderForPayment = {
       id_pedido: ins.rows[0].id_pedido,
@@ -535,17 +535,17 @@ export async function createPublicOrder(input) {
     } else if (payment === 'TRANSFER') {
       transfer = await ensureTransferTransaction(orderForPayment, ins.rows[0].public_token, baseUrl);
       paymentProvider = 'MANUAL_BANK';
-    } else if (String(process.env.GMX_EMAIL_CONFIRMATION_ENABLED || 'true').toLowerCase() !== 'false' && customer.email) {
+    } else if (String(process.env.SHINY_EMAIL_CONFIRMATION_ENABLED || 'true').toLowerCase() !== 'false' && customer.email) {
       email = await queueAndSendEmail({
         to: customer.email,
-        subject: brandText(`GMX · Pedido ${ins.rows[0].id_pedido}`),
+        subject: brandText(`Shiny · Pedido ${ins.rows[0].id_pedido}`),
         html: orderConfirmationHtml({
           order: { ...orderForPayment, metodo_pago_publico: 'Pago en sucursal' },
           receiptUrl
         }),
         reference: ins.rows[0].id_pedido
       });
-      await query(`UPDATE gmx.pedidos SET email_confirmacion_estado=$2 WHERE id_pedido=$1`, [
+      await query(`UPDATE shiny.pedidos SET email_confirmacion_estado=$2 WHERE id_pedido=$1`, [
       ins.rows[0].id_pedido, email.sent ? 'SENT' : email.queued ? 'QUEUED' : 'NOT_SENT']
       );
     }
@@ -579,11 +579,11 @@ export async function getPublicOrder(token) {
       estado_pedido,estado_pago,metodo_pago_publico,numero_comprobante,email_confirmacion_estado,
       codigo_promocional,descuento_promocion,id_sucursal,sucursal,public_expires_at,tipo_entrega,
       payment_provider,payment_provider_session,payment_confirmed_at,transfer_proof_status
-    FROM gmx.pedidos WHERE public_token=$1 ORDER BY row_id LIMIT 1`, [token]);
+    FROM shiny.pedidos WHERE public_token=$1 ORDER BY row_id LIMIT 1`, [token]);
   if (!h.rowCount) return null;
   const order = h.rows[0];
   const d = await query(`SELECT producto,cantidad,precio_unitario,subtotal,sku,tipo,detalle
-    FROM gmx.detalle_pedidos WHERE id_pedido=$1 ORDER BY row_id`, [order.id_pedido]);
+    FROM shiny.detalle_pedidos WHERE id_pedido=$1 ORDER BY row_id`, [order.id_pedido]);
   return { ...order, detalles: d.rows };
 }
 

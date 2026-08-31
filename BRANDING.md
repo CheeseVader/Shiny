@@ -1,10 +1,10 @@
 # Marca configurable
 
 La marca visible se controla desde `brand.config.json`. Los nombres técnicos
-de archivos, tablas, esquema PostgreSQL `gmx`, migraciones y dependencias no
+de archivos, tablas, esquema PostgreSQL `shiny`, migraciones y dependencias no
 se renombran.
 
-Para cambiar GMX a Shiny desde PowerShell:
+Para cambiar Shiny a Shiny desde PowerShell:
 
 ```powershell
 .\set-brand.ps1 -Name "Shiny"

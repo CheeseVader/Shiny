@@ -127,11 +127,11 @@ export default function BannerManager({ media = [], onChanged = () => {}, onMedi
   return <div className="cms-banner-stack">
     {message ? <div className="message">{message}</div> : null}
     <article className="contentmk-card hero-editor-card">
-      <div className="hero-editor-title"><div><h3>{editing ? 'Editar slide' : 'Nuevo slide del Slideshow'}</h3><p>{brandText("Selecciona una imagen de Multimedia. GMX utilizará la misma imagen en web, desktop, tablet y móvil.")}</p></div>{editing ? <button className="secondary compact" onClick={() => {setEditing(null);setForm({ ...blank });}}>Nuevo</button> : null}</div>
+      <div className="hero-editor-title"><div><h3>{editing ? 'Editar slide' : 'Nuevo slide del Slideshow'}</h3><p>{brandText("Selecciona una imagen de Multimedia. Shiny utilizará la misma imagen en web, desktop, tablet y móvil.")}</p></div>{editing ? <button className="secondary compact" onClick={() => {setEditing(null);setForm({ ...blank });}}>Nuevo</button> : null}</div>
 
       <div className="contentmk-fields cols2">
         <label className="span2">Nombre interno (opcional)<input placeholder="Se genera automáticamente si lo dejas vacío" value={form.nombre} onChange={(e) => setForm((x) => ({ ...x, nombre: e.target.value }))} /></label>
-<div className="span2 gmx-simple-slide-image" data-patch="SLIDESHOW_SIMPLE_IMAGE_PICKER_R3">
+<div className="span2 shiny-simple-slide-image" data-patch="SLIDESHOW_SIMPLE_IMAGE_PICKER_R3">
   <label>Imagen del slide
     <select
               value={form.id_media_desktop || ''}
@@ -151,7 +151,7 @@ export default function BannerManager({ media = [], onChanged = () => {}, onMedi
     </select>
   </label>
 
-  <div className="gmx-simple-slide-image-actions">
+  <div className="shiny-simple-slide-image-actions">
     <span>Selecciona una imagen de la Biblioteca Multimedia.</span>
     {form.id_media_desktop ?
             <button type="button" className="secondary compact" onClick={clearImage}>Quitar imagen</button> :
@@ -161,7 +161,7 @@ export default function BannerManager({ media = [], onChanged = () => {}, onMedi
         
         <div className="slideshow-auto-responsive-note">
           <b>Responsive automático</b>
-          <span>{brandText("GMX adapta la altura y usa recorte tipo cover automáticamente en desktop, tablet y móvil.")}</span>
+          <span>{brandText("Shiny adapta la altura y usa recorte tipo cover automáticamente en desktop, tablet y móvil.")}</span>
         </div>
 
         <label className="check-field"><input type="checkbox" checked={form.publicado} onChange={(e) => setForm((x) => ({ ...x, publicado: e.target.checked }))} /><span>Mostrar en tienda</span></label>

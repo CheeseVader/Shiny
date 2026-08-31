@@ -1,6 +1,6 @@
 BEGIN;
 
-CREATE TABLE IF NOT EXISTS gmx.devoluciones_reembolsos (
+CREATE TABLE IF NOT EXISTS shiny.devoluciones_reembolsos (
   row_id BIGSERIAL PRIMARY KEY,
   id_reembolso TEXT NOT NULL UNIQUE,
   id_devolucion TEXT NOT NULL,
@@ -25,11 +25,11 @@ CREATE TABLE IF NOT EXISTS gmx.devoluciones_reembolsos (
   error_detalle TEXT,
   fecha_actualizacion TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
-CREATE INDEX IF NOT EXISTS idx_dev_reembolsos_devolucion ON gmx.devoluciones_reembolsos(id_devolucion);
-CREATE INDEX IF NOT EXISTS idx_dev_reembolsos_pedido ON gmx.devoluciones_reembolsos(id_pedido);
-CREATE INDEX IF NOT EXISTS idx_dev_reembolsos_estado ON gmx.devoluciones_reembolsos(estado);
+CREATE INDEX IF NOT EXISTS idx_dev_reembolsos_devolucion ON shiny.devoluciones_reembolsos(id_devolucion);
+CREATE INDEX IF NOT EXISTS idx_dev_reembolsos_pedido ON shiny.devoluciones_reembolsos(id_pedido);
+CREATE INDEX IF NOT EXISTS idx_dev_reembolsos_estado ON shiny.devoluciones_reembolsos(estado);
 
-CREATE TABLE IF NOT EXISTS gmx.devoluciones_eventos (
+CREATE TABLE IF NOT EXISTS shiny.devoluciones_eventos (
   row_id BIGSERIAL PRIMARY KEY,
   id_evento TEXT NOT NULL UNIQUE,
   id_devolucion TEXT NOT NULL,
@@ -41,9 +41,9 @@ CREATE TABLE IF NOT EXISTS gmx.devoluciones_eventos (
   id_admin TEXT,
   usuario TEXT
 );
-CREATE INDEX IF NOT EXISTS idx_dev_eventos_devolucion ON gmx.devoluciones_eventos(id_devolucion,fecha);
+CREATE INDEX IF NOT EXISTS idx_dev_eventos_devolucion ON shiny.devoluciones_eventos(id_devolucion,fecha);
 
-COMMENT ON TABLE gmx.devoluciones_reembolsos IS 'Preparación de reembolsos. Integraciones externas permanecen deshabilitadas hasta validación posterior a auditoría.';
-COMMENT ON COLUMN gmx.devoluciones_reembolsos.integracion_habilitada IS 'Debe permanecer FALSE hasta aprobar auditoría y pruebas sandbox.';
+COMMENT ON TABLE shiny.devoluciones_reembolsos IS 'Preparación de reembolsos. Integraciones externas permanecen deshabilitadas hasta validación posterior a auditoría.';
+COMMENT ON COLUMN shiny.devoluciones_reembolsos.integracion_habilitada IS 'Debe permanecer FALSE hasta aprobar auditoría y pruebas sandbox.';
 
 COMMIT;

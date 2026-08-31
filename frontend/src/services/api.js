@@ -21,7 +21,7 @@ function isAdministrativeLocation(){
 }
 
 export async function api(path,options={}){
-  const token=localStorage.getItem('GMX_AUTH_TOKEN')||'';
+  const token=localStorage.getItem('SHINY_AUTH_TOKEN')||'';
   const headers={
     'Content-Type':'application/json',
     ...(options.headers||{})
@@ -33,8 +33,8 @@ export async function api(path,options={}){
   try{body=await response.json();}catch{}
 
   if(response.status===401){
-    localStorage.removeItem('GMX_AUTH_TOKEN');
-    localStorage.removeItem('GMX_AUTH_USER');
+    localStorage.removeItem('SHINY_AUTH_TOKEN');
+    localStorage.removeItem('SHINY_AUTH_USER');
 
     // Un endpoint administrativo jamás debe expulsar a un visitante de la tienda
     // hacia /login. Solo una página del backoffice puede hacer esa redirección.

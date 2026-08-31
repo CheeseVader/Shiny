@@ -2,7 +2,7 @@ const fs = require('fs');
 const path = require('path');
 const { spawnSync } = require('child_process');
 
-const root = process.argv[2] || 'C:\\Users\\SrsGarciaEspinoza\\Videos\\GMX';
+const root = process.argv[2] || 'C:\\Users\\SrsGarciaEspinoza\\Videos\\Shiny';
 const file = path.join(root, 'frontend', 'src', 'pages', 'OrdersPage.jsx');
 
 if (!fs.existsSync(file)) {
@@ -12,7 +12,7 @@ if (!fs.existsSync(file)) {
 
 let src = fs.readFileSync(file, 'utf8');
 
-if (src.includes('GMX_POS_PAGO_MIXTO_001_V4')) {
+if (src.includes('SHINY_POS_PAGO_MIXTO_001_V4')) {
   console.log('POS-PAGO-MIXTO-001 V4 ya estaba aplicado.');
   process.exit(0);
 }
@@ -50,7 +50,7 @@ replaceOnce(
   itemKeyAnchor,
   itemKeyAnchor + `
 
-  // GMX_POS_PAGO_MIXTO_001_V4
+  // SHINY_POS_PAGO_MIXTO_001_V4
   const saleTotal=useMemo(()=>{
     const raw=cart.reduce((sum,item)=>sum+(Number(item.price)||0)*(Number(item.quantity)||0),0);
     const previewTotal=Number(benefitPreview?.total);

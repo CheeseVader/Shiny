@@ -1,5 +1,5 @@
 
-/* GMX 10.6.2.3.13 — Smart dependent filters + POS catalog */
+/* Shiny 10.6.2.3.13 — Smart dependent filters + POS catalog */
 .pos-controls-smart{
   display:grid;grid-template-columns:240px minmax(360px,1fr);gap:12px;align-items:end
 }

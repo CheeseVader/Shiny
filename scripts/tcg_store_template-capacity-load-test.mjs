@@ -25,7 +25,7 @@ function pct(a,p){if(!a.length)return 0;const s=[...a].sort((x,y)=>x-y);return M
 function requestJson(pathname){
   return new Promise(resolve=>{
     const t=performance.now();let body='';let bytes=0;
-    const req=transport.get(new URL(pathname,base),{headers:{Accept:'application/json','User-Agent':'GMX-Capacity/1.0'},agent:false},res=>{
+    const req=transport.get(new URL(pathname,base),{headers:{Accept:'application/json','User-Agent':'SHINY-Capacity/1.0'},agent:false},res=>{
       res.on('data',c=>{bytes+=c.length;body+=c;});
       res.on('end',()=>{let json=null;try{json=JSON.parse(body);}catch{}resolve({status:res.statusCode||0,ms:performance.now()-t,bytes,json});});
     });
@@ -46,7 +46,7 @@ function openSse(i){
     let settled=false;
     const done=()=>{if(!settled){settled=true;resolve();}};
     const req=transport.get(new URL('/api/public/live-sync/events',base),{
-      headers:{Accept:'text/event-stream','User-Agent':`GMX-Capacity-SSE/${i}`},agent:false
+      headers:{Accept:'text/event-stream','User-Agent':`SHINY-Capacity-SSE/${i}`},agent:false
     },res=>{
       if(res.statusCode!==200){
         if(res.statusCode===503||res.statusCode===429)rejected++;
@@ -65,32 +65,32 @@ function openSse(i){
 
 const preflight=await liveStatus();
 if(!preflight){
-  console.error('[GMX CAPACITY] ERROR: no se pudo leer /api/public/live-sync/status');
+  console.error('[Shiny CAPACITY] ERROR: no se pudo leer /api/public/live-sync/status');
   process.exit(3);
 }
 const existing=Number(preflight.connections||0);
 const maxConnections=Number(preflight.maxConnections||0);
 const available=Math.max(0,maxConnections-existing);
-console.log(`[GMX CAPACITY] preflight existing=${existing} max=${maxConnections} available=${available} requested=${requested}`);
+console.log(`[Shiny CAPACITY] preflight existing=${existing} max=${maxConnections} available=${available} requested=${requested}`);
 if(maxConnections>0&&requested>available){
-  console.error(`[GMX CAPACITY] ABORTADO: faltan ${requested-available} slots SSE. Cierra pestañas/storefront que mantengan EventSource y vuelve a ejecutar. No se cambió ningún límite.`);
+  console.error(`[Shiny CAPACITY] ABORTADO: faltan ${requested-available} slots SSE. Cierra pestañas/storefront que mantengan EventSource y vuelve a ejecutar. No se cambió ningún límite.`);
   process.exit(4);
 }
 
-console.log(`[GMX CAPACITY] SSE ramp: ${requested} clients · ${rampPerSecond}/s`);
+console.log(`[Shiny CAPACITY] SSE ramp: ${requested} clients · ${rampPerSecond}/s`);
 for(let baseIndex=0;baseIndex<requested;baseIndex+=rampPerSecond){
   const batch=Math.min(rampPerSecond,requested-baseIndex);
   await Promise.all(Array.from({length:batch},(_,j)=>openSse(baseIndex+j)));
-  console.log(`[GMX CAPACITY] requested=${Math.min(baseIndex+batch,requested)} opened=${opened} failed=${failed} rejected=${rejected} closed=${closed}`);
+  console.log(`[Shiny CAPACITY] requested=${Math.min(baseIndex+batch,requested)} opened=${opened} failed=${failed} rejected=${rejected} closed=${closed}`);
   if(failed>0){
-    console.error('[GMX CAPACITY] se detectó un fallo durante la rampa; se detiene el crecimiento por seguridad.');
+    console.error('[Shiny CAPACITY] se detectó un fallo durante la rampa; se detiene el crecimiento por seguridad.');
     break;
   }
   if(baseIndex+batch<requested)await sleep(1000);
 }
 const before=await metrics();
 if(opened===requested&&failed===0){
-  console.log(`[GMX CAPACITY] holding ${holdSeconds}s + HTTP ${httpRps} req/s`);
+  console.log(`[Shiny CAPACITY] holding ${holdSeconds}s + HTTP ${httpRps} req/s`);
   const start=performance.now();let seq=0;
   while((performance.now()-start)<holdSeconds*1000){
     const tick=performance.now();const jobs=[];

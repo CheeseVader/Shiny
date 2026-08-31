@@ -25,7 +25,7 @@ const withoutCost = (value) => {
   return safe;
 };
 
-/* GMX_PRODUCT_LOCAL_MEDIA_R12 */
+/* SHINY_PRODUCT_LOCAL_MEDIA_R12 */
 const localFileName = fileURLToPath(import.meta.url);
 const localDirName = path.dirname(localFileName);
 const localProductUploadsDir = path.join(localDirName, '..', '..', 'uploads', 'products');
@@ -139,6 +139,23 @@ function numberOrNull(value, integer = false) {
 }
 
 
+function applyProductCurrencyFields(input, body = {}) {
+  const currency = String(body?.moneda_precio || input?.moneda_precio || 'MXN').trim().toUpperCase();
+  const gameCode = String(body?.tcg_game_code || input?.tcg_game_code || '').trim().toUpperCase();
+  const originRaw = body?.precio_origen ?? body?.precio ?? input?.precio;
+  const origin = originRaw === '' || originRaw == null ? null : Number(originRaw);
+
+  if (!['MXN','USD'].includes(currency)) throw new Error('PRODUCT_CURRENCY_INVALID');
+  if (currency === 'USD' && !gameCode) throw new Error('PRODUCT_TCG_REQUIRED_FOR_USD');
+  if (origin === null || !Number.isFinite(origin) || origin < 0) throw new Error('PRODUCT_PRICE_INVALID');
+
+  input.moneda_precio = currency;
+  input.tcg_game_code = gameCode || null;
+  input.precio_origen = origin;
+  // Until PostgreSQL trigger converts it, input.precio is the source amount.
+  input.precio = origin;
+  return input;
+}
 function validateProduct(input) {
   if (!input.sku) throw new Error('PRODUCT_SKU_REQUIRED');
   if (!input.nombre) throw new Error('PRODUCT_NAME_REQUIRED');
@@ -323,6 +340,7 @@ router.get('/:rowId', async (req, res) => {
 router.post('/', async (req, res) => {
   try {
     const input = normalize(req.body);
+    applyProductCurrencyFields(input, req.body);
     if (!isSuperadmin(req)) input.costo = 0;
 
     validateProduct(input);
@@ -359,7 +377,7 @@ router.post('/', async (req, res) => {
     };
     if (error?.code === '23505') return res.status(409).json({ success: false, error: 'PRODUCT_SKU_DUPLICATE', message: 'El SKU ya existe. Usa un SKU diferente.' });
     if (messages[code]) return res.status(code === 'PRODUCT_SKU_DUPLICATE' ? 409 : 400).json({ success: false, error: code, message: messages[code], existing: error.existing || undefined });
-    console.error(brandText("[GMX][PRODUCT_CREATE]"), error);
+    console.error(brandText("[Shiny][PRODUCT_CREATE]"), error);
     res.status(500).json({ success: false, error: 'PRODUCT_CREATE_FAILED', message: 'No fue posible crear el producto.' });
   }
 });
@@ -368,6 +386,7 @@ router.post('/', async (req, res) => {
 router.put('/:rowId', async (req, res) => {
   try {
     const input = normalize(req.body);
+    applyProductCurrencyFields(input, req.body);
     if (!isSuperadmin(req)) {
       const current = await getProduct(req.params.rowId);
       if (!current) return res.status(404).json({ success: false, error: 'PRODUCT_NOT_FOUND' });

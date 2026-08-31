@@ -1,4 +1,4 @@
-/* GMX 10.6.2.4.1.10 — Buylist pricing engine */
+/* Shiny 10.6.2.4.1.10 — Buylist pricing engine */
 .buylist-pricing-note{
   margin:12px 0;padding:11px 13px;border:1px solid #b2ddff;border-radius:12px;
   background:#eff8ff;color:#175cd3;font-size:12px;line-height:1.5
@@ -10,7 +10,7 @@
   color:#344054;font-size:10px;font-weight:850;text-transform:uppercase
 }
 
-/* GMX 10.6.2.4.1.10.1 */
+/* Shiny 10.6.2.4.1.10.1 */
 .buylist-fx-card{
   display:flex;justify-content:space-between;align-items:center;gap:16px;
   margin:10px 0 14px;padding:12px 14px;border:1px solid #d0d5dd;border-radius:12px;background:#fcfcfd
@@ -25,7 +25,7 @@
   .buylist-fx-actions input{width:100%}
 }
 
-/* GMX 10.6.2.4.1.10.2 — Global FX configuration */
+/* Shiny 10.6.2.4.1.10.2 — Global FX configuration */
 .finance-effective-rate{display:grid;text-align:right;gap:2px}
 .finance-effective-rate>span{font-size:10px;color:#667085;text-transform:uppercase;font-weight:850}
 .finance-effective-rate>strong{font-size:20px}.finance-effective-rate>small{color:#667085}
@@ -42,12 +42,12 @@
 .buylist-fx-readonly.is-missing{border-color:#fedf89;background:#fffaeb}
 @media(max-width:1050px){.finance-fx-grid{grid-template-columns:1fr}}
 
-/* GMX 10.6.2.4.1.10.2.1 */
+/* Shiny 10.6.2.4.1.10.2.1 */
 .finance-banxico-actions{display:flex;gap:8px;flex-wrap:wrap}
 .finance-help{display:block;color:#667085;line-height:1.4}
 .buylist-price-table td strong{white-space:nowrap}
 
-/* GMX 10.6.2.4.1.11.4 — SMTP configuration */
+/* Shiny 10.6.2.4.1.11.4 — SMTP configuration */
 .smtp-status{display:grid;gap:2px;text-align:right;padding:9px 12px;border:1px solid #e4e7ec;border-radius:11px}
 .smtp-status>span{font-size:10px;text-transform:uppercase;font-weight:850;color:#667085}
 .smtp-status>strong{font-size:17px}
@@ -73,13 +73,13 @@
   .smtp-status{text-align:left}
 }
 
-/* GMX 10.6.2.4.1.11.4.2 — SMTP test progress */
+/* Shiny 10.6.2.4.1.11.4.2 — SMTP test progress */
 .smtp-button-working{display:inline-flex;align-items:center;justify-content:center;gap:8px}
 .smtp-spinner{
   display:inline-block;width:15px;height:15px;border:2px solid currentColor;
-  border-right-color:transparent;border-radius:999px;animation:gmx-smtp-spin .75s linear infinite
+  border-right-color:transparent;border-radius:999px;animation:shiny-smtp-spin .75s linear infinite
 }
-@keyframes gmx-smtp-spin{to{transform:rotate(360deg)}}
+@keyframes shiny-smtp-spin{to{transform:rotate(360deg)}}
 .smtp-progress-wrap{display:grid;gap:7px;width:100%;margin-top:12px}
 .smtp-progress-head{display:flex;justify-content:space-between;gap:12px;color:#475467;font-size:11px;font-weight:750}
 .smtp-progress-track{height:8px;overflow:hidden;border-radius:999px;background:#e4e7ec}

@@ -25,7 +25,7 @@ export default function StoreAccountPage() {
   async function loadPrivate() {
     if (!auth.user) return;
     try {
-      const [o, l, d] = await Promise.all([publicApi('/api/client/orders'), publicApi('/api/client/loyalty'), publicApi('/api/client/addresses')]);
+      const [o, d] = await Promise.all([publicApi('/api/client/orders'), publicApi('/api/client/addresses')]); const l = {data:null};
       setOrders(o.data || []);setLoyalty(l.data || null);setAddresses(d.data || []);
     } catch (e) {setMessage(e.message);}
   }
@@ -80,7 +80,7 @@ export default function StoreAccountPage() {
   if (auth.loading) return <main className="public-page"><div className="public-empty">Cargando cuenta…</div></main>;
 
   if (!auth.user) return <main className="public-page">
-    <div className="public-page-head"><small>{brandText("CUENTA GMX")}</small><h1>{mode === 'login' ? 'Iniciar sesión' : 'Crear cuenta'}</h1><p>Tu cuenta de cliente es independiente del acceso administrativo.</p></div>
+    <div className="public-page-head"><small>{brandText("CUENTA Shiny")}</small><h1>{mode === 'login' ? 'Iniciar sesión' : 'Crear cuenta'}</h1><p>Tu cuenta de cliente es independiente del acceso administrativo.</p></div>
     {message ? <div className="checkout-message">{message}</div> : null}
     {verificationUrl ? <div className="dev-verification"><b>Modo local:</b> si SMTP todavía no está configurado, puedes probar la confirmación con <a href={verificationUrl}>este enlace</a>.</div> : null}
     <div className="client-auth-shell">
@@ -106,7 +106,7 @@ export default function StoreAccountPage() {
     {message ? <div className="checkout-message">{message}</div> : null}
     <div className="client-account-metrics"><div><span>Puntos</span><strong>{points.toLocaleString('es-MX')}</strong></div><div><span>Valor aproximado</span><strong>{money(points * pointValue, currency)}</strong></div><div><span>Pedidos</span><strong>{orders.length}</strong></div></div>
     <section className="account-loyalty-card">
-      <div className="account-loyalty-head"><div><h2>Mis puntos</h2><p>{brandText("Movimientos de fidelidad registrados en GMX.")}</p></div><strong>{points.toLocaleString('es-MX')} pts</strong></div>
+      <div className="account-loyalty-head"><div><h2>Mis puntos</h2><p>{brandText("Movimientos de fidelidad registrados en Shiny.")}</p></div><strong>{points.toLocaleString('es-MX')} pts</strong></div>
       {(loyalty?.movements || []).length ? <div className="loyalty-public-ledger">
         {(loyalty.movements || []).slice(0, 20).map((m, i) => <div key={`${m.fecha}-${i}`}>
           <span><b>{m.tipo}</b><small>{new Date(m.fecha).toLocaleString('es-MX')} · {m.id_pedido || m.motivo || 'Movimiento'}</small></span>

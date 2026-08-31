@@ -1,4 +1,4 @@
-/* GMX · Catálogo TCG · Diseño 4 EXACTO aprobado
+/* Shiny · Catálogo TCG · Diseño 4 EXACTO aprobado
    Alcance: solo .proposal-a-tcg. No toca Sidebar/AppShell. */
 .proposal-a-tcg{--d4:#0b63e5;--d4navy:#0b2d5c;--ink:#101828;--muted:#667085;--line:#e4eaf2;--soft:#f8fafc;--green:#079447;background:#fff!important;color:var(--ink)!important;width:100%!important;max-width:none!important}
 .proposal-a-tcg .proposal-a-shell{width:100%!important;max-width:none!important;margin:0!important;padding:0!important;background:#fff!important;border:0!important;border-radius:0!important;box-shadow:none!important;overflow:visible!important}

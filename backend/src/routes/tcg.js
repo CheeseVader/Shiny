@@ -18,7 +18,7 @@ const router = Router();
 router.get('/template.xlsx', async (_req, res) => {try {
     const buffer = await buildDynamicImportTemplate();
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-    res.setHeader('Content-Disposition', 'attachment; filename="GMX_Plantillas_Importacion_Dinamica.xlsx"');
+    res.setHeader('Content-Disposition', 'attachment; filename="SHINY_Plantillas_Importacion_Dinamica.xlsx"');
     res.setHeader('Cache-Control', 'no-store');
     res.send(buffer);
   } catch (_e) {res.status(500).json({ success: false, error: 'DYNAMIC_TEMPLATE_FAILED' });}});
@@ -99,11 +99,11 @@ router.get('/inventory/receipt-template.xlsx', async (_req, res) => {
   try {
     const buffer = await buildTcgReceiptTemplate();
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-    res.setHeader('Content-Disposition', 'attachment; filename="GMX_TCG_Recepcion_Masiva.xlsx"');
+    res.setHeader('Content-Disposition', 'attachment; filename="SHINY_TCG_Recepcion_Masiva.xlsx"');
     res.setHeader('Cache-Control', 'no-store');
     res.send(buffer);
   } catch (e) {
-    console.error(brandText("[GMX][TCG_RECEIPT_TEMPLATE]"), e);
+    console.error(brandText("[Shiny][TCG_RECEIPT_TEMPLATE]"), e);
     res.status(500).json({ success: false, error: 'TCG_RECEIPT_TEMPLATE_FAILED' });
   }
 });

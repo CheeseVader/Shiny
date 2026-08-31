@@ -1,5 +1,5 @@
 
-/* GMX 10.6.2.4.1.12.2.0.3.5 — Premium Arcade / TCG Templates */
+/* Shiny 10.6.2.4.1.12.2.0.3.5 — Premium Arcade / TCG Templates */
 .template-card{position:relative;overflow:hidden}
 .template-card.premium-template{
   min-height:190px;
@@ -49,9 +49,9 @@
 .store-preview.fx-holo::after{
   content:"";position:absolute;inset:0;z-index:19;pointer-events:none;opacity:.12;
   background:linear-gradient(115deg,#67e8f9,#c084fc,#f0abfc,#fde68a,#67e8f9);background-size:300% 300%;
-  mix-blend-mode:screen;animation:gmxHoloShift 8s ease infinite
+  mix-blend-mode:screen;animation:shinyHoloShift 8s ease infinite
 }
-@keyframes gmxHoloShift{0%,100%{background-position:0 50%}50%{background-position:100% 50%}}
+@keyframes shinyHoloShift{0%,100%{background-position:0 50%}50%{background-position:100% 50%}}
 .store-preview.fx-grid>*,
 .store-preview.fx-sunset>*,
 .store-preview.fx-pixels>*,

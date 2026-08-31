@@ -23,7 +23,7 @@
   box-shadow:0 16px 42px rgba(25,34,53,.075)!important;
 }
 
-/* Cabecera compacta como OpciÃ³n 3 */
+/* Cabecera compacta como Opción 3 */
 .tcgops-premium-r34>.content-card>.section-head{
   margin:0 0 12px!important;
   padding:4px 2px 10px!important;
@@ -82,7 +82,7 @@
   box-shadow:none!important;
 }
 
-/* KPIs EXACTOS de OpciÃ³n 3 */
+/* KPIs EXACTOS de Opción 3 */
 .tcgops-premium-r34 .tcgops-kpis{
   display:grid!important;
   grid-template-columns:repeat(4,minmax(0,1fr))!important;
@@ -117,9 +117,9 @@
   font-size:17px;
   font-weight:800;
 }
-.tcgops-premium-r34 .tcgops-kpis>article:nth-child(1):before{content:"â—‡"}
-.tcgops-premium-r34 .tcgops-kpis>article:nth-child(2):before{content:"â–¦"}
-.tcgops-premium-r34 .tcgops-kpis>article:nth-child(3):before{content:"â†—"}
+.tcgops-premium-r34 .tcgops-kpis>article:nth-child(1):before{content:"◇"}
+.tcgops-premium-r34 .tcgops-kpis>article:nth-child(2):before{content:"▦"}
+.tcgops-premium-r34 .tcgops-kpis>article:nth-child(3):before{content:"↗"}
 .tcgops-premium-r34 .tcgops-kpis>article:nth-child(4):before{content:"!"}
 .tcgops-premium-r34 .tcgops-kpis>article:after{
   content:"";
@@ -151,7 +151,7 @@
   font-size:9px!important;
 }
 
-/* GRID PRINCIPAL: misma composiciÃ³n de OpciÃ³n 3 */
+/* GRID PRINCIPAL: misma composición de Opción 3 */
 .tcgops-premium-r34 .p34-dashboard-grid{
   display:grid!important;
   grid-template-columns:1.35fr 1.05fr .92fr 1fr!important;
@@ -313,7 +313,7 @@
 .tcgops-premium-r34 .p34-branch-gallery article span{color:#9299a7!important;font-size:8px!important}
 .tcgops-premium-r34 .p34-branch-gallery article>b{color:#263044!important;font-size:11px!important}
 
-/* Alertas como OpciÃ³n 3 */
+/* Alertas como Opción 3 */
 .tcgops-premium-r34 .p34-alert-list{display:grid!important;gap:7px!important}
 .tcgops-premium-r34 .p34-alert-list article{
   display:grid!important;
@@ -378,7 +378,7 @@
   padding:16px!important;text-align:center!important;color:#9299a7!important;font-size:9px!important;
 }
 
-/* Tabs y zona operativa: misma estÃ©tica, sin cambiar funciones */
+/* Tabs y zona operativa: misma estética, sin cambiar funciones */
 .tcgops-premium-r34 .tcgops-tabs{
   display:inline-flex!important;
   width:auto!important;

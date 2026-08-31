@@ -2,7 +2,7 @@ const fs=require('fs');
 const path=require('path');
 const {spawnSync}=require('child_process');
 
-const root=process.argv[2]||'C:\\Users\\SrsGarciaEspinoza\\Videos\\GMX';
+const root=process.argv[2]||'C:\\Users\\SrsGarciaEspinoza\\Videos\\Shiny';
 const ordersFile=path.join(root,'frontend','src','pages','OrdersPage.jsx');
 const commercialFile=path.join(root,'frontend','src','pages','CommercialPage.jsx');
 
@@ -44,7 +44,7 @@ function replaceOnce(src,search,replacement,label){
 // =========================================================
 let orders=fs.readFileSync(ordersFile,'utf8');
 
-if(!orders.includes('GMX_DEV_AUD_001B_RETURN_FLOW')){
+if(!orders.includes('SHINY_DEV_AUD_001B_RETURN_FLOW')){
   backup(ordersFile,'DEV_AUD_001B');
 
   // Función de navegación.
@@ -52,7 +52,7 @@ if(!orders.includes('GMX_DEV_AUD_001B_RETURN_FLOW')){
   orders=replaceOnce(
     orders,
     anchor,
-`  // GMX_DEV_AUD_001B_RETURN_FLOW
+`  // SHINY_DEV_AUD_001B_RETURN_FLOW
   function openReturnFlow(order){
     if(!order?.id_pedido)return;
     window.location.href=\`/admin/comercial?tab=returns&orderId=\${encodeURIComponent(order.id_pedido)}\`;
@@ -82,7 +82,7 @@ ${anchor}`,
 // =========================================================
 let commercial=fs.readFileSync(commercialFile,'utf8');
 
-if(!commercial.includes('GMX_DEV_AUD_001B_RETURN_DEEPLINK')){
+if(!commercial.includes('SHINY_DEV_AUD_001B_RETURN_DEEPLINK')){
   backup(commercialFile,'DEV_AUD_001B');
 
   const effectAnchor="  useEffect(()=>{load();},[]);";
@@ -91,7 +91,7 @@ if(!commercial.includes('GMX_DEV_AUD_001B_RETURN_DEEPLINK')){
     effectAnchor,
 `${effectAnchor}
 
-  // GMX_DEV_AUD_001B_RETURN_DEEPLINK
+  // SHINY_DEV_AUD_001B_RETURN_DEEPLINK
   // Permite abrir Gestión Comercial directamente desde un pedido PAGADO.
   useEffect(()=>{
     const params=new URLSearchParams(window.location.search);

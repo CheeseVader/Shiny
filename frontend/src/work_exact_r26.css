@@ -1,4 +1,4 @@
-/* GMX R26 - WORK EXACT VISUAL LAYER. Scoped to page roots; no sidebar selectors. */
+/* Shiny R26 - WORK EXACT VISUAL LAYER. Scoped to page roots; no sidebar selectors. */
 :root{--wk-navy:#071d3f;--wk-text:#0f172a;--wk-muted:#64748b;--wk-line:#dde4ee;--wk-bg:#f5f7fa;--wk-green:#16a464;--wk-amber:#f59e0b;--wk-red:#ef4444;--wk-blue:#1768e5}
 .work-products,.work-clients,.work-inventory,.work-categories,.work-branches,.work-ops,.work-commercial,.work-tcg,.work-tcgops,.work-buylist,.work-benefits,.work-alerts,.work-contentmk,.work-reports,.work-admin,.work-system,.work-dashboard{font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;color:var(--wk-text)}
 .work-kpi-grid{display:grid;gap:14px;margin-bottom:14px}.work-kpi-grid-6{grid-template-columns:repeat(6,minmax(0,1fr))}.work-kpi-grid-4{grid-template-columns:repeat(4,minmax(0,1fr))}

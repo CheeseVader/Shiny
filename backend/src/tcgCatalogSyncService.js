@@ -91,7 +91,7 @@ function rarityCode(name = '') {
 }
 
 async function providerRow(gameCode) {
-  const r = await query(`SELECT * FROM gmx.tcg_sync_providers WHERE game_code=$1 LIMIT 1`, [gameCode]);
+  const r = await query(`SELECT * FROM shiny.tcg_sync_providers WHERE game_code=$1 LIMIT 1`, [gameCode]);
   if (!r.rowCount) throw new Error('SYNC_PROVIDER_NOT_CONFIGURED');
   return r.rows[0];
 }
@@ -99,13 +99,13 @@ async function providerRow(gameCode) {
 async function markProvider(gameCode, field, { error = null } = {}) {
   const allowed = new Set(['last_sets_sync_at', 'last_cards_sync_at', 'last_prices_sync_at']);
   if (!allowed.has(field)) return;
-  await query(`UPDATE gmx.tcg_sync_providers
+  await query(`UPDATE shiny.tcg_sync_providers
     SET ${field}=NOW(),last_error=$2::text,status=CASE WHEN $2::text IS NULL THEN status ELSE 'ERROR' END
     WHERE game_code=$1`, [gameCode, error]);
 }
 
 async function clearProviderError(gameCode) {
-  await query(`UPDATE gmx.tcg_sync_providers
+  await query(`UPDATE shiny.tcg_sync_providers
     SET last_error=NULL,status=CASE WHEN status='ERROR' THEN 'READY' ELSE status END
     WHERE game_code=$1`, [gameCode]);
 }
@@ -113,15 +113,15 @@ async function clearProviderError(gameCode) {
 async function upsertMasterSet(client, gameCode, set) {
   const code = txt(set.code);
   if (!code || !txt(set.name)) return;
-  await client.query(`INSERT INTO gmx.tcg_master_sets(
+  await client.query(`INSERT INTO shiny.tcg_master_sets(
     id_juego,codigo,nombre,fecha_lanzamiento,total_cartas,activo,fuente_oficial,fecha_actualizacion)
     VALUES($1,$2,$3,NULLIF($4,'')::date,$5,true,NULLIF($6,''),NOW())
     ON CONFLICT(id_juego,codigo) DO UPDATE SET
       nombre=EXCLUDED.nombre,
-      fecha_lanzamiento=COALESCE(EXCLUDED.fecha_lanzamiento,gmx.tcg_master_sets.fecha_lanzamiento),
-      total_cartas=GREATEST(EXCLUDED.total_cartas,gmx.tcg_master_sets.total_cartas),
+      fecha_lanzamiento=COALESCE(EXCLUDED.fecha_lanzamiento,shiny.tcg_master_sets.fecha_lanzamiento),
+      total_cartas=GREATEST(EXCLUDED.total_cartas,shiny.tcg_master_sets.total_cartas),
       activo=true,
-      fuente_oficial=COALESCE(EXCLUDED.fuente_oficial,gmx.tcg_master_sets.fuente_oficial),
+      fuente_oficial=COALESCE(EXCLUDED.fuente_oficial,shiny.tcg_master_sets.fuente_oficial),
       fecha_actualizacion=NOW()`, [
   gameCode, code, txt(set.name), txt(set.releaseDate), Number(set.total || 0), txt(set.sourceUrl)]
   );
@@ -131,7 +131,7 @@ async function ensureMasterRarity(client, gameCode, rarity) {
   const name = txt(rarity);
   if (!name) return;
   const code = rarityCode(name);
-  await client.query(`INSERT INTO gmx.tcg_master_rarezas(id_juego,codigo,nombre,activo,orden,fecha_actualizacion)
+  await client.query(`INSERT INTO shiny.tcg_master_rarezas(id_juego,codigo,nombre,activo,orden,fecha_actualizacion)
     VALUES($1,$2,$3,true,999,NOW())
     ON CONFLICT(id_juego,codigo) DO UPDATE SET
       nombre=EXCLUDED.nombre,activo=true,fecha_actualizacion=NOW()`, [
@@ -163,7 +163,7 @@ async function upsertMasterCard(client, card, { incremental = false } = {}) {
   const providerRef = JSON.stringify({ [card.providerCode]: card.externalId });
 
   const existing = await client.query(`SELECT row_id,source_hash,image_local_url,source_refs
-    FROM gmx.tcg_master_cards
+    FROM shiny.tcg_master_cards
     WHERE canonical_key=$1
        OR (provider_code=$2 AND external_id=$3 AND set_code=$4 AND language=$5)
     ORDER BY CASE WHEN canonical_key=$1 THEN 0 ELSE 1 END,row_id
@@ -175,7 +175,7 @@ async function upsertMasterCard(client, card, { incremental = false } = {}) {
     const row = existing.rows[0];
 
     if (incremental && row.source_hash === sourceHash) {
-      await client.query(`UPDATE gmx.tcg_master_cards
+      await client.query(`UPDATE shiny.tcg_master_cards
         SET last_synced_at=NOW(),
             canonical_key=COALESCE(NULLIF(canonical_key,''),$2),
             source_refs=COALESCE(source_refs,'{}'::jsonb)||$3::jsonb
@@ -183,7 +183,7 @@ async function upsertMasterCard(client, card, { incremental = false } = {}) {
       return { rowId: row.row_id, changed: false, inserted: false, sourceHash };
     }
 
-    const updated = await client.query(`UPDATE gmx.tcg_master_cards SET
+    const updated = await client.query(`UPDATE shiny.tcg_master_cards SET
       canonical_key=$2,
       source_refs=COALESCE(source_refs,'{}'::jsonb)||$3::jsonb,
       name=$4,
@@ -215,7 +215,7 @@ async function upsertMasterCard(client, card, { incremental = false } = {}) {
     return { rowId: updated.rows[0].row_id, changed: true, inserted: false, sourceHash };
   }
 
-  const r = await client.query(`INSERT INTO gmx.tcg_master_cards(
+  const r = await client.query(`INSERT INTO shiny.tcg_master_cards(
     game_code,provider_code,external_id,set_code,name,number,collector_number,rarity,
     card_type,subtype,artist,description,language,image_small_url,image_large_url,image_local_url,
     purchase_url,source_url,external_updated_at,last_synced_at,metadata,source_hash,
@@ -243,14 +243,14 @@ async function upsertPrice(client, masterCardId, p, { incremental = false } = {}
   const sourceHash = hashObject(payload);
 
   const existing = await client.query(`SELECT row_id,source_hash
-    FROM gmx.tcg_card_price_current
+    FROM shiny.tcg_card_price_current
     WHERE master_card_id=$1 AND price_provider=$2 AND variant=$3 AND currency=$4
     LIMIT 1`, [
   masterCardId, txt(p.provider), txt(p.variant) || 'default', txt(p.currency).toUpperCase()]
   );
 
   if (existing.rowCount && incremental && existing.rows[0].source_hash === sourceHash) {
-    await client.query(`UPDATE gmx.tcg_card_price_current SET fetched_at=NOW() WHERE row_id=$1`, [
+    await client.query(`UPDATE shiny.tcg_card_price_current SET fetched_at=NOW() WHERE row_id=$1`, [
     existing.rows[0].row_id]
     );
     return { changed: false };
@@ -262,7 +262,7 @@ async function upsertPrice(client, masterCardId, p, { incremental = false } = {}
   payload.providerUpdatedAt, sourceHash];
 
 
-  await client.query(`INSERT INTO gmx.tcg_card_price_current(
+  await client.query(`INSERT INTO shiny.tcg_card_price_current(
     master_card_id,price_provider,variant,currency,low,mid,high,market,trend,
     source_url,provider_updated_at,fetched_at,source_hash)
     VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,NOW(),$12)
@@ -272,7 +272,7 @@ async function upsertPrice(client, masterCardId, p, { incremental = false } = {}
       provider_updated_at=EXCLUDED.provider_updated_at,fetched_at=NOW(),
       source_hash=EXCLUDED.source_hash`, values);
 
-  await client.query(`INSERT INTO gmx.tcg_card_price_history(
+  await client.query(`INSERT INTO shiny.tcg_card_price_history(
     master_card_id,price_provider,variant,currency,low,mid,high,market,trend,
     source_url,provider_updated_at,fetched_at)
     VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,NOW())`, values.slice(0, 11));
@@ -346,9 +346,9 @@ async function mapTcgdexSetId(setCode) {
     if (exact?.id) return exact.id;
   } catch {}
 
-  // If the primary PokÃ©mon API and TCGdex use different IDs, map by the
+  // If the primary Pokémon API and TCGdex use different IDs, map by the
   // master set name instead of guessing.
-  const master = await query(`SELECT nombre FROM gmx.tcg_master_sets
+  const master = await query(`SELECT nombre FROM shiny.tcg_master_sets
     WHERE id_juego='POKEMON' AND codigo=$1 LIMIT 1`, [setCode]);
   const wanted = String(master.rows[0]?.nombre || '').trim().toLowerCase();
   if (!wanted) return setCode;
@@ -398,7 +398,7 @@ async function tcgdexPokemonCards(setCode, { downloadImages = false, syncPrices 
     }));
     cards.push(...full);
   }
-  cards._gmxSource = 'TCGdex';
+  cards._shinySource = 'TCGdex';
   return cards;
 }
 
@@ -435,7 +435,7 @@ function ygoPrices(card, setEntry) {
 
 async function pokemonSets() {
   const headers = {};
-  if (process.env.GMX_POKEMON_TCG_API_KEY) headers['X-Api-Key'] = process.env.GMX_POKEMON_TCG_API_KEY;
+  if (process.env.SHINY_POKEMON_TCG_API_KEY) headers['X-Api-Key'] = process.env.SHINY_POKEMON_TCG_API_KEY;
 
   try {
     let page = 1,all = [];
@@ -450,10 +450,10 @@ async function pokemonSets() {
       total: Number(x.total || x.printedTotal || 0),
       sourceUrl: `https://api.pokemontcg.io/v2/sets/${encodeURIComponent(x.id)}`
     }));
-    sets._gmxSource = 'PokÃ©mon TCG API';
+    sets._shinySource = 'Pokémon TCG API';
     return sets;
   } catch (primaryError) {
-    // Fallback: TCGdex is an open PokÃ©mon catalog API and does not require an API key.
+    // Fallback: TCGdex is an open Pokémon catalog API and does not require an API key.
     try {
       const all = await fetchJson('https://api.tcgdex.net/v2/en/sets', { timeout: 30000 });
       const sets = (Array.isArray(all) ? all : []).map((x) => ({
@@ -461,8 +461,8 @@ async function pokemonSets() {
         total: Number(x.cardCount?.total || x.cardCount?.official || 0),
         sourceUrl: `https://api.tcgdex.net/v2/en/sets/${encodeURIComponent(x.id)}`
       })).filter((x) => x.code && x.name);
-      sets._gmxSource = 'TCGdex fallback';
-      sets._gmxPrimaryError = String(primaryError.message || primaryError);
+      sets._shinySource = 'TCGdex fallback';
+      sets._shinyPrimaryError = String(primaryError.message || primaryError);
       return sets;
     } catch (fallbackError) {
       throw new Error(
@@ -474,7 +474,7 @@ async function pokemonSets() {
 
 async function pokemonCards(setCode, { downloadImages = false, syncPrices = true } = {}) {
   const headers = {};
-  if (process.env.GMX_POKEMON_TCG_API_KEY) headers['X-Api-Key'] = process.env.GMX_POKEMON_TCG_API_KEY;
+  if (process.env.SHINY_POKEMON_TCG_API_KEY) headers['X-Api-Key'] = process.env.SHINY_POKEMON_TCG_API_KEY;
 
   try {
     let page = 1,all = [];
@@ -506,12 +506,12 @@ async function pokemonCards(setCode, { downloadImages = false, syncPrices = true
         metadata: { hp: x.hp, types: x.types, legalities: x.legalities, regulationMark: x.regulationMark }
       });
     }
-    cards._gmxSource = 'PokÃ©mon TCG API';
+    cards._shinySource = 'Pokémon TCG API';
     return cards;
   } catch (primaryError) {
     try {
       const cards = await tcgdexPokemonCards(setCode, { downloadImages, syncPrices });
-      cards._gmxPrimaryError = String(primaryError.message || primaryError);
+      cards._shinyPrimaryError = String(primaryError.message || primaryError);
       return cards;
     } catch (fallbackError) {
       throw new Error(
@@ -584,7 +584,7 @@ async function yugiohSets() {
 }
 
 async function yugiohCards(setCode, { downloadImages = false, syncPrices = true } = {}) {
-  const master = await query(`SELECT * FROM gmx.tcg_master_sets WHERE id_juego='YUGIOH' AND codigo=$1 LIMIT 1`, [setCode]);
+  const master = await query(`SELECT * FROM shiny.tcg_master_sets WHERE id_juego='YUGIOH' AND codigo=$1 LIMIT 1`, [setCode]);
   if (!master.rowCount) throw new Error('SET_NOT_FOUND_IN_MASTER');
   const setName = master.rows[0].nombre;
   const j = await fetchJson(`https://db.ygoprodeck.com/api/v7/cardinfo.php?cardset=${encodeURIComponent(setName)}`, { timeout: 60000 });
@@ -615,30 +615,30 @@ async function yugiohCards(setCode, { downloadImages = false, syncPrices = true 
 const SOURCE_REGISTRY = {
   POKEMON: {
     catalog: [
-    { code: 'AUTO', name: 'AutomÃ¡tico', description: 'PokÃ©mon TCG API con TCGdex como respaldo' },
-    { code: 'POKEMON_TCG_API', name: 'PokÃ©mon TCG API', description: 'Forzar PokÃ©mon TCG API' },
+    { code: 'AUTO', name: 'Automático', description: 'Pokémon TCG API con TCGdex como respaldo' },
+    { code: 'POKEMON_TCG_API', name: 'Pokémon TCG API', description: 'Forzar Pokémon TCG API' },
     { code: 'TCGDEX', name: 'TCGdex', description: 'Forzar TCGdex' }],
 
     images: [
-    { code: 'AUTO', name: 'AutomÃ¡tico', description: 'Usar la imagen de la fuente de catÃ¡logo elegida' },
-    { code: 'CATALOG', name: 'Fuente de catÃ¡logo', description: 'Usar la imagen entregada por la fuente de catÃ¡logo' }],
+    { code: 'AUTO', name: 'Automático', description: 'Usar la imagen de la fuente de catálogo elegida' },
+    { code: 'CATALOG', name: 'Fuente de catálogo', description: 'Usar la imagen entregada por la fuente de catálogo' }],
 
     prices: [
     { code: 'TCGPLAYER', name: 'TCGplayer' },
     { code: 'CARDMARKET', name: 'Cardmarket' },
-    { code: 'COLLECTR', name: 'Collectr', requiresCredential: true, credentialEnv: 'GMX_COLLECTR_API_KEY' }]
+    { code: 'COLLECTR', name: 'Collectr', requiresCredential: true, credentialEnv: 'SHINY_COLLECTR_API_KEY' }]
 
   },
   MAGIC: {
-    catalog: [{ code: 'SCRYFALL', name: 'Scryfall', description: 'CatÃ¡logo disponible para Magic' }],
+    catalog: [{ code: 'SCRYFALL', name: 'Scryfall', description: 'Catálogo disponible para Magic' }],
     images: [{ code: 'SCRYFALL', name: 'Scryfall' }],
     prices: [
     { code: 'SCRYFALL', name: 'Scryfall' },
-    { code: 'COLLECTR', name: 'Collectr', requiresCredential: true, credentialEnv: 'GMX_COLLECTR_API_KEY' }]
+    { code: 'COLLECTR', name: 'Collectr', requiresCredential: true, credentialEnv: 'SHINY_COLLECTR_API_KEY' }]
 
   },
   YUGIOH: {
-    catalog: [{ code: 'YGOPRODECK', name: 'YGOPRODeck', description: 'CatÃ¡logo disponible para Yu-Gi-Oh!' }],
+    catalog: [{ code: 'YGOPRODECK', name: 'YGOPRODeck', description: 'Catálogo disponible para Yu-Gi-Oh!' }],
     images: [{ code: 'YGOPRODECK', name: 'YGOPRODeck' }],
     prices: [
     { code: 'TCGPLAYER', name: 'TCGplayer' },
@@ -647,7 +647,7 @@ const SOURCE_REGISTRY = {
     { code: 'AMAZON', name: 'Amazon' },
     { code: 'COOLSTUFFINC', name: 'CoolStuffInc' },
     { code: 'YGOPRODECK_SET', name: 'YGOPRODeck Set' },
-    { code: 'COLLECTR', name: 'Collectr', requiresCredential: true, credentialEnv: 'GMX_COLLECTR_API_KEY' }]
+    { code: 'COLLECTR', name: 'Collectr', requiresCredential: true, credentialEnv: 'SHINY_COLLECTR_API_KEY' }]
 
   }
 };
@@ -684,7 +684,7 @@ function normalizeSourcePreferences(gameCode, prefs = {}) {
 }
 
 async function sourcePreferences(gameCode) {
-  const r = await query(`SELECT source_preferences FROM gmx.tcg_sync_game_config WHERE game_code=$1 LIMIT 1`, [gameCode]);
+  const r = await query(`SELECT source_preferences FROM shiny.tcg_sync_game_config WHERE game_code=$1 LIMIT 1`, [gameCode]);
   return normalizeSourcePreferences(gameCode, r.rows[0]?.source_preferences || {});
 }
 
@@ -706,12 +706,12 @@ async function pokemonSetsByPreference(prefs) {
       total: Number(x.cardCount?.total || x.cardCount?.official || 0),
       sourceUrl: `https://api.tcgdex.net/v2/en/sets/${encodeURIComponent(x.id)}`
     })).filter((x) => x.code && x.name);
-    sets._gmxSource = 'TCGdex';
+    sets._shinySource = 'TCGdex';
     return sets;
   }
   if (prefs.catalogSource === 'POKEMON_TCG_API') {
     const headers = {};
-    if (process.env.GMX_POKEMON_TCG_API_KEY) headers['X-Api-Key'] = process.env.GMX_POKEMON_TCG_API_KEY;
+    if (process.env.SHINY_POKEMON_TCG_API_KEY) headers['X-Api-Key'] = process.env.SHINY_POKEMON_TCG_API_KEY;
     let page = 1,all = [];
     while (true) {
       const j = await fetchJson(`https://api.pokemontcg.io/v2/sets?page=${page}&pageSize=250&orderBy=-releaseDate`, { headers });
@@ -724,7 +724,7 @@ async function pokemonSetsByPreference(prefs) {
       total: Number(x.total || x.printedTotal || 0),
       sourceUrl: `https://api.pokemontcg.io/v2/sets/${encodeURIComponent(x.id)}`
     }));
-    sets._gmxSource = 'PokÃ©mon TCG API';
+    sets._shinySource = 'Pokémon TCG API';
     return sets;
   }
   return pokemonSets();
@@ -734,10 +734,10 @@ async function pokemonCardsByPreference(setCode, opts, prefs) {
   let cards;
   if (prefs.catalogSource === 'TCGDEX') {
     cards = await tcgdexPokemonCards(setCode, opts);
-    cards._gmxSource = 'TCGdex';
+    cards._shinySource = 'TCGdex';
   } else if (prefs.catalogSource === 'POKEMON_TCG_API') {
     const headers = {};
-    if (process.env.GMX_POKEMON_TCG_API_KEY) headers['X-Api-Key'] = process.env.GMX_POKEMON_TCG_API_KEY;
+    if (process.env.SHINY_POKEMON_TCG_API_KEY) headers['X-Api-Key'] = process.env.SHINY_POKEMON_TCG_API_KEY;
     let page = 1,all = [];
     while (true) {
       const q = encodeURIComponent(`set.id:${setCode}`);
@@ -766,7 +766,7 @@ async function pokemonCardsByPreference(setCode, opts, prefs) {
         metadata: { hp: x.hp, types: x.types, legalities: x.legalities, regulationMark: x.regulationMark }
       });
     }
-    cards._gmxSource = 'PokÃ©mon TCG API';
+    cards._shinySource = 'Pokémon TCG API';
   } else {
     cards = await pokemonCards(setCode, opts);
   }
@@ -785,7 +785,7 @@ export async function getSourcePreferences(gameCode) {
 
 export async function saveSourcePreferences(gameCode, input = {}) {
   const prefs = normalizeSourcePreferences(gameCode, input);
-  await query(`INSERT INTO gmx.tcg_sync_game_config(
+  await query(`INSERT INTO shiny.tcg_sync_game_config(
     game_code,enabled,region,language,sync_cards,sync_prices,download_images,
     selected_sets,auto_sync_enabled,auto_sync_frequency,source_preferences,updated_at)
     VALUES($1,true,'NA_LATAM','en',true,true,false,'[]'::jsonb,false,'WEEKLY',$2::jsonb,NOW())
@@ -804,28 +804,38 @@ export async function listSyncProviders() {
   return query(`SELECT p.*,m.nombre AS game_name,m.publisher,
       c.enabled,c.region,c.language,c.sync_cards,c.sync_prices,c.download_images,
       c.selected_sets,c.auto_sync_enabled,c.auto_sync_frequency,c.source_preferences,c.updated_at AS config_updated_at,
-      (SELECT COUNT(*)::bigint FROM gmx.tcg_master_sets s WHERE s.id_juego=p.game_code AND s.activo=true) AS master_sets,
-      (SELECT COUNT(*)::bigint FROM gmx.tcg_master_cards mc WHERE mc.game_code=p.game_code) AS master_cards
-    FROM gmx.tcg_sync_providers p
-    LEFT JOIN gmx.tcg_master_juegos m ON m.codigo=p.game_code
-    LEFT JOIN gmx.tcg_sync_game_config c ON c.game_code=p.game_code
+      COALESCE(
+        NULLIF(c.source_preferences->>'usdMxnRate','')::numeric,
+        CASE p.game_code
+          WHEN 'POKEMON' THEN 15
+          WHEN 'YUGIOH' THEN 17
+          WHEN 'MAGIC' THEN 21
+          WHEN 'RIFTBOUND' THEN 30
+          ELSE NULL
+        END
+      ) AS usd_mxn_rate,
+      (SELECT COUNT(*)::bigint FROM shiny.tcg_master_sets s WHERE s.id_juego=p.game_code AND s.activo=true) AS master_sets,
+      (SELECT COUNT(*)::bigint FROM shiny.tcg_master_cards mc WHERE mc.game_code=p.game_code) AS master_cards
+    FROM shiny.tcg_sync_providers p
+    LEFT JOIN shiny.tcg_master_juegos m ON m.codigo=p.game_code
+    LEFT JOIN shiny.tcg_sync_game_config c ON c.game_code=p.game_code
     ORDER BY COALESCE(m.orden,999999),m.nombre,p.game_code`);
 }
 
 export async function getSyncSets(gameCode) {
   return query(`SELECT s.*,
       COALESCE((c.selected_sets ? s.codigo),false) AS selected,
-      (SELECT COUNT(*)::bigint FROM gmx.tcg_master_cards mc
+      (SELECT COUNT(*)::bigint FROM shiny.tcg_master_cards mc
         WHERE mc.game_code=s.id_juego AND mc.set_code=s.codigo) AS synced_cards
-    FROM gmx.tcg_master_sets s
-    LEFT JOIN gmx.tcg_sync_game_config c ON c.game_code=s.id_juego
+    FROM shiny.tcg_master_sets s
+    LEFT JOIN shiny.tcg_sync_game_config c ON c.game_code=s.id_juego
     WHERE s.id_juego=$1 AND s.activo=true
     ORDER BY COALESCE(s.fecha_lanzamiento,'1900-01-01'::date) DESC,s.nombre`, [gameCode]);
 }
 
 export async function updateSyncConfig(gameCode, input = {}) {
   const selected = Array.isArray(input.selectedSets) ? input.selectedSets.map(txt).filter(Boolean) : [];
-  const r = await query(`INSERT INTO gmx.tcg_sync_game_config(
+  const r = await query(`INSERT INTO shiny.tcg_sync_game_config(
     game_code,enabled,region,language,sync_cards,sync_prices,download_images,
     selected_sets,auto_sync_enabled,auto_sync_frequency,source_preferences,updated_at)
     VALUES($1,$2,$3,$4,$5,$6,$7,$8::jsonb,$9,$10,$11::jsonb,NOW())
@@ -835,7 +845,7 @@ export async function updateSyncConfig(gameCode, input = {}) {
       download_images=EXCLUDED.download_images,selected_sets=EXCLUDED.selected_sets,
       auto_sync_enabled=EXCLUDED.auto_sync_enabled,
       auto_sync_frequency=EXCLUDED.auto_sync_frequency,
-      source_preferences=COALESCE(EXCLUDED.source_preferences,gmx.tcg_sync_game_config.source_preferences),
+      source_preferences=COALESCE(EXCLUDED.source_preferences,shiny.tcg_sync_game_config.source_preferences),
       updated_at=NOW()
     RETURNING *`, [
   gameCode, input.enabled === true, txt(input.region) || 'NA_LATAM', txt(input.language) || 'en',
@@ -854,7 +864,7 @@ export async function syncGameSets(gameCode) {
       // Catalog-only TCGs still work: their master sets are already managed by official/manual import.
       await markProvider(gameCode, 'last_sets_sync_at');
       await clearProviderError(gameCode);
-      const r = await query(`SELECT COUNT(*)::bigint total FROM gmx.tcg_master_sets WHERE id_juego=$1 AND activo=true`, [gameCode]);
+      const r = await query(`SELECT COUNT(*)::bigint total FROM shiny.tcg_master_sets WHERE id_juego=$1 AND activo=true`, [gameCode]);
       return { gameCode, mode: 'MASTER_CATALOG', sets: Number(r.rows[0]?.total || 0), provider: provider.provider_name };
     }
     const prefs = await sourcePreferences(gameCode);
@@ -864,13 +874,13 @@ export async function syncGameSets(gameCode) {
       catch (e) {
         if (!prefs.allowFallback || prefs.catalogSource === 'AUTO') throw e;
         sets = await pokemonSets();
-        sets._gmxPrimaryError = String(e.message || e);
+        sets._shinyPrimaryError = String(e.message || e);
       }
     } else {
       sets = await remote.sets();
     }
-    const sourceUsed = sets?._gmxSource || provider.provider_name;
-    const primaryError = sets?._gmxPrimaryError || null;
+    const sourceUsed = sets?._shinySource || provider.provider_name;
+    const primaryError = sets?._shinyPrimaryError || null;
     const client = await pool.connect();
     try {
       await client.query('BEGIN');
@@ -881,10 +891,10 @@ export async function syncGameSets(gameCode) {
     await clearProviderError(gameCode);
     return {
       gameCode, mode: 'REMOTE_API', sets: sets.length, provider: provider.provider_name,
-      sourceUsed, warning: primaryError ? `Fuente principal no disponible; se utilizÃ³ ${sourceUsed}.` : null
+      sourceUsed, warning: primaryError ? `Fuente principal no disponible; se utilizó ${sourceUsed}.` : null
     };
   } catch (e) {
-    await query(`UPDATE gmx.tcg_sync_providers SET last_error=$2,status='ERROR' WHERE game_code=$1`, [gameCode, String(e.message || e).slice(0, 500)]);
+    await query(`UPDATE shiny.tcg_sync_providers SET last_error=$2,status='ERROR' WHERE game_code=$1`, [gameCode, String(e.message || e).slice(0, 500)]);
     throw e;
   }
 }
@@ -899,7 +909,7 @@ export async function syncSelectedCards(gameCode, { setCodes = [], downloadImage
   if (!selected.length) throw new Error('SELECT_AT_LEAST_ONE_SET');
 
   const known = await query(`SELECT codigo,COALESCE(total_cartas,0)::int AS total_cartas
-    FROM gmx.tcg_master_sets
+    FROM shiny.tcg_master_sets
     WHERE id_juego=$1 AND codigo=ANY($2::text[]) AND activo=true`, [gameCode, selected]);
   const valid = new Set(known.rows.map((x) => x.codigo));
   const estimatedBySet = new Map(known.rows.map((x) => [x.codigo, Number(x.total_cartas || 0)]));
@@ -919,7 +929,7 @@ export async function syncSelectedCards(gameCode, { setCodes = [], downloadImage
         ...payload
       });} catch {}
   };
-  await notify({ phase: 'starting', setCode: null, message: 'Preparando sincronizaciÃ³n de cartasâ€¦' });
+  await notify({ phase: 'starting', setCode: null, message: 'Preparando sincronización de cartas…' });
   const invalid = selected.filter((x) => !valid.has(x));
   if (invalid.length) throw new Error(`UNKNOWN_SET:${invalid.join(',')}`);
 
@@ -933,7 +943,7 @@ export async function syncSelectedCards(gameCode, { setCodes = [], downloadImage
         phase: 'fetching_set',
         setCode,
         setEstimatedCards: Number(estimatedBySet.get(setCode) || 0),
-        message: `Descargando ${setCode}â€¦`
+        message: `Descargando ${setCode}…`
       });
       const effectiveDownloadImages = gameCode === 'YUGIOH' ? true : downloadImages;
       let cards;
@@ -943,7 +953,7 @@ export async function syncSelectedCards(gameCode, { setCodes = [], downloadImage
         } catch (e) {
           if (!prefs.allowFallback || prefs.catalogSource === 'AUTO') throw e;
           cards = await pokemonCards(setCode, { downloadImages: effectiveDownloadImages, syncPrices });
-          cards._gmxPrimaryError = String(e.message || e);
+          cards._shinyPrimaryError = String(e.message || e);
           for (const c of cards) c.prices = filterPricesByPreference(c.prices, prefs);
         }
       } else {
@@ -954,7 +964,7 @@ export async function syncSelectedCards(gameCode, { setCodes = [], downloadImage
         phase: 'saving_cards',
         setCode,
         setActualCards: cards.length,
-        message: `Guardando ${cards.length} carta(s) de ${setCode}â€¦`
+        message: `Guardando ${cards.length} carta(s) de ${setCode}…`
       });
       const client = await pool.connect();
       let setCards = 0,setPrices = 0;
@@ -991,8 +1001,8 @@ export async function syncSelectedCards(gameCode, { setCodes = [], downloadImage
       processedSets++;
       result.sets.push({
         setCode, cards: setCards, prices: setPrices,
-        sourceUsed: cards?._gmxSource || provider.provider_name,
-        warning: cards?._gmxPrimaryError ? `Fuente principal no disponible: ${String(cards._gmxPrimaryError).slice(0, 220)}` : null
+        sourceUsed: cards?._shinySource || provider.provider_name,
+        warning: cards?._shinyPrimaryError ? `Fuente principal no disponible: ${String(cards._shinyPrimaryError).slice(0, 220)}` : null
       });
       await notify({
         phase: 'set_complete', setCode, setActualCards: setCards,
@@ -1008,14 +1018,14 @@ export async function syncSelectedCards(gameCode, { setCodes = [], downloadImage
     }
   }
 
-  await query(`UPDATE gmx.tcg_sync_game_config SET
+  await query(`UPDATE shiny.tcg_sync_game_config SET
     enabled=true,selected_sets=$2::jsonb,sync_prices=$3,download_images=$4,updated_at=NOW()
     WHERE game_code=$1`, [gameCode, JSON.stringify(selected), syncPrices === true, downloadImages === true]);
 
   await markProvider(gameCode, 'last_cards_sync_at', { error: result.errors.length ? JSON.stringify(result.errors.slice(0, 5)) : null });
   if (syncPrices) await markProvider(gameCode, 'last_prices_sync_at', { error: result.errors.length ? JSON.stringify(result.errors.slice(0, 5)) : null });
   if (!result.errors.length) await clearProviderError(gameCode);
-  await notify({ phase: 'sync_complete', message: 'SincronizaciÃ³n de cartas terminada.' });
+  await notify({ phase: 'sync_complete', message: 'Sincronización de cartas terminada.' });
   return result;
 }
 
@@ -1023,13 +1033,13 @@ export async function installSelectedToOperational(gameCode, setCodes = []) {
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
-    const masterGame = await client.query(`SELECT * FROM gmx.tcg_master_juegos WHERE codigo=$1 AND activo=true LIMIT 1`, [gameCode]);
+    const masterGame = await client.query(`SELECT * FROM shiny.tcg_master_juegos WHERE codigo=$1 AND activo=true LIMIT 1`, [gameCode]);
     if (!masterGame.rowCount) throw new Error('MASTER_GAME_NOT_FOUND');
     const game = masterGame.rows[0];
 
-    let local = (await client.query(`SELECT * FROM gmx.tcg_juegos WHERE catalogo_codigo=$1 ORDER BY row_id LIMIT 1 FOR UPDATE`, [gameCode])).rows[0];
+    let local = (await client.query(`SELECT * FROM shiny.tcg_juegos WHERE catalogo_codigo=$1 ORDER BY row_id LIMIT 1 FOR UPDATE`, [gameCode])).rows[0];
     if (!local) {
-      local = (await client.query(`INSERT INTO gmx.tcg_juegos(
+      local = (await client.query(`INSERT INTO shiny.tcg_juegos(
         id_juego,nombre,codigo,catalogo_codigo,publisher,sitio_oficial,activo,visible_portal,orden)
         VALUES($1,$2,$3,$3,$4,$5,true,false,$6) RETURNING *`, [
       `TCGJ-${gameCode}`, game.nombre, gameCode, game.publisher, game.sitio_oficial, game.orden]
@@ -1039,19 +1049,19 @@ export async function installSelectedToOperational(gameCode, setCodes = []) {
     const selected = [...new Set((setCodes || []).map(txt).filter(Boolean))];
     if (!selected.length) throw new Error('SELECT_AT_LEAST_ONE_SET');
 
-    const sets = await client.query(`SELECT * FROM gmx.tcg_master_sets
+    const sets = await client.query(`SELECT * FROM shiny.tcg_master_sets
       WHERE id_juego=$1 AND codigo=ANY($2::text[]) AND activo=true`, [gameCode, selected]);
 
     for (const set of sets.rows) {
-      const existing = await client.query(`SELECT row_id FROM gmx.tcg_sets
+      const existing = await client.query(`SELECT row_id FROM shiny.tcg_sets
         WHERE id_juego=$1 AND UPPER(COALESCE(codigo,''))=UPPER($2) LIMIT 1`, [local.id_juego, set.codigo]);
       if (existing.rowCount) {
-        await client.query(`UPDATE gmx.tcg_sets SET nombre=$3,fecha_lanzamiento=$4,total_cartas=$5,
+        await client.query(`UPDATE shiny.tcg_sets SET nombre=$3,fecha_lanzamiento=$4,total_cartas=$5,
           activo=true,fuente_oficial=$6 WHERE row_id=$1 AND id_juego=$2`, [
         existing.rows[0].row_id, local.id_juego, set.nombre, set.fecha_lanzamiento, set.total_cartas, set.fuente_oficial]
         );
       } else {
-        await client.query(`INSERT INTO gmx.tcg_sets(
+        await client.query(`INSERT INTO shiny.tcg_sets(
           id_set,id_juego,nombre,codigo,fecha_lanzamiento,total_cartas,activo,orden,fuente_oficial)
           VALUES($1,$2,$3,$4,$5,$6,true,0,$7)`, [
         `${gameCode}-${set.codigo}`, local.id_juego, set.nombre, set.codigo, set.fecha_lanzamiento, set.total_cartas, set.fuente_oficial]
@@ -1059,9 +1069,9 @@ export async function installSelectedToOperational(gameCode, setCodes = []) {
       }
     }
 
-    const rarities = await client.query(`SELECT * FROM gmx.tcg_master_rarezas WHERE id_juego=$1 AND activo=true`, [gameCode]);
+    const rarities = await client.query(`SELECT * FROM shiny.tcg_master_rarezas WHERE id_juego=$1 AND activo=true`, [gameCode]);
     for (const rarity of rarities.rows) {
-      await client.query(`INSERT INTO gmx.tcg_rarezas(id_rareza,id_juego,codigo,nombre,orden,activo)
+      await client.query(`INSERT INTO shiny.tcg_rarezas(id_rareza,id_juego,codigo,nombre,orden,activo)
         VALUES($1,$2,$3,$4,$5,true)
         ON CONFLICT DO NOTHING`, [
       `${gameCode}-${rarity.codigo}`, local.id_juego, rarity.codigo, rarity.nombre, rarity.orden]
@@ -1069,16 +1079,16 @@ export async function installSelectedToOperational(gameCode, setCodes = []) {
     }
 
     let cardsInstalled = 0;
-    const cards = await client.query(`SELECT * FROM gmx.tcg_master_cards
+    const cards = await client.query(`SELECT * FROM shiny.tcg_master_cards
       WHERE game_code=$1 AND set_code=ANY($2::text[])`, [gameCode, selected]);
     for (const card of cards.rows) {
       const setId = `${gameCode}-${card.set_code}`;
-      const existing = await client.query(`SELECT row_id FROM gmx.tcg_cartas
+      const existing = await client.query(`SELECT row_id FROM shiny.tcg_cartas
         WHERE master_card_id=$1 OR (id_juego=$2 AND id_set=$3 AND COALESCE(numero_completo,'')=COALESCE($4,''))
         ORDER BY row_id LIMIT 1`, [card.row_id, local.id_juego, setId, card.collector_number || card.number || '']);
       const image = card.image_local_url || card.image_large_url || card.image_small_url || null;
       if (existing.rowCount) {
-        await client.query(`UPDATE gmx.tcg_cartas SET
+        await client.query(`UPDATE shiny.tcg_cartas SET
           master_card_id=$2,provider_code=$3,external_id=$4,id_juego=$5,id_set=$6,
           nombre=$7,numero_carta=$8,numero_completo=$9,rareza=$10,tipo_carta=$11,
           subtipo=$12,artista=$13,descripcion=$14,imagen_principal=$15,image_source_url=$16,
@@ -1089,7 +1099,7 @@ export async function installSelectedToOperational(gameCode, setCodes = []) {
         card.subtype, card.artist, card.description, image, card.image_large_url || card.image_small_url]
         );
       } else {
-        await client.query(`INSERT INTO gmx.tcg_cartas(
+        await client.query(`INSERT INTO shiny.tcg_cartas(
           id_carta,master_card_id,provider_code,external_id,id_juego,id_set,nombre,
           numero_carta,numero_completo,rareza,tipo_carta,subtipo,artista,descripcion,
           imagen_principal,image_source_url,estado_catalogo,fecha_creacion,fecha_actualizacion)
@@ -1109,11 +1119,19 @@ export async function installSelectedToOperational(gameCode, setCodes = []) {
 }
 
 export async function cardPriceComparison(masterCardId) {
-  const card = await query(`SELECT * FROM gmx.tcg_master_cards WHERE row_id=$1 LIMIT 1`, [masterCardId]);
+  const card = await query(`SELECT * FROM shiny.tcg_master_cards WHERE row_id=$1 LIMIT 1`, [masterCardId]);
   if (!card.rowCount) throw new Error('MASTER_CARD_NOT_FOUND');
-  const prices = await query(`SELECT * FROM gmx.tcg_card_price_current
-    WHERE master_card_id=$1 ORDER BY currency,price_provider,variant`, [masterCardId]);
-  return { card: card.rows[0], prices: prices.rows };
+  const prices = await query(`SELECT * FROM shiny.tcg_card_price_current
+    WHERE master_card_id=$1
+      AND UPPER(price_provider)='TCGPLAYER'
+    ORDER BY currency,variant`, [masterCardId]);
+  return {
+    card: card.rows[0],
+    prices: prices.rows,
+    price_source: 'TCGPLAYER',
+    strict_price_source: true,
+    tcgplayer_cached: Boolean(prices.rowCount)
+  };
 }
 
 
@@ -1127,8 +1145,8 @@ export async function listSyncedMasterCards({ gameCode = '', setCode = '', searc
   }
   values.push(Math.min(Math.max(Number(limit) || 100, 1), 300));
   return query(`SELECT c.*,
-      (SELECT COUNT(*)::bigint FROM gmx.tcg_card_price_current p WHERE p.master_card_id=c.row_id) AS price_sources
-    FROM gmx.tcg_master_cards c
+      (SELECT COUNT(*)::bigint FROM shiny.tcg_card_price_current p WHERE p.master_card_id=c.row_id) AS price_sources
+    FROM shiny.tcg_master_cards c
     ${filters.length ? 'WHERE ' + filters.join(' AND ') : ''}
     ORDER BY c.name,c.collector_number,c.row_id
     LIMIT $${values.length}`, values);
@@ -1153,8 +1171,8 @@ export function startTcgSyncScheduler() {
     schedulerRunning = true;
     try {
       const enabled = await query(`SELECT c.*,p.last_sets_sync_at,p.last_cards_sync_at,p.supports_cards
-        FROM gmx.tcg_sync_game_config c
-        JOIN gmx.tcg_sync_providers p ON p.game_code=c.game_code
+        FROM shiny.tcg_sync_game_config c
+        JOIN shiny.tcg_sync_providers p ON p.game_code=c.game_code
         WHERE c.enabled=true AND c.auto_sync_enabled=true`);
 
       for (const cfg of enabled.rows) {
@@ -1172,7 +1190,7 @@ export function startTcgSyncScheduler() {
             });
           }
         } catch (e) {
-          await query(`UPDATE gmx.tcg_sync_providers SET last_error=$2,status='ERROR' WHERE game_code=$1`, [
+          await query(`UPDATE shiny.tcg_sync_providers SET last_error=$2,status='ERROR' WHERE game_code=$1`, [
           cfg.game_code, String(e.message || e).slice(0, 500)]
           ).catch(() => {});
         }
@@ -1201,8 +1219,8 @@ export async function masterCatalogSummary() {
         COUNT(DISTINCT c.set_code)::bigint AS synced_sets_count,
         COUNT(DISTINCT CASE WHEN p.row_id IS NOT NULL THEN c.row_id END)::bigint AS cards_with_prices,
         MAX(c.last_synced_at) AS last_card_sync_at
-      FROM gmx.tcg_master_cards c
-      LEFT JOIN gmx.tcg_card_price_current p
+      FROM shiny.tcg_master_cards c
+      LEFT JOIN shiny.tcg_card_price_current p
         ON p.master_card_id=c.row_id
       GROUP BY c.game_code
     ),
@@ -1210,7 +1228,7 @@ export async function masterCatalogSummary() {
       SELECT
         s.id_juego AS game_code,
         COUNT(*)::bigint AS sets_count
-      FROM gmx.tcg_master_sets s
+      FROM shiny.tcg_master_sets s
       WHERE COALESCE(s.activo,true)=true
       GROUP BY s.id_juego
     )
@@ -1223,7 +1241,7 @@ export async function masterCatalogSummary() {
       COALESCE(cs.cards_count,0)::bigint AS cards_count,
       COALESCE(cs.cards_with_prices,0)::bigint AS cards_with_prices,
       cs.last_card_sync_at
-    FROM gmx.tcg_master_juegos g
+    FROM shiny.tcg_master_juegos g
     FULL OUTER JOIN card_stats cs
       ON cs.game_code=g.codigo
     FULL OUTER JOIN set_stats ss
@@ -1246,8 +1264,8 @@ export async function masterCatalogSets(gameCode, search = '') {
         COUNT(*)::bigint AS synced_cards,
         COUNT(DISTINCT CASE WHEN p.row_id IS NOT NULL THEN c.row_id END)::bigint AS cards_with_prices,
         MAX(c.last_synced_at) AS last_sync_at
-      FROM gmx.tcg_master_cards c
-      LEFT JOIN gmx.tcg_card_price_current p
+      FROM shiny.tcg_master_cards c
+      LEFT JOIN shiny.tcg_card_price_current p
         ON p.master_card_id=c.row_id
       WHERE c.game_code=$1
         AND (
@@ -1267,7 +1285,7 @@ export async function masterCatalogSets(gameCode, search = '') {
       COALESCE(d.synced_cards,0)::bigint AS synced_cards,
       COALESCE(d.cards_with_prices,0)::bigint AS cards_with_prices,
       d.last_sync_at
-    FROM gmx.tcg_master_sets s
+    FROM shiny.tcg_master_sets s
     FULL OUTER JOIN downloaded d
       ON d.codigo=s.codigo
     WHERE
@@ -1302,7 +1320,7 @@ export async function browseMasterCatalogCards({
 
   const where = filters.length ? `WHERE ${filters.join(' AND ')}` : '';
 
-  const count = await query(`SELECT COUNT(*)::bigint total FROM gmx.tcg_master_cards c ${where}`, vals);
+  const count = await query(`SELECT COUNT(*)::bigint total FROM shiny.tcg_master_cards c ${where}`, vals);
 
   const qvals = [...vals, safeSize, offset];
   const limitParam = `$${vals.length + 1}`;
@@ -1319,7 +1337,7 @@ export async function browseMasterCatalogCards({
       COUNT(DISTINCT p.price_provider)::bigint AS price_providers,
       MIN(p.market) FILTER (WHERE p.market IS NOT NULL) AS lowest_market_numeric,
 
-      /* GMX_TCGPLAYER_CATALOG_R3
+      /* SHINY_TCGPLAYER_CATALOG_R3
          Precio de referencia principal para Catalogo Maestro:
          TCGplayer en USD. El precio interno de tienda permanece separado.
       */
@@ -1349,16 +1367,16 @@ export async function browseMasterCatalogCards({
 
       (
         SELECT MIN(NULLIF(i.precio,0))
-        FROM gmx.tcg_cartas lc
-        JOIN gmx.tcg_inventario i
+        FROM shiny.tcg_cartas lc
+        JOIN shiny.tcg_inventario i
           ON i.id_carta=lc.id_carta
         WHERE lc.master_card_id=c.row_id
           AND COALESCE(i.precio,0)>0
       ) AS store_price_mxn
-    FROM gmx.tcg_master_cards c
-    LEFT JOIN gmx.tcg_master_sets s
+    FROM shiny.tcg_master_cards c
+    LEFT JOIN shiny.tcg_master_sets s
       ON s.id_juego=c.game_code AND s.codigo=c.set_code
-    LEFT JOIN gmx.tcg_card_price_current p
+    LEFT JOIN shiny.tcg_card_price_current p
       ON p.master_card_id=c.row_id
     ${where}
     GROUP BY c.row_id,s.nombre,s.fecha_lanzamiento
@@ -1390,9 +1408,87 @@ export async function masterCatalogRarities(gameCode = '', setCode = '', search 
   }
   return query(`
     SELECT c.rarity,COUNT(*)::bigint cards
-    FROM gmx.tcg_master_cards c
+    FROM shiny.tcg_master_cards c
     WHERE ${filters.join(' AND ')}
     GROUP BY c.rarity
     ORDER BY COUNT(*) DESC,c.rarity
   `, vals);
+}
+
+// SHINY_TCG_FX_PER_GAME_R1
+const SHINY_TCG_FX_DEFAULTS = Object.freeze({
+  POKEMON:15,
+  YUGIOH:17,
+  MAGIC:21,
+  RIFTBOUND:30
+});
+
+function shinyTcgFxDefault(gameCode){
+  const code=txt(gameCode).toUpperCase();
+  const rate=Number(SHINY_TCG_FX_DEFAULTS[code]||0);
+  return Number.isFinite(rate)&&rate>0?rate:null;
+}
+
+export async function getTcgExchangeRate(gameCode){
+  const code=txt(gameCode).toUpperCase();
+  if(!code){
+    return {game_code:'',available:false,rate:null,source:'SHINY_TCG',rate_date:null,message:'TCG_REQUIRED'};
+  }
+
+  const r=await query(`
+    SELECT source_preferences,updated_at
+    FROM shiny.tcg_sync_game_config
+    WHERE game_code=$1
+    LIMIT 1
+  `,[code]);
+
+  const prefs=r.rows[0]?.source_preferences||{};
+  const configured=Number(prefs?.usdMxnRate||0);
+  const fallback=shinyTcgFxDefault(code);
+  const rate=Number.isFinite(configured)&&configured>0?configured:fallback;
+
+  return {
+    game_code:code,
+    available:Number.isFinite(Number(rate))&&Number(rate)>0,
+    rate:rate?Number(rate):null,
+    source:(Number.isFinite(configured)&&configured>0)?'SHINY_TCG_CONFIG':'SHINY_TCG_DEFAULT',
+    rate_date:r.rows[0]?.updated_at||null,
+    message:rate?'':`Configura el TDC USD→MXN para ${code} en TCG → Auto Sync.`
+  };
+}
+
+export async function saveTcgExchangeRate(gameCode,input={}){
+  const code=txt(gameCode).toUpperCase();
+  const rate=Number(input?.rate);
+  if(!code)throw new Error('TCG_REQUIRED');
+  if(!Number.isFinite(rate)||rate<=0||rate>999)throw new Error('INVALID_TCG_FX_RATE');
+
+  const r=await query(`
+    INSERT INTO shiny.tcg_sync_game_config(game_code,source_preferences,updated_at)
+    VALUES(
+      $1,
+      jsonb_build_object(
+        'usdMxnRate',$2::numeric,
+        'usdMxnUpdatedAt',NOW()::text
+      ),
+      NOW()
+    )
+    ON CONFLICT(game_code) DO UPDATE SET
+      source_preferences=
+        COALESCE(shiny.tcg_sync_game_config.source_preferences,'{}'::jsonb)
+        || jsonb_build_object(
+          'usdMxnRate',$2::numeric,
+          'usdMxnUpdatedAt',NOW()::text
+        ),
+      updated_at=NOW()
+    RETURNING game_code,source_preferences,updated_at
+  `,[code,rate]);
+
+  return {
+    game_code:code,
+    available:true,
+    rate,
+    source:'SHINY_TCG_CONFIG',
+    rate_date:r.rows[0]?.updated_at||null
+  };
 }

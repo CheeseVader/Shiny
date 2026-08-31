@@ -5,7 +5,7 @@ import VisionCandidatePicker from '../components/VisionCandidatePicker.jsx';
 import { visionQueries, scoreVisionCandidate } from '../utils/vision.js';
 import ProductModal from '../components/ProductModal.jsx';
 import { R23BarList, R23Donut } from '../components/VisualKitR23.jsx';
-import '../phase_gmx_exact_views_r23.css';
+import '../phase_shiny_exact_views_r23.css';
 
 const PAGE_SIZE = 25;
 function money(v) {return Number(v || 0).toLocaleString('es-MX', { style: 'currency', currency: 'MXN' });}
@@ -27,7 +27,7 @@ function ProductThumb({ src, name }) {
   const value = String(src || '').trim();
 
   if (!value || failed) {
-    return <div className="admin-product-thumb"><span>{brandText("TCG_STORE_TEMPLATE")}</span></div>;
+    return <div className="admin-product-thumb"><span>{brandText("Shiny")}</span></div>;
   }
 
   return <div className="admin-product-thumb">
@@ -72,7 +72,7 @@ export default function ProductsPage() {
   const [visionDraft, setVisionDraft] = useState(null);
   const [visionLastResult, setVisionLastResult] = useState(null);
   const [message, setMessage] = useState('');
-  /* TCG_STORE_TEMPLATE_PRODUCT_IMAGE_BULK_R11 */
+  /* Shiny_PRODUCT_IMAGE_BULK_R11 */
   const [imageBulkBusy, setImageBulkBusy] = useState(false);
   const [imageBulkProgress, setImageBulkProgress] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -315,7 +315,7 @@ export default function ProductsPage() {
       return;
     }
     const confirmed = await window.tcg_store_templateConfirm(brandText(
-      `TCG_STORE_TEMPLATE validará stock e historial antes de procesar la baja de ${product.nombre || product.id}. Un producto con historial será desactivado, no eliminado.`),
+      `Shiny validará stock e historial antes de procesar la baja de ${product.nombre || product.id}. Un producto con historial será desactivado, no eliminado.`),
     {
       title: 'Baja segura de producto',
       confirmText: 'Procesar baja',
@@ -348,7 +348,7 @@ export default function ProductsPage() {
   }
   async function downloadDynamicTemplate() {
     try {
-      const token = localStorage.getItem('TCG_STORE_TEMPLATE_AUTH_TOKEN') || '';
+      const token = localStorage.getItem('Shiny_AUTH_TOKEN') || '';
       const response = await fetch('/api/v1/tcg/template.xlsx', {
         headers: { Authorization: `Bearer ${token}` },
         cache: 'no-store'
@@ -357,10 +357,10 @@ export default function ProductsPage() {
       const blob = await response.blob();
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
-      a.href = url;a.download = 'TCG_STORE_TEMPLATE_Plantillas_Importacion_Dinamica.xlsx';
+      a.href = url;a.download = 'Shiny_Plantillas_Importacion_Dinamica.xlsx';
       document.body.appendChild(a);a.click();a.remove();
       URL.revokeObjectURL(url);
-      window.tcg_store_templateNotify?.(brandText("Plantilla generada con el catálogo actual de TCG_STORE_TEMPLATE."), { type: 'success' });
+      window.tcg_store_templateNotify?.(brandText("Plantilla generada con el catálogo actual de Shiny."), { type: 'success' });
     } catch (e) {setMessage(e.message);}
   }
 

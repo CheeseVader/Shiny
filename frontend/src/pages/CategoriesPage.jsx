@@ -1,7 +1,7 @@
 import { brandText } from "../config/brand.js";import { useEffect, useMemo, useState } from 'react';
 import { api } from '../services/api.js';
 import { R23BarList, R23Donut } from '../components/VisualKitR23.jsx';
-import '../phase_gmx_exact_views_r23.css';
+import '../phase_shiny_exact_views_r23.css';
 import '../categories_icons_r75.css';
 
 const EMPTY = { id: '', nombre: '', estado: 'Activo' };
@@ -29,7 +29,7 @@ function CategoryR75Icon({ name = '' }) {
     bear: <><circle cx="7" cy="7" r="2"/><circle cx="17" cy="7" r="2"/><circle cx="12" cy="12" r="7"/><circle cx="10" cy="11" r=".7"/><circle cx="14" cy="11" r=".7"/><path d="M10 15c1.3 1 2.7 1 4 0"/></>,
     box: <><path d="M4 8l8-4 8 4-8 4-8-4Z"/><path d="M4 8v9l8 4 8-4V8M12 12v9"/></>
   };
-  return <span className={`gmx-r75-cat-icon ${kind}`}><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">{paths[kind]}</svg></span>;
+  return <span className={`shiny-r75-cat-icon ${kind}`}><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">{paths[kind]}</svg></span>;
 }
 
 
@@ -174,7 +174,7 @@ export default function CategoriesPage() {
             {visible.length ? visible.map((row) =>
             <tr key={row.id}>
                 <td>
-                  <div className="gmx-r75-category-name"><CategoryR75Icon name={row.nombre}/><div><strong>{row.nombre}</strong><div className="muted">{row.id}</div></div></div>
+                  <div className="shiny-r75-category-name"><CategoryR75Icon name={row.nombre}/><div><strong>{row.nombre}</strong><div className="muted">{row.id}</div></div></div>
                 </td>
                 <td><div className="category-count-visual"><span><strong>{Number(row.total_productos || 0)}</strong> producto(s)</span><i><b style={{ width: `${Math.max(Number(row.total_productos || 0) ? 5 : 0, (Number(row.total_productos || 0) / maxProducts) * 100)}%` }} /></i></div></td>
                 <td>
@@ -220,7 +220,7 @@ export default function CategoriesPage() {
             </select>
           </label>
 
-          {form.id ? <p className="muted" style={{ margin: 0 }}>{brandText("\n            Si cambias el nombre, TCG_STORE_TEMPLATE actualizará también los productos actualmente asociados a esta categoría.\n          ")}
+          {form.id ? <p className="muted" style={{ margin: 0 }}>{brandText("\n            Si cambias el nombre, Shiny actualizará también los productos actualmente asociados a esta categoría.\n          ")}
 
           </p> : null}
         </div>

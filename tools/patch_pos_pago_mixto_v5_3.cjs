@@ -2,12 +2,12 @@ const fs=require('fs');
 const path=require('path');
 const {spawnSync}=require('child_process');
 
-const root=process.argv[2]||'C:\\Users\\SrsGarciaEspinoza\\Videos\\GMX';
+const root=process.argv[2]||'C:\\Users\\SrsGarciaEspinoza\\Videos\\Shiny';
 const file=path.join(root,'frontend','src','pages','OrdersPage.jsx');
 if(!fs.existsSync(file)){console.error(`No se encontró ${file}`);process.exit(2);}
 
 let src=fs.readFileSync(file,'utf8');
-if(src.includes('GMX_POS_PAGO_MIXTO_001_V5_3')){
+if(src.includes('SHINY_POS_PAGO_MIXTO_001_V5_3')){
   console.log('POS-PAGO-MIXTO-001 V5.3 ya estaba aplicado.');
   process.exit(0);
 }
@@ -32,7 +32,7 @@ function replaceOnce(search,replacement,label){
 // 1) Marcador.
 replaceOnce(
   "export default function OrdersPage() {",
-  "export default function OrdersPage() {\n  // GMX_POS_PAGO_MIXTO_001_V5_3",
+  "export default function OrdersPage() {\n  // SHINY_POS_PAGO_MIXTO_001_V5_3",
   "component marker"
 );
 

@@ -8,8 +8,9 @@ import OrderDetailModal from '../components/OrderDetailModal.jsx';
 import MixedPaymentsPanel from '../components/MixedPaymentsPanel.jsx';
 import StoreSlideshow from '../components/public/StoreSlideshow.jsx';
 import { R23BarList } from '../components/VisualKitR23.jsx';
-import '../phase_gmx_exact_views_r23.css';
+import '../phase_shiny_exact_views_r23.css';
 import './OrdersPagePOSClassic.css';
+import useAdminBrand from '../hooks/useAdminBrand.js';
 
 import './OrdersPageOrdersR62.css';
 import './OrdersPageR75Integration.css';
@@ -38,7 +39,7 @@ function sanitizePaymentReference(value) {
 }
 
 export default function OrdersPage({ mode = '' }) {
-  // TCG_STORE_TEMPLATE_POS_PAGO_MIXTO_001_V5_3
+  // Shiny_POS_PAGO_MIXTO_001_V5_3
   const forcedMode = mode === 'orders' || mode === 'pos'
     ? mode
     : (typeof window !== 'undefined' && window.location.pathname.includes('/pedidos') ? 'orders' : 'pos');
@@ -97,7 +98,7 @@ export default function OrdersPage({ mode = '' }) {
   async function enterPosFullscreen() {
     if (!isOperator || posStandalone || posKioskMode || posFullscreen) return;
     if (!fullscreenCapable) {
-      setMessage(brandText("Este navegador no permite pantalla completa desde la página. Abre TCG_STORE_TEMPLATE como aplicación/PWA o en modo kiosco."));
+      setMessage(brandText("Este navegador no permite pantalla completa desde la página. Abre Shiny como aplicación/PWA o en modo kiosco."));
       return;
     }
     try {
@@ -158,9 +159,9 @@ export default function OrdersPage({ mode = '' }) {
       posExitAuthorizedRef.current = true;
       try {if (document.fullscreenElement) await document.exitFullscreen();} catch {}
       try {await api('/api/auth/logout', { method: 'POST' });} catch {}
-      localStorage.removeItem('TCG_STORE_TEMPLATE_AUTH_TOKEN');
-      localStorage.removeItem('TCG_STORE_TEMPLATE_AUTH_USER');
-      localStorage.removeItem('TCG_STORE_TEMPLATE_AUTH_ACCESS');
+      localStorage.removeItem('Shiny_AUTH_TOKEN');
+      localStorage.removeItem('Shiny_AUTH_USER');
+      localStorage.removeItem('Shiny_AUTH_ACCESS');
       window.location.assign('/login');
     } catch (error) {
       setPosExitError(error?.message === 'INVALID_CREDENTIALS' ? 'Contraseña incorrecta.' : String(error?.message || 'No fue posible autorizar la salida.'));
@@ -171,6 +172,7 @@ export default function OrdersPage({ mode = '' }) {
   const [manualDiscountType, setManualDiscountType] = useState('PORCENTAJE');
   const [manualDiscountValue, setManualDiscountValue] = useState(0);
   const [manualDiscountReason, setManualDiscountReason] = useState('');
+  const [manualDiscountPin, setManualDiscountPin] = useState('');
   const [loyalty, setLoyalty] = useState(null);
   const [saleType, setSaleType] = useState('ALL');
   const [tcgGames, setTcgGames] = useState([]);
@@ -212,7 +214,8 @@ export default function OrdersPage({ mode = '' }) {
   const [orderLookupBusy, setOrderLookupBusy] = useState(false);
   const [posSource, setPosSource] = useState(null);
   const [storefrontRuntime, setStorefrontRuntime] = useState({ zones: {}, settings: {}, promotions: [] });
-  const posBrandName = String(brandText('TCG_STORE_TEMPLATE') || 'GMX').trim() || 'GMX';
+  const posBrand = useAdminBrand();
+  const posBrandName = String(posBrand?.name || 'Shiny').trim() || 'Shiny';
   const [returnLauncherOpen, setReturnLauncherOpen] = useState(false);
   const scanInputRef = useRef(null);
   const cameraVideoRef = useRef(null);
@@ -227,7 +230,7 @@ export default function OrdersPage({ mode = '' }) {
     notes: '', reintegrateStock: true, busy: false, error: ''
   });
 
-  // TCG_STORE_TEMPLATE_POS_FIX_002
+  // Shiny_POS_FIX_002
   // Si una respuesta se pierde, el mismo payload reutiliza la misma clave.
   // Si carrito/pagos cambian, se genera una clave nueva.
   const [saleAttempt, setSaleAttempt] = useState({ key: '', fingerprint: '' });
@@ -370,8 +373,8 @@ export default function OrdersPage({ mode = '' }) {
   async function loadExternalPosContext() {
     if (typeof window === 'undefined' || forcedMode !== 'pos') return;
     const params = new URLSearchParams(window.location.search);
-    const pendingOrderId = String(params.get('order') || localStorage.getItem('GMX_POS_PENDING_ORDER') || '').trim();
-    const pendingReturnId = String(params.get('return') || localStorage.getItem('GMX_POS_PENDING_RETURN') || '').trim();
+    const pendingOrderId = String(params.get('order') || localStorage.getItem('SHINY_POS_PENDING_ORDER') || '').trim();
+    const pendingReturnId = String(params.get('return') || localStorage.getItem('SHINY_POS_PENDING_RETURN') || '').trim();
     if (!pendingOrderId && !pendingReturnId) return;
 
     try {
@@ -392,7 +395,7 @@ export default function OrdersPage({ mode = '' }) {
         setCart(orderDetailsToPosCart(order));
         setPosSource({ type: 'RETURN', id: pendingReturnId, reference, rowId: row.row_id, order, returnData });
         setMessage(`Devolución ${pendingReturnId} cargada en POS con ${order.detalles?.length || 0} partida(s).`);
-        localStorage.removeItem('GMX_POS_PENDING_RETURN');
+        localStorage.removeItem('SHINY_POS_PENDING_RETURN');
         return;
       }
 
@@ -408,14 +411,14 @@ export default function OrdersPage({ mode = '' }) {
       setNotes(order.notas || '');
       setPosSource({ type: 'ORDER', id: order.id_pedido, rowId: order.row_id, order });
       setMessage(`Pedido ${order.id_pedido} cargado en POS. Revisa los artículos y continúa con el cobro.`);
-      localStorage.removeItem('GMX_POS_PENDING_ORDER');
+      localStorage.removeItem('SHINY_POS_PENDING_ORDER');
     } catch (error) {
       setMessage(error.message || 'No fue posible cargar la operación en POS.');
     }
   }
 
   async function loadOrders(term = orderSearch) {
-    // TCG_STORE_TEMPLATE_POS_HIST_DEV_001
+    // Shiny_POS_HIST_DEV_001
     const params = new URLSearchParams({
       limit: '200',
       search: term
@@ -493,7 +496,7 @@ export default function OrdersPage({ mode = '' }) {
     const onKeyDown = (event) => {
       const key = String(event.key || '').toLowerCase();
 
-      // Salida normal protegida de TCG_STORE_TEMPLATE:
+      // Salida normal protegida de Shiny:
       // Ctrl + Alt + X abre el modal SIN abandonar Fullscreen.
       if (!(event.ctrlKey && event.altKey && key === 'x')) return;
       if (!posFullscreenEnteredRef.current && !posKioskMode || posExitAuthorizedRef.current) return;
@@ -721,7 +724,7 @@ export default function OrdersPage({ mode = '' }) {
 
     if (candidates.length === 1 && candidates[0].score >= 0.90) {
       addToCart(candidates[0]);
-      setMessage(brandText(`${candidates[0].name || candidates[0].sku} reconocido por TCG_STORE_TEMPLATE Vision y agregado al carrito.`));
+      setMessage(brandText(`${candidates[0].name || candidates[0].sku} reconocido por Shiny Vision y agregado al carrito.`));
       return;
     }
 
@@ -876,25 +879,25 @@ export default function OrdersPage({ mode = '' }) {
 
   useEffect(() => () => stopCamera(), []);
 
-  // TCG_STORE_TEMPLATE_POS_PAGO_MIXTO_001_V4 + POS-007
+  // Shiny_POS_PAGO_MIXTO_001_V4 + POS-007
   const totalBeforeManualDiscount = useMemo(() => {
     const raw = cart.reduce((sum, item) => sum + (Number(item.price) || 0) * (Number(item.quantity) || 0), 0);
     const previewTotal = Number(benefitPreview?.total);
     return Number.isFinite(previewTotal) ? Number(previewTotal.toFixed(4)) : Number(raw.toFixed(4));
   }, [cart, benefitPreview]);
 
-  const canUseManualDiscount = ['SUPERADMIN', 'ADMIN'].includes(String(currentUser?.rol || '').toUpperCase());
+  const canUseManualDiscount = true;
 
   const manualDiscountError = useMemo(() => {
     const value = Number(manualDiscountValue || 0);
     if (value <= 0) return '';
-    if (!canUseManualDiscount) return 'Tu usuario no tiene permiso para aplicar descuentos manuales.';
+    if (!/^\d{4}$/.test(String(manualDiscountPin || '').trim())) return 'Captura el código de autorización de 4 dígitos.';
     if (!['PORCENTAJE', 'MONTO'].includes(manualDiscountType)) return 'Selecciona un tipo de descuento válido.';
     if (manualDiscountType === 'PORCENTAJE' && value > 100) return 'El porcentaje no puede ser mayor a 100%.';
     if (manualDiscountType === 'MONTO' && value > totalBeforeManualDiscount) return 'El descuento no puede superar el total disponible.';
     if (!String(manualDiscountReason || '').trim()) return 'Captura el motivo del descuento manual.';
     return '';
-  }, [manualDiscountValue, manualDiscountType, manualDiscountReason, totalBeforeManualDiscount, canUseManualDiscount]);
+  }, [manualDiscountValue, manualDiscountType, manualDiscountReason, manualDiscountPin, totalBeforeManualDiscount, canUseManualDiscount]);
 
   const manualDiscountAmount = useMemo(() => {
     const value = Number(manualDiscountValue || 0);
@@ -988,7 +991,7 @@ export default function OrdersPage({ mode = '' }) {
     setMessage('');
     if (!cart.length) {setMessage('El carrito está vacío.');return;}
     const availablePoints = Math.max(0, Number(loyalty?.puntos_disponibles || 0));
-    if (clientId && availablePoints > 0 && Number(pointsToRedeem || 0) === 0) {
+    if (false && clientId && availablePoints > 0 && Number(pointsToRedeem || 0) === 0) {
       setPointsModalOpen(true);return;
     }
     setCheckoutModalOpen(true);
@@ -1054,6 +1057,7 @@ export default function OrdersPage({ mode = '' }) {
         manualDiscountType: Number(manualDiscountValue || 0) > 0 ? manualDiscountType : '',
         manualDiscountValue: Number(manualDiscountValue || 0),
         manualDiscountReason: Number(manualDiscountValue || 0) > 0 ? manualDiscountReason.trim() : '',
+        manualDiscountPin: Number(manualDiscountValue || 0) > 0 ? String(manualDiscountPin || '').trim() : '',
         items: cart.map((item) => ({
           itemType: item.item_type,
           itemId: item.item_id,
@@ -1090,7 +1094,7 @@ export default function OrdersPage({ mode = '' }) {
       setBenefitPreview(null);
       setManualDiscountType('PORCENTAJE');
       setManualDiscountValue(0);
-      setManualDiscountReason('');
+      setManualDiscountReason('');setManualDiscountPin('');
 
       await Promise.all([
       loadInventory(branchId),
@@ -1394,11 +1398,11 @@ export default function OrdersPage({ mode = '' }) {
     const paymentRows = Array.isArray(order?.pagos) ? order.pagos : [];
     const discounts = Number(order?.descuento_promocion || 0) + Number(order?.descuento_puntos || 0);
     const rows = details.map((x) => `<tr><td><b>${esc(x.producto || 'Artículo')}</b>${x.sku ? `<small>${esc(x.sku)}</small>` : ''}${String(x.tipo || '').toUpperCase() === 'TCG' && x.detalle ? `<small>${esc(x.detalle)}</small>` : ''}</td><td class="center">${Number(x.cantidad || 0)}</td><td class="right">${moneyLocal(x.precio_unitario || x.precio)}</td><td class="right"><b>${moneyLocal(x.subtotal)}</b></td></tr>`).join('');
-    return brandText(`<!doctype html><html><head><meta charset="utf-8"><title>TCG_STORE_TEMPLATE · ${esc(order?.id_pedido || 'Comprobante')}</title><style>
+    return brandText(`<!doctype html><html><head><meta charset="utf-8"><title>Shiny · ${esc(order?.id_pedido || 'Comprobante')}</title><style>
       *{box-sizing:border-box}body{font-family:Arial,sans-serif;color:#111;margin:0;padding:18px}.ticket{max-width:760px;margin:auto}.brand{text-align:center}.brand h1{margin:0;font-size:24px}.muted{color:#666;font-size:12px}
       .meta{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin:16px 0;padding:10px;border:1px solid #ddd;border-radius:8px}table{width:100%;border-collapse:collapse}th,td{padding:8px 5px;border-bottom:1px solid #ddd;font-size:12px;text-align:left}th{font-size:10px;text-transform:uppercase}.center{text-align:center}.right{text-align:right}small{display:block;color:#666;margin-top:2px}
       .totals{margin:16px 0 0 auto;max-width:300px}.totals div{display:flex;justify-content:space-between;padding:4px 0}.total{font-size:20px;border-top:2px solid #111;margin-top:4px;padding-top:9px!important}.pay{margin-top:16px;padding:10px;border:1px solid #ddd;border-radius:8px}.thanks{text-align:center;margin-top:20px;font-size:11px;color:#666}@media print{body{padding:0}.ticket{max-width:none}}@page{margin:10mm}
-      </style></head><body><div class="ticket"><div class="brand"><h1>TCG_STORE_TEMPLATE</h1><div>Ticket / comprobante de venta</div><div class="muted">${esc(order?.id_pedido || '')}</div></div>
+      </style></head><body><div class="ticket"><div class="brand"><h1>Shiny</h1><div>Ticket / comprobante de venta</div><div class="muted">${esc(order?.id_pedido || '')}</div></div>
       <div class="meta"><div><b>Fecha</b><br>${order?.fecha ? new Date(order.fecha).toLocaleString('es-MX') : '—'}</div><div><b>Sucursal</b><br>${esc(order?.sucursal || '—')}</div><div><b>Cliente</b><br>${esc(order?.nombre_cliente || 'Público general')}</div><div><b>Estado</b><br>${esc(order?.estado_pedido || '')}</div></div>
       <table><thead><tr><th>Artículo</th><th class="center">Cant.</th><th class="right">Precio</th><th class="right">Importe</th></tr></thead><tbody>${rows}</tbody></table>
       <div class="totals"><div><span>Subtotal</span><b>${moneyLocal(order?.subtotal)}</b></div>${discounts > 0 ? `<div><span>Descuentos</span><b>-${moneyLocal(discounts)}</b></div>` : ''}<div class="total"><b>Total</b><b>${moneyLocal(order?.total)}</b></div></div>
@@ -1407,7 +1411,7 @@ export default function OrdersPage({ mode = '' }) {
 
   function printReceipt(order, { pdf = false } = {}) {
     const win = window.open('', '_blank', 'width=900,height=760');
-    if (!win) {setMessage(brandText("El navegador bloqueó la ventana del comprobante. Permite ventanas emergentes para TCG_STORE_TEMPLATE."));return;}
+    if (!win) {setMessage(brandText("El navegador bloqueó la ventana del comprobante. Permite ventanas emergentes para Shiny."));return;}
     win.document.open();win.document.write(receiptHtml(order));win.document.close();win.focus();
     setTimeout(() => {if (pdf) setMessage('En el diálogo de impresión selecciona “Guardar como PDF”.');win.print();}, 250);
   }
@@ -1533,30 +1537,57 @@ export default function OrdersPage({ mode = '' }) {
         <div className="tcg_store_template-pos-fullscreen-card">
           <div className="tcg_store_template-pos-fullscreen-logo">{`${posBrandName} POS`}</div>
           <h2>Iniciar Punto de Venta</h2>
-          <p>{brandText("TCG_STORE_TEMPLATE necesita una confirmación del operador para activar la pantalla completa del navegador.")}</p>
+          <p>{brandText("Shiny necesita una confirmación del operador para activar la pantalla completa del navegador.")}</p>
           <button type="button" onClick={enterPosFullscreen}>⛶ Iniciar POS</button>
-          <small>{brandText("Desktop: Ctrl + Alt + X abre la salida protegida sin abandonar pantalla completa. Tablet/móvil: mantén presionado TCG_STORE_TEMPLATE POS durante 5 segundos. La salida requiere contraseña.")}</small>
+          <small>{brandText("Desktop: Ctrl + Alt + X abre la salida protegida sin abandonar pantalla completa. Tablet/móvil: mantén presionado Shiny POS durante 5 segundos. La salida requiere contraseña.")}</small>
         </div>
       </div> : null}
-      {forcedMode === 'pos' && isOperator && posExitOpen ? <div className="tcg_store_template-pos-exit-lock" role="dialog" aria-modal="true" aria-label="Salida protegida del punto de venta">
-        <form className="tcg_store_template-pos-exit-card" onSubmit={authorizeProtectedPosExit}>
+      {forcedMode === 'pos' && isOperator && posExitOpen ? <div
+        className="tcg_store_template-pos-exit-lock"
+        role="dialog"
+        aria-modal="true"
+        aria-label="Â¿Salir del punto de venta? del punto de venta"
+        style={{
+          position:'fixed',
+          inset:0,
+          zIndex:2147483000,
+          display:'grid',
+          placeItems:'center',
+          padding:'24px',
+          background:'rgba(4,10,22,.72)',
+          backdropFilter:'blur(8px)',
+          WebkitBackdropFilter:'blur(8px)'
+        }}
+      >
+        <form
+          className="tcg_store_template-pos-exit-card"
+          onSubmit={authorizeProtectedPosExit}
+          style={{
+            width:'min(520px,calc(100vw - 32px))',
+            maxHeight:'calc(100vh - 48px)',
+            overflow:'auto',
+            display:'grid',
+            gap:'16px',
+            margin:0,
+            padding:'28px',
+            border:'1px solid #d9e1ec',
+            borderRadius:'20px',
+            background:'#fff',
+            color:'#172033',
+            boxShadow:'0 30px 90px rgba(2,8,23,.36)'
+          }}
+        >
           <div className="tcg_store_template-pos-exit-shield">{`${posBrandName} POS`}</div>
-          <h2>Salida protegida</h2>
-          <p>El punto de venta está bloqueado. Usa Volver a pantalla completa para continuar, o autoriza la salida con la contraseña del operador.</p>
-          <div className="tcg_store_template-pos-exit-context">
-            <span><small>Operador</small><strong>{currentUser?.nombre || currentUser?.email || 'Usuario'}</strong></span>
-            <span><small>Sucursal</small><strong>{branches.find((b) => String(b.id_sucursal) === String(operatorBranchId))?.nombre_sucursal || 'Sin sucursal'}</strong></span>
-          </div>
-          <label>Contraseña
-            <input type="password" autoFocus autoComplete="current-password" value={posExitPassword} onChange={(e) => setPosExitPassword(e.target.value)} disabled={posExitBusy} />
+          <h2>¿Salir del punto de venta?</h2>
+          <p>Ingresa tu contraseña para cerrar la sesión.</p>
+<label>Contraseña<input type="password" autoFocus autoComplete="current-password" value={posExitPassword} onChange={(e) => setPosExitPassword(e.target.value)} disabled={posExitBusy} />
           </label>
           {posExitError ? <div className="tcg_store_template-pos-exit-error">{posExitError}</div> : null}
           <div className="tcg_store_template-pos-exit-actions">
-            <button type="button" className="secondary" onClick={cancelProtectedPosExit} disabled={posExitBusy}>Volver a pantalla completa</button>
-            <button type="submit" className="danger" disabled={posExitBusy || !posExitPassword}>{posExitBusy ? 'Validando…' : 'Autorizar salida'}</button>
+            <button type="button" className="secondary" onClick={cancelProtectedPosExit} disabled={posExitBusy}>Continuar en POS</button>
+            <button type="submit" className="danger" disabled={posExitBusy || !posExitPassword}>Salir de sesión</button>
           </div>
-          <small className="tcg_store_template-pos-exit-help">La salida autorizada cerrará esta sesión del operador.</small>
-        </form>
+</form>
       </div> : null}
       <section className={`content-card ${forcedMode === 'pos' ? 'tcg_store_template-pos-host' : ''}`}>
         {forcedMode === 'pos' ? <div className="section-head">
@@ -1581,8 +1612,8 @@ export default function OrdersPage({ mode = '' }) {
 
         {tab === 'pos' ?
         <div className="tcg_store_template-pos-terminal">
-            {posSource ? <div className={`gmx-r75-pos-source ${posSource.type === 'RETURN' ? 'return' : 'order'}`}>
-              <div className="gmx-r75-pos-source-icon">{posSource.type === 'RETURN' ? '↩' : '▤'}</div>
+            {posSource ? <div className={`shiny-r75-pos-source ${posSource.type === 'RETURN' ? 'return' : 'order'}`}>
+              <div className="shiny-r75-pos-source-icon">{posSource.type === 'RETURN' ? '↩' : '▤'}</div>
               <div><span>{posSource.type === 'RETURN' ? 'DEVOLUCIÓN CARGADA' : 'PEDIDO CARGADO'}</span><strong>{posSource.id}</strong><small>{posSource.order?.nombre_cliente || 'Público general'} · {(posSource.order?.detalles || []).length} partida(s) · {money(posSource.order?.total)}</small></div>
               <button type="button" onClick={()=>{setPosSource(null);setCart([]);window.history.replaceState({},'', '/admin/pos');}}>×</button>
             </div> : null}
@@ -1605,8 +1636,8 @@ export default function OrdersPage({ mode = '' }) {
 
             <div className="tcg_store_template-pos-workspace">
               <main className="tcg_store_template-pos-left">
-                <div className="tcg_store_template-pos-searchbar gmx-r78-universal-searchbar">
-                  <div className={`tcg_store_template-pos-search-input-wrap gmx-r78-universal-search ${scanMode ? 'scan-active' : ''}`}>
+                <div className="tcg_store_template-pos-searchbar shiny-r78-universal-searchbar">
+                  <div className={`tcg_store_template-pos-search-input-wrap shiny-r78-universal-search ${scanMode ? 'scan-active' : ''}`}>
                     <span className="tcg_store_template-pos-search-icon">⌕</span>
                     <input
                       ref={scanInputRef}
@@ -1619,7 +1650,7 @@ export default function OrdersPage({ mode = '' }) {
                       }}
                       placeholder="Buscar por SKU, nombre, carta, código, pedido, DEV, pedimento, folio o referencia…"
                       autoComplete="off" />
-                    <button type="button" className="gmx-r78-search-camera" title="Cámara / QR" aria-label="Abrir cámara o QR" onClick={openCameraScanner}>⌗</button>
+                    <button type="button" className="shiny-r78-search-camera" title="Cámara / QR" aria-label="Abrir cámara o QR" onClick={openCameraScanner}>⌗</button>
                     <VisionScannerModal
                       open={visionOpen}
                       title="Reconocer producto o carta"
@@ -1641,7 +1672,7 @@ export default function OrdersPage({ mode = '' }) {
 
                 <section className="tcg_store_template-pos-items-panel">
                   <div className="tcg_store_template-pos-panel-title">
-                    <strong>ARTÍCULOS <span className="gmx-r78-count-badge">{cart.length}</span></strong>
+                    <strong>ARTÍCULOS <span className="shiny-r78-count-badge">{cart.length}</span></strong>
                   </div>
 
                   <div className="tcg_store_template-pos-cart-table-wrap">
@@ -1654,7 +1685,7 @@ export default function OrdersPage({ mode = '' }) {
                           <td>{index + 1}</td>
                           <td>
                             <div className="tcg_store_template-pos-cart-product">
-                              <div className="tcg_store_template-pos-cart-thumb">{item.image_url ? <img src={item.image_url} alt="" /> : <span>{item.item_type === 'TCG' ? 'TCG' : brandText("TCG_STORE_TEMPLATE")}</span>}</div>
+                              <div className="tcg_store_template-pos-cart-thumb">{item.image_url ? <img src={item.image_url} alt="" /> : <span>{item.item_type === 'TCG' ? 'TCG' : brandText("Shiny")}</span>}</div>
                               <div><strong>{item.name}</strong><small>{item.sku || item.item_id || ''}</small></div>
                             </div>
                           </td>
@@ -1673,8 +1704,8 @@ export default function OrdersPage({ mode = '' }) {
                         {manualDiscountAmount > 0 ? <tr className="tcg_store_template-pos-adjustment-row manual"><td>🔒</td><td><strong>Descuento manual · {manualDiscountType === 'PORCENTAJE' ? `${manualDiscountValue}%` : money(manualDiscountValue)}</strong><small>{manualDiscountReason || 'Autorizado'}</small></td><td></td><td></td><td><strong>-{money(manualDiscountAmount)}</strong></td><td><button type="button" className="tcg_store_template-pos-trash" onClick={() => {setManualDiscountValue(0);setManualDiscountReason('');}}>×</button></td></tr> : null}
                       </tbody>
                     </table>
-                    {!cart.length ? <div className="tcg_store_template-pos-empty gmx-r78-cart-empty">
-                      <span className="gmx-r78-empty-cart-icon">⌑</span>
+                    {!cart.length ? <div className="tcg_store_template-pos-empty shiny-r78-cart-empty">
+                      <span className="shiny-r78-empty-cart-icon">⌑</span>
                       <strong>Carrito vacío</strong>
                       <span>Busca y agrega artículos para comenzar.</span>
                     </div> : null}
@@ -1702,10 +1733,10 @@ export default function OrdersPage({ mode = '' }) {
                   {Math.max(0, Number(total || 0) - Number(saleTotal || 0)) > 0 ? <div className="tcg_store_template-pos-savings"><span>🏷 Ahorro total</span><strong>-{money(Math.max(0, Number(total || 0) - Number(saleTotal || 0)))}</strong></div> : null}
                 </section>
 
-                <section className="gmx-r78-pos-hero-card">
+                <section className="shiny-r78-pos-hero-card">
                   {(storefrontRuntime?.zones?.HOME_HERO || []).length
                     ? <StoreSlideshow slides={storefrontRuntime.zones.HOME_HERO || []} settings={storefrontRuntime.settings || {}} variant="hero" />
-                    : <div className="gmx-r78-pos-hero-fallback">
+                    : <div className="shiny-r78-pos-hero-fallback">
                         <span>{posBrandName} · BENEFICIOS</span>
                         <strong>Promociones de temporada</strong>
                         <p>El slideshow de la tienda aparecerá aquí cuando exista un Hero publicado.</p>
@@ -1714,25 +1745,25 @@ export default function OrdersPage({ mode = '' }) {
               </aside>
             </div>
 
-            <div className="tcg_store_template-pos-actions gmx-r78-pos-actions">
-              <button type="button" className="tcg_store_template-pos-action" onClick={() => {setCatalogBranchId(branchId);setProductSearch('');setCatalogOpen(true);}}><span className="gmx-r78-action-icon">◇</span>Catálogo / Existencias</button>
-              <button type="button" className="tcg_store_template-pos-action" onClick={() => {setClientSearch('');setClientSearchOpen(false);setClientModalOpen(true);}}><span className="gmx-r78-action-icon">◉</span>{clientId ? 'Cliente seleccionado' : 'Cliente'}</button>
-              <button type="button" className="tcg_store_template-pos-action" disabled={!canUseManualDiscount} onClick={() => setDiscountModalOpen(true)}><span className="gmx-r78-action-icon">%</span>Descuento</button>
-              <button type="button" className="tcg_store_template-pos-action" onClick={() => setPromoModalOpen(true)}><span className="gmx-r78-action-icon">◇</span>Promoción</button>
-              <button type="button" className="tcg_store_template-pos-action" onClick={() => setNotesModalOpen(true)}><span className="gmx-r78-action-icon">▢</span>Observaciones</button>
-              <button type="button" className="tcg_store_template-pos-action gmx-r78-return-action" onClick={openReturnLauncher}><span className="gmx-r78-action-icon">↩</span>Devoluciones</button>
+            <div className="tcg_store_template-pos-actions shiny-r78-pos-actions">
+              <button type="button" className="tcg_store_template-pos-action" onClick={() => {setCatalogBranchId(branchId);setProductSearch('');setCatalogOpen(true);}}><span className="shiny-r78-action-icon">◇</span>Catálogo / Existencias</button>
+              <button type="button" className="tcg_store_template-pos-action" onClick={() => {setClientSearch('');setClientSearchOpen(false);setClientModalOpen(true);}}><span className="shiny-r78-action-icon">◉</span>{clientId ? 'Cliente seleccionado' : 'Cliente'}</button>
+              <button type="button" className="tcg_store_template-pos-action" disabled={!canUseManualDiscount} onClick={() => setDiscountModalOpen(true)}><span className="shiny-r78-action-icon">%</span>Descuento</button>
+              <button type="button" className="tcg_store_template-pos-action" onClick={() => setPromoModalOpen(true)}><span className="shiny-r78-action-icon">◇</span>Promoción</button>
+              <button type="button" className="tcg_store_template-pos-action" onClick={() => setNotesModalOpen(true)}><span className="shiny-r78-action-icon">▢</span>Observaciones</button>
+              <button type="button" className="tcg_store_template-pos-action shiny-r78-return-action" onClick={openReturnLauncher}><span className="shiny-r78-action-icon">↩</span>Devoluciones</button>
               <button className="tcg_store_template-pos-charge" type="button" onClick={checkout} disabled={!cart.length || Boolean(manualDiscountError)}>
                 <span>COBRAR</span><strong>{money(saleTotal)}</strong>
               </button>
             </div>
 
-            {returnLauncherOpen ? <div className="modal-backdrop gmx-r78-return-launcher-backdrop" onMouseDown={() => setReturnLauncherOpen(false)}>
-              <div className="modal gmx-r78-return-launcher" onMouseDown={(e) => e.stopPropagation()}>
+            {returnLauncherOpen ? <div className="modal-backdrop shiny-r78-return-launcher-backdrop" onMouseDown={() => setReturnLauncherOpen(false)}>
+              <div className="modal shiny-r78-return-launcher" onMouseDown={(e) => e.stopPropagation()}>
                 <div className="modal-head">
                   <div><div className="eyebrow">DEVOLUCIONES · POS</div><h2>¿Qué deseas devolver?</h2><p>Selecciona el origen de la operación.</p></div>
                   <button className="icon-btn" type="button" onClick={() => setReturnLauncherOpen(false)}>×</button>
                 </div>
-                <div className="gmx-r78-return-choice-grid">
+                <div className="shiny-r78-return-choice-grid">
                   <button type="button" onClick={startSaleReturnLookup}>
                     <span>↩</span><strong>Devolución de venta</strong><small>Productos vendidos desde POS o pedidos.</small>
                   </button>
@@ -1740,7 +1771,7 @@ export default function OrdersPage({ mode = '' }) {
                     <span>▦</span><strong>Devolución de compra</strong><small>Recepción / proveedor · pendiente de flujo backend.</small>
                   </button>
                 </div>
-                <div className="gmx-r78-return-launcher-note">Las devoluciones de venta solicitarán el código de autorización de 4 dígitos únicamente cuando el perfil actual no tenga privilegios para autorizar.</div>
+                <div className="shiny-r78-return-launcher-note">Las devoluciones de venta solicitarán el código de autorización de 4 dígitos únicamente cuando el perfil actual no tenga privilegios para autorizar.</div>
               </div>
             </div> : null}
 
@@ -1772,9 +1803,10 @@ export default function OrdersPage({ mode = '' }) {
             {discountModalOpen ? <div className="modal-backdrop" onMouseDown={() => setDiscountModalOpen(false)}><div className="modal tcg_store_template-pos-action-modal" onMouseDown={(e) => e.stopPropagation()}>
               <div className="modal-head"><div><div className="eyebrow">DESCUENTO MANUAL</div><h2>Aplicar descuento</h2></div><button className="icon-btn" type="button" onClick={() => setDiscountModalOpen(false)}>×</button></div>
               <div className="tcg_store_template-pos-modal-grid"><label>Tipo<select value={manualDiscountType} onChange={(e) => setManualDiscountType(e.target.value)}><option value="PORCENTAJE">Porcentaje (%)</option><option value="MONTO">Monto ($)</option></select></label><label>{manualDiscountType === 'PORCENTAJE' ? 'Porcentaje' : 'Monto'}<input type="number" onKeyDown={blockInvalidMoneyKey} onPaste={blockInvalidMoneyPaste} min="0" max={manualDiscountType === 'PORCENTAJE' ? '100' : undefined} step="0.01" value={manualDiscountValue} onChange={(e) => setManualDiscountValue(Math.max(0, Number(e.target.value || 0)))} /></label></div>
-              <label>Motivo / autorización<input value={manualDiscountReason} onChange={(e) => setManualDiscountReason(e.target.value)} placeholder="Motivo obligatorio" /></label>
+              <label>Motivo<input value={manualDiscountReason} onChange={(e) => setManualDiscountReason(e.target.value)} placeholder="Motivo obligatorio" /></label>
+              <label>Código de autorización<input inputMode="numeric" autoComplete="one-time-code" maxLength={4} value={manualDiscountPin} onChange={(e) => setManualDiscountPin(String(e.target.value || '').replace(/\D/g,'').slice(0,4))} placeholder="4 dígitos" /></label>
               {Number(manualDiscountValue || 0) > 0 ? <div className="benefit-summary"><span>Base <b>{money(totalBeforeManualDiscount)}</b></span><span>Descuento <b>-{money(manualDiscountAmount)}</b></span><strong>Total final {money(saleTotal)}</strong>{manualDiscountError ? <span className="danger-text">{manualDiscountError}</span> : null}</div> : null}
-              <div className="tcg_store_template-pos-modal-actions"><button type="button" className="secondary" onClick={() => {setManualDiscountValue(0);setManualDiscountReason('');setDiscountModalOpen(false);}}>Quitar descuento</button><button type="button" disabled={Boolean(manualDiscountError) || Number(manualDiscountValue || 0) <= 0} onClick={() => setDiscountModalOpen(false)}>Aplicar</button></div>
+              <div className="tcg_store_template-pos-modal-actions"><button type="button" className="secondary" onClick={() => {setManualDiscountValue(0);setManualDiscountReason('');setManualDiscountPin('');setDiscountModalOpen(false);}}>Quitar descuento</button><button type="button" disabled={Boolean(manualDiscountError) || Number(manualDiscountValue || 0) <= 0} onClick={() => setDiscountModalOpen(false)}>Aplicar</button></div>
             </div></div> : null}
 
             {promoModalOpen ? <div className="modal-backdrop" onMouseDown={() => setPromoModalOpen(false)}><div className="modal tcg_store_template-pos-action-modal" onMouseDown={(e) => e.stopPropagation()}>
@@ -1949,7 +1981,7 @@ export default function OrdersPage({ mode = '' }) {
                   const viewingOtherBranch = !isOperator && Boolean(catalogBranchId && branchId && catalogBranchId !== branchId);
                   const fresh = catalogAddFeedback?.key === key && !catalogAddFeedback?.blocked;
                   return <article className={`tcg_store_template-pos-modal-item ${fresh ? 'just-added' : ''} ${qty > 0 ? 'in-cart' : ''}`} key={key}>
-                      <div className="tcg_store_template-pos-modal-thumb">{item.image_url ? <img src={item.image_url} alt={item.name} /> : <span>{item.item_type === 'TCG' ? 'TCG' : brandText("TCG_STORE_TEMPLATE")}</span>}</div>
+                      <div className="tcg_store_template-pos-modal-thumb">{item.image_url ? <img src={item.image_url} alt={item.name} /> : <span>{item.item_type === 'TCG' ? 'TCG' : brandText("Shiny")}</span>}</div>
                       <div className="tcg_store_template-pos-modal-main"><small>{item.item_type === 'TCG' ? 'CARTA TCG' : 'PRODUCTO'}</small><strong>{item.name}</strong><span>{[item.sku, item.game_name, item.set_name, item.card_number].filter(Boolean).join(' · ')}</span><em>Existencia {item.stock ?? 0}{qty > 0 ? ` · En carrito ${qty}` : ''}</em></div>
                       <strong className="tcg_store_template-pos-modal-price">{money(item.price)}</strong>
                       <button
@@ -1966,16 +1998,16 @@ export default function OrdersPage({ mode = '' }) {
             </div> : null}
           </div> :
         null}
-        {forcedMode === 'orders' ? <div className="gmx-orders-r61">
+        {forcedMode === 'orders' ? <div className="shiny-orders-r61">
 
-          <div className="gmx-orders-pagehead">
+          <div className="shiny-orders-pagehead">
             <span>VENTAS</span>
             <h2>Pedidos</h2>
             <p>Gestión de pedidos y ventas</p>
           </div>
 
-          <div className="gmx-orders-shell">
-            <div className="gmx-orders-darkhead">
+          <div className="shiny-orders-shell">
+            <div className="shiny-orders-darkhead">
               <strong>PEDIDOS</strong>
               <div>
                 <label><span>Sucursal</span>
@@ -1989,8 +2021,8 @@ export default function OrdersPage({ mode = '' }) {
               </div>
             </div>
 
-            <div className="gmx-orders-body">
-              <div className="gmx-orders-toolbar">
+            <div className="shiny-orders-body">
+              <div className="shiny-orders-toolbar">
                 <form onSubmit={(e)=>{e.preventDefault();loadOrders(orderSearch).catch(error=>setMessage(error.message));}}>
                   <span>⌕</span>
                   <input value={orderSearch} onChange={(e)=>setOrderSearch(e.target.value)} placeholder="Buscar pedido por folio, cliente, estatus..." />
@@ -2004,9 +2036,9 @@ export default function OrdersPage({ mode = '' }) {
                 <button type="button" className="new-order" onClick={()=>window.location.assign('/admin/pos')}>＋ Nuevo pedido</button>
               </div>
 
-              <div className="gmx-orders-layout">
+              <div className="shiny-orders-layout">
                 <main>
-                  <div className="gmx-orders-kpis">
+                  <div className="shiny-orders-kpis">
                     <article><i className="blue">▤</i><div><span>Todos los pedidos</span><strong>{orderUi.counts.all}</strong><small>Total</small></div></article>
                     <article><i className="amber">◷</i><div><span>Pendientes</span><strong>{orderUi.counts.pending}</strong><small>{orderUi.counts.all ? Math.round(orderUi.counts.pending/orderUi.counts.all*100) : 0}% del total</small></div></article>
                     <article><i className="blue">↻</i><div><span>En proceso</span><strong>{orderUi.counts.process}</strong><small>{orderUi.counts.all ? Math.round(orderUi.counts.process/orderUi.counts.all*100) : 0}% del total</small></div></article>
@@ -2014,9 +2046,9 @@ export default function OrdersPage({ mode = '' }) {
                     <article><i className="red">×</i><div><span>Cancelados</span><strong>{orderUi.counts.cancelled}</strong><small>{orderUi.counts.all ? Math.round(orderUi.counts.cancelled/orderUi.counts.all*100) : 0}% del total</small></div></article>
                   </div>
 
-                  <section className="gmx-orders-list">
-                    <div className="gmx-orders-listtitle">Listado de pedidos ({orderUi.filtered.length})</div>
-                    <div className="gmx-orders-tablewrap">
+                  <section className="shiny-orders-list">
+                    <div className="shiny-orders-listtitle">Listado de pedidos ({orderUi.filtered.length})</div>
+                    <div className="shiny-orders-tablewrap">
                       <table>
                         <thead><tr><th>Folio</th><th>Fecha</th><th>Cliente</th><th>Total</th><th>Estatus</th><th>Operador</th><th>Acciones</th></tr></thead>
                         <tbody>
@@ -2027,19 +2059,19 @@ export default function OrdersPage({ mode = '' }) {
                               <td>{order.fecha?new Date(order.fecha).toLocaleString('es-MX'):'—'}</td>
                               <td>{order.nombre_cliente||'Público general'}</td>
                               <td><strong>{money(order.total)}</strong></td>
-                              <td><span className={`gmx-order-status ${cls}`}>{label}</span></td>
+                              <td><span className={`shiny-order-status ${cls}`}>{label}</span></td>
                               <td>{order.nombre_usuario||order.operador||order.usuario||currentUser?.nombre||'—'}</td>
-                              <td><div className="gmx-order-actions">
+                              <td><div className="shiny-order-actions">
                                 <button type="button" onClick={()=>openOrder(order.row_id)}>Ver</button>
                                 {String(order.estado_pedido||'').toUpperCase()==='PENDIENTE' ?
                                   <button type="button" className="pay" onClick={()=>{
-                                    try{localStorage.setItem('GMX_POS_PENDING_ORDER',String(order.id_pedido||''));}catch{}
+                                    try{localStorage.setItem('SHINY_POS_PENDING_ORDER',String(order.id_pedido||''));}catch{}
                                     window.location.assign(`/admin/pos?order=${encodeURIComponent(order.id_pedido||'')}`);
                                   }}>Cobrar en POS</button>:null}
                               </div></td>
                             </tr>
                           })}
-                          {!orderUi.paged.length?<tr><td colSpan="7"><div className="gmx-orders-empty">
+                          {!orderUi.paged.length?<tr><td colSpan="7"><div className="shiny-orders-empty">
                             <span>▤</span>
                             <strong>No hay pedidos registrados</strong>
                             <p>Los pedidos que registres aparecerán aquí.</p>
@@ -2049,7 +2081,7 @@ export default function OrdersPage({ mode = '' }) {
                       </table>
                     </div>
 
-                    <footer className="gmx-orders-pagination">
+                    <footer className="shiny-orders-pagination">
                       <span>Mostrando {orderUi.filtered.length ? orderUi.start+1 : 0} a {Math.min(orderUi.start+orderPageSize,orderUi.filtered.length)} de {orderUi.filtered.length} pedidos</span>
                       <div>
                         <button type="button" disabled={orderUi.safePage<=1} onClick={()=>setOrderPage(p=>Math.max(1,p-1))}>‹</button>
@@ -2065,7 +2097,7 @@ export default function OrdersPage({ mode = '' }) {
                   </section>
                 </main>
 
-                <aside className="gmx-orders-side">
+                <aside className="shiny-orders-side">
                   <section>
                     <h3>RESUMEN</h3>
                     <div><span>Pedidos hoy</span><b>{orderUi.todayCount}</b></div>
@@ -2110,7 +2142,7 @@ export default function OrdersPage({ mode = '' }) {
           </div>
           {returnFlow.error ? <div className="tcg_store_template-pos-return-error" role="alert">{returnFlow.error}</div> : null}
 
-          {returnFlow.stage === 'auth' ? <div className="tcg_store_template-pos-return-auth gmx-r77-pin-auth">
+          {returnFlow.stage === 'auth' ? <div className="tcg_store_template-pos-return-auth shiny-r77-pin-auth">
             <div className="tcg_store_template-pos-return-security"><strong>Autorización requerida</strong><span>Solicita a un administrador autorizado un código temporal de 4 dígitos. El código es de un solo uso y vence en 5 minutos.</span></div>
             <div className="tcg_store_template-pos-return-order-summary">
               <div><span>Pedido</span><strong>{returnFlow.order?.id_pedido}</strong></div>
@@ -2119,8 +2151,8 @@ export default function OrdersPage({ mode = '' }) {
               <div><span>Total</span><strong>{money(returnFlow.order?.total)}</strong></div>
             </div>
             <div className="tcg_store_template-pos-return-fields tcg_store_template-pos-return-auth-fields">
-              <label className="tcg_store_template-pos-return-password-label gmx-r77-pin-label">Código de autorización
-                <input className="tcg_store_template-pos-return-password-input gmx-r77-pin-input" type="text" inputMode="numeric" pattern="[0-9]*" maxLength="4" autoFocus autoComplete="one-time-code" value={returnFlow.password} onChange={(e) => setReturnFlow((c) => ({ ...c, password: e.target.value.replace(/\D/g, '').slice(0, 4), error: '' }))} onKeyDown={(e) => {if (e.key === 'Enter' && !returnFlow.busy) authorizeReturnInPOS();}} placeholder="••••" disabled={returnFlow.busy} />
+              <label className="tcg_store_template-pos-return-password-label shiny-r77-pin-label">Código de autorización
+                <input className="tcg_store_template-pos-return-password-input shiny-r77-pin-input" type="text" inputMode="numeric" pattern="[0-9]*" maxLength="4" autoFocus autoComplete="one-time-code" value={returnFlow.password} onChange={(e) => setReturnFlow((c) => ({ ...c, password: e.target.value.replace(/\D/g, '').slice(0, 4), error: '' }))} onKeyDown={(e) => {if (e.key === 'Enter' && !returnFlow.busy) authorizeReturnInPOS();}} placeholder="••••" disabled={returnFlow.busy} />
               </label>
             </div>
             <div className="tcg_store_template-pos-return-actions"><button type="button" className="secondary" disabled={returnFlow.busy} onClick={closeReturnFlow}>Cancelar</button><button type="button" disabled={returnFlow.busy} onClick={authorizeReturnInPOS}>{returnFlow.busy ? 'Validando código…' : 'Autorizar devolución'}</button></div>
@@ -2192,7 +2224,7 @@ export default function OrdersPage({ mode = '' }) {
             </label>
           </div>
 
-          <div className="pos-payment-warning">{brandText("\n            Al confirmar, TCG_STORE_TEMPLATE volverá a validar el stock, descontará el inventario y cambiará el pedido a PAGADO.\n          ")}
+          <div className="pos-payment-warning">{brandText("\n            Al confirmar, Shiny volverá a validar el stock, descontará el inventario y cambiará el pedido a PAGADO.\n          ")}
 
           </div>
 

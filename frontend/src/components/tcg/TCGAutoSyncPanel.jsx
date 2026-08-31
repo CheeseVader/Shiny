@@ -34,7 +34,7 @@ export default function TCGAutoSyncPanel() {
   const [iconBusy, setIconBusy] = useState('');
   const [setSort, setSetSort] = useState('AZ');
   const [selectedGames, setSelectedGames] = useState(()=>{
-    try{return JSON.parse(localStorage.getItem('GMX_AUTO_SYNC_SELECTED_GAMES')||'[]');}
+    try{return JSON.parse(localStorage.getItem('SHINY_AUTO_SYNC_SELECTED_GAMES')||'[]');}
     catch{return [];}
   });
 
@@ -50,10 +50,10 @@ export default function TCGAutoSyncPanel() {
         next[key.slice('tcg.icon.'.length)]=String(row.valor||'');
       }
       setTcgIcons(next);
-      try{localStorage.setItem('GMX_TCG_ICONS_CACHE',JSON.stringify(next));}catch{}
+      try{localStorage.setItem('SHINY_TCG_ICONS_CACHE',JSON.stringify(next));}catch{}
     } catch {
       try{
-        setTcgIcons(JSON.parse(localStorage.getItem('GMX_TCG_ICONS_CACHE')||'{}'));
+        setTcgIcons(JSON.parse(localStorage.getItem('SHINY_TCG_ICONS_CACHE')||'{}'));
       }catch{setTcgIcons({});}
     }
   }
@@ -77,15 +77,15 @@ export default function TCGAutoSyncPanel() {
     setIconBusy(game.game_code);
     setMessage('');
     try{
-      const token=localStorage.getItem('GMX_AUTH_TOKEN')||'';
+      const token=localStorage.getItem('SHINY_AUTH_TOKEN')||'';
       const resp=await fetch('/api/v1/content/media/upload',{
         method:'POST',
         headers:{
           'Content-Type':'application/octet-stream',
           Authorization:`Bearer ${token}`,
-          'X-GMX-File-Name':encodeURIComponent(file.name),
-          'X-GMX-File-Type':file.type||'application/octet-stream',
-          'X-GMX-Category':'TCG_ICON'
+          'X-SHINY-File-Name':encodeURIComponent(file.name),
+          'X-SHINY-File-Type':file.type||'application/octet-stream',
+          'X-SHINY-Category':'TCG_ICON'
         },
         body:file
       });
@@ -109,7 +109,7 @@ export default function TCGAutoSyncPanel() {
       const safe=String(game.game_code).replace(/[^a-zA-Z0-9_.-]/g,'_');
       setTcgIcons((old)=>{
         const next={...old,[safe]:String(mediaId)};
-        try{localStorage.setItem('GMX_TCG_ICONS_CACHE',JSON.stringify(next));}catch{}
+        try{localStorage.setItem('SHINY_TCG_ICONS_CACHE',JSON.stringify(next));}catch{}
         return next;
       });
       setMessage(`Icono actualizado para ${game.game_name||game.game_code}.`);
@@ -120,9 +120,27 @@ export default function TCGAutoSyncPanel() {
     }
   }
 
+
+  async function saveGameFx(code,rawRate){
+    const rate=Number(rawRate);
+    if(!Number.isFinite(rate)||rate<=0){
+      setMessage('El TDC debe ser mayor a cero.');
+      return;
+    }
+    try{
+      await api(`/api/v1/tcg-sync/games/${encodeURIComponent(code)}/fx`,{
+        method:'PUT',
+        body:JSON.stringify({rate})
+      });
+      setProviders((old)=>old.map((p)=>p.game_code===code?{...p,usd_mxn_rate:rate}:p));
+      setMessage(`TDC actualizado para ${code}: ${rate.toFixed(2)} MXN/USD.`);
+    }catch(e){
+      setMessage(`No fue posible guardar el TDC: ${e.message}`);
+    }
+  }
   function persistSelectedGames(next){
     setSelectedGames(next);
-    try{localStorage.setItem('GMX_AUTO_SYNC_SELECTED_GAMES',JSON.stringify(next));}catch{}
+    try{localStorage.setItem('SHINY_AUTO_SYNC_SELECTED_GAMES',JSON.stringify(next));}catch{}
   }
 
   function toggleGame(code){
@@ -174,7 +192,7 @@ export default function TCGAutoSyncPanel() {
     const list = r.data || [];
     setProviders(list);
     const stored=(()=>{
-      try{return JSON.parse(localStorage.getItem('GMX_AUTO_SYNC_SELECTED_GAMES')||'[]');}
+      try{return JSON.parse(localStorage.getItem('SHINY_AUTO_SYNC_SELECTED_GAMES')||'[]');}
       catch{return [];}
     })().filter((code)=>list.some((p)=>p.game_code===code));
 
@@ -199,7 +217,7 @@ export default function TCGAutoSyncPanel() {
     if (configured.length) setSelected(configured.filter((x) => list.some((s) => s.codigo === x)));
   }
 
-  /* GMX_AUTO_SYNC_STEP2_AUTOLOAD_R44 */
+  /* SHINY_AUTO_SYNC_STEP2_AUTOLOAD_R44 */
   useEffect(()=>{
     if(wizardStep!==2||!gameCode)return;
     loadSets(gameCode).catch((e)=>setMessage(e.message));
@@ -263,7 +281,7 @@ export default function TCGAutoSyncPanel() {
     if (!selected.length) return;
     setBusy('cards');setMessage('');
     try {
-      const ok = await window.gmxConfirm?.(
+      const ok = await window.shinyConfirm?.(
         `Se sincronizarán únicamente ${selected.length} expansión(es) de ${current?.game_name || gameCode}. ¿Continuar?`,
         { title: 'Sincronización selectiva', confirmText: 'Sincronizar' }
       );
@@ -297,19 +315,19 @@ export default function TCGAutoSyncPanel() {
       const r = await api(`/api/v1/tcg-sync/games/${encodeURIComponent(gameCode)}/install`, {
         method: 'POST', body: JSON.stringify({ setCodes: selected })
       });
-      setMessage(brandText(`Instalado en GMX: ${r.data.sets} expansiones, ${r.data.rarities} rarezas y ${r.data.cards} cartas sincronizadas.`));
+      setMessage(brandText(`Instalado en Shiny: ${r.data.sets} expansiones, ${r.data.rarities} rarezas y ${r.data.cards} cartas sincronizadas.`));
     } catch (e) {setMessage(e.message);} finally {setBusy('');}
   }
 
   async function addSelectedToStore() {
     if (!selected.length || !gameCode) return;
-    const ok = await window.gmxConfirm?.(brandText(
-      `GMX revisará ${selected.length} expansión(es) de ${current?.game_name || gameCode}. Si ya existen, solo actualizará cambios y precios; no tocará stock ni costos. ¿Continuar?`),
+    const ok = await window.shinyConfirm?.(brandText(
+      `Shiny revisará ${selected.length} expansión(es) de ${current?.game_name || gameCode}. Si ya existen, solo actualizará cambios y precios; no tocará stock ni costos. ¿Continuar?`),
     { title: 'Agregar expansiones a mi tienda', confirmText: 'Agregar' }
     );
     if (ok === false) return;
 
-    const op = window.gmxOperation?.start({
+    const op = window.shinyOperation?.start({
       title: `Agregando ${selected.length} expansión(es)`,
       detail: 'Preparando trabajo…',
       progress: 1,
@@ -320,7 +338,7 @@ export default function TCGAutoSyncPanel() {
     setBusy('add');setMessage('');setLastCardSyncResult(null);
 
     try {
-      const token = localStorage.getItem('GMX_AUTH_TOKEN') || '';
+      const token = localStorage.getItem('SHINY_AUTH_TOKEN') || '';
       const headers = {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${token}`,
@@ -351,7 +369,7 @@ export default function TCGAutoSyncPanel() {
         const job = statusJson.data || {};
         finalJob = job;
 
-        window.gmxOperation?.update(op, {
+        window.shinyOperation?.update(op, {
           progress: Number(job.progress || 0),
           detail: job.message || 'Procesando…',
           etaSeconds: job.etaSeconds,
@@ -379,14 +397,14 @@ export default function TCGAutoSyncPanel() {
       await loadProviders(gameCode);
       await loadSets(gameCode);
 
-      window.gmxOperation?.complete(op, {
+      window.shinyOperation?.complete(op, {
         title: 'Expansiones agregadas',
         detail: 'El catálogo seleccionado ya está disponible en tu tienda.',
         keepMs: 1400
       });
     } catch (e) {
       setMessage(`No fue posible agregar las expansiones: ${e.message}`);
-      window.gmxOperation?.fail(op, e);
+      window.shinyOperation?.fail(op, e);
     } finally {
       setBusy('');
     }
@@ -419,7 +437,7 @@ export default function TCGAutoSyncPanel() {
   const priceProviders = useMemo(() => [...new Set((priceData?.prices || []).map((x) => x.price_provider))], [priceData]);
 
   return (
-    <div className="gmx-approved-sync">
+    <div className="shiny-approved-sync">
       <div className="gas-top">
         <div className="gas-title">
           <span className="gas-refresh">↻</span>
@@ -525,6 +543,17 @@ export default function TCGAutoSyncPanel() {
                     <span className="gas-game-text">
                       <b>{p.game_name||p.game_code}</b>
                       <small>{p.provider_name||'Proveedor configurado'}</small>
+                      <label className="gas-tcg-fx" onClick={(e)=>e.stopPropagation()}>
+                        <span>TDC USD→MXN</span>
+                        <input
+                          type="number"
+                          min="0.01"
+                          step="0.01"
+                          defaultValue={p.usd_mxn_rate||''}
+                          placeholder="Ej. 17"
+                          onBlur={(e)=>saveGameFx(p.game_code,e.target.value)}
+                        />
+                      </label>
                       <em className={p.supports_cards?'full':'catalog'}>
                         {p.supports_cards?'API completa':'Catálogo'}
                       </em>

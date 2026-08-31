@@ -5,7 +5,7 @@ export default function TopBar({ title, subtitle, health, onMenu }) {
   const nav=useNavigate();
   const [loggingOut,setLoggingOut]=useState(false);
   const user=useMemo(()=>{
-    try{return JSON.parse(localStorage.getItem('GMX_AUTH_USER')||'null');}
+    try{return JSON.parse(localStorage.getItem('SHINY_AUTH_USER')||'null');}
     catch{return null;}
   },[]);
 
@@ -18,13 +18,13 @@ export default function TopBar({ title, subtitle, health, onMenu }) {
   function logout(){
     if(loggingOut)return;
 
-    const token=localStorage.getItem('GMX_AUTH_TOKEN');
+    const token=localStorage.getItem('SHINY_AUTH_TOKEN');
     setLoggingOut(true);
 
     // Seguridad primero: retirar el acceso local y desmontar el backoffice
     // antes de esperar cualquier respuesta de red.
-    localStorage.removeItem('GMX_AUTH_TOKEN');
-    localStorage.removeItem('GMX_AUTH_USER');
+    localStorage.removeItem('SHINY_AUTH_TOKEN');
+    localStorage.removeItem('SHINY_AUTH_USER');
     nav('/login',{replace:true});
 
     // Revocar la sesión del servidor en segundo plano. keepalive permite

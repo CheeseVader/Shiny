@@ -8,7 +8,7 @@ import {
   pool } from
 '../db.js';
 
-const ROOT = brandText("C:\\Users\\igarcia\\Videos\\GMX\\backend");
+const ROOT = brandText("C:\\Users\\igarcia\\Videos\\Shiny\\backend");
 
 
 function section(title) {
@@ -26,7 +26,7 @@ function assert(condition, message) {
 
 try {
 
-  section(brandText("GMX PRODUCTOS CATALOGO FINAL SMOKE"));
+  section(brandText("Shiny PRODUCTOS CATALOGO FINAL SMOKE"));
 
   console.log('PRODUCTOS / CATALOGO GENERAL');
   console.log('NO DATABASE MUTATION');
@@ -45,7 +45,7 @@ try {
         column_name,
         data_type
       FROM information_schema.columns
-      WHERE table_schema='gmx'
+      WHERE table_schema='shiny'
         AND table_name='productos'
       ORDER BY ordinal_position
     `);
@@ -108,7 +108,7 @@ try {
           WHERE nombre IS NULL
              OR BTRIM(nombre)=''
         )::int AS nombre_vacio
-      FROM gmx.productos
+      FROM shiny.productos
     `);
 
   console.table(counts.rows);
@@ -133,7 +133,7 @@ try {
       SELECT
         sku,
         COUNT(*)::int AS total
-      FROM gmx.productos
+      FROM shiny.productos
       WHERE sku IS NOT NULL
         AND BTRIM(sku)<>''
       GROUP BY sku
@@ -165,7 +165,7 @@ try {
       SELECT
         codigo_barras,
         COUNT(*)::int AS total
-      FROM gmx.productos
+      FROM shiny.productos
       WHERE codigo_barras IS NOT NULL
         AND BTRIM(codigo_barras)<>''
       GROUP BY codigo_barras
@@ -200,7 +200,7 @@ try {
         nombre,
         precio,
         costo
-      FROM gmx.productos
+      FROM shiny.productos
       WHERE COALESCE(precio,0)<0
          OR COALESCE(costo,0)<0
       LIMIT 20
@@ -237,7 +237,7 @@ try {
         nombre,
         stock,
         stock_minimo
-      FROM gmx.productos
+      FROM shiny.productos
       WHERE COALESCE(stock,0)<0
          OR COALESCE(stock_minimo,0)<0
       LIMIT 20
@@ -267,7 +267,7 @@ try {
       SELECT
         COALESCE(NULLIF(BTRIM(categoria),''),'[SIN CATEGORIA]') AS categoria,
         COUNT(*)::int AS total
-      FROM gmx.productos
+      FROM shiny.productos
       GROUP BY 1
       ORDER BY total DESC
       LIMIT 50
@@ -296,7 +296,7 @@ try {
       SELECT
         COALESCE(NULLIF(BTRIM(estado),''),'[VACIO]') AS estado,
         COUNT(*)::int AS total
-      FROM gmx.productos
+      FROM shiny.productos
       GROUP BY 1
       ORDER BY total DESC
     `);
@@ -322,8 +322,8 @@ try {
         i.id_producto,
         i.id_sucursal,
         i.stock
-      FROM gmx.inventario_sucursales i
-      LEFT JOIN gmx.productos p
+      FROM shiny.inventario_sucursales i
+      LEFT JOIN shiny.productos p
         ON p.id=i.id_producto
       WHERE p.id IS NULL
       LIMIT 20
@@ -354,7 +354,7 @@ try {
         id_producto,
         id_sucursal,
         COUNT(*)::int AS total
-      FROM gmx.inventario_sucursales
+      FROM shiny.inventario_sucursales
       GROUP BY id_producto,id_sucursal
       HAVING COUNT(*)>1
       LIMIT 20
@@ -479,7 +479,7 @@ try {
   join('\n');
 
   assert(
-    /INSERT\s+INTO\s+gmx\.productos/i.
+    /INSERT\s+INTO\s+shiny\.productos/i.
     test(
       allSource
     ),
@@ -487,7 +487,7 @@ try {
   );
 
   assert(
-    /UPDATE\s+gmx\.productos/i.
+    /UPDATE\s+shiny\.productos/i.
     test(
       allSource
     ),
@@ -495,7 +495,7 @@ try {
   );
 
   assert(
-    /SELECT[\s\S]*gmx\.productos/i.
+    /SELECT[\s\S]*shiny\.productos/i.
     test(
       allSource
     ),
@@ -614,7 +614,7 @@ try {
         sku,
         nombre,
         descripcion
-      FROM gmx.productos
+      FROM shiny.productos
       WHERE
            COALESCE(nombre,'') LIKE '%�%'
         OR COALESCE(descripcion,'') LIKE '%�%'
@@ -652,7 +652,7 @@ try {
           WHERE codigo_barras IS NULL
              OR BTRIM(codigo_barras)=''
         )::int AS sin_codigo_barras
-      FROM gmx.productos
+      FROM shiny.productos
     `);
 
   console.table(
@@ -718,7 +718,7 @@ try {
   await query(`
       SELECT
         COUNT(*)::int AS total
-      FROM gmx.productos
+      FROM shiny.productos
       WHERE
            UPPER(COALESCE(nombre,'')) LIKE '%POS-003 TEST%'
         OR UPPER(COALESCE(nombre,'')) LIKE '%PRODUCT TEST%'

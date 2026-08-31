@@ -1,5 +1,5 @@
 import { brandText } from "../config/brand.js"; /**
- * GMX — CLIENTES-001 SOURCE AUDIT
+ * Shiny — CLIENTES-001 SOURCE AUDIT
  *
  * MODE: READ ONLY
  *
@@ -71,12 +71,12 @@ const targets = [
 
 
 const patterns = [
-["CLIENT INSERT", /INSERT\s+INTO\s+gmx\.clientes/gi],
-["CLIENT UPDATE", /UPDATE\s+gmx\.clientes/gi],
-["CLIENT DELETE", /DELETE\s+FROM\s+gmx\.clientes/gi],
+["CLIENT INSERT", /INSERT\s+INTO\s+shiny\.clientes/gi],
+["CLIENT UPDATE", /UPDATE\s+shiny\.clientes/gi],
+["CLIENT DELETE", /DELETE\s+FROM\s+shiny\.clientes/gi],
 
-["FIDELIDAD INSERT", /INSERT\s+INTO\s+gmx\.fidelidad_movimientos/gi],
-["FIDELIDAD UPDATE", /UPDATE\s+gmx\.fidelidad_cuentas/gi],
+["FIDELIDAD INSERT", /INSERT\s+INTO\s+shiny\.fidelidad_movimientos/gi],
+["FIDELIDAD UPDATE", /UPDATE\s+shiny\.fidelidad_cuentas/gi],
 
 ["BEGIN", /\bBEGIN\b/gi],
 ["COMMIT", /\bCOMMIT\b/gi],
@@ -244,7 +244,7 @@ function inspectFile(relative) {
 }
 
 function main() {
-  section(brandText("GMX — CLIENTES-001 SOURCE AUDIT"));
+  section(brandText("Shiny — CLIENTES-001 SOURCE AUDIT"));
 
   console.log("MODE=READ_ONLY");
   console.log(`ROOT=${ROOT}`);

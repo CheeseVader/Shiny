@@ -1,4 +1,4 @@
-/* GMX 10.6.2.4.1.6 — purchases */
+/* Shiny 10.6.2.4.1.6 — purchases */
 .purchase-v16{display:grid;grid-template-columns:minmax(0,1fr) 330px;gap:18px;align-items:start}
 .purchase-v16-main{display:grid;gap:14px}.purchase-panel{border:1px solid #e4e7ec;border-radius:14px;padding:16px;background:#fff}
 .purchase-panel h3{margin:0 0 12px}.purchase-panel-head{display:flex;justify-content:space-between;align-items:center;gap:12px}

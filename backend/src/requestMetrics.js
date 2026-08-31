@@ -1,7 +1,7 @@
 import { performance } from 'node:perf_hooks';
 
 const startedAt=Date.now();
-const MAX_SAMPLES=Math.max(1000,Number(process.env.GMX_HTTP_METRIC_SAMPLES||20000));
+const MAX_SAMPLES=Math.max(1000,Number(process.env.SHINY_HTTP_METRIC_SAMPLES||20000));
 const samples=[];
 let total=0,success=0,clientErrors=0,serverErrors=0,inFlight=0,peakInFlight=0;
 const byGroup=new Map();

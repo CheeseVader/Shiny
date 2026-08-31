@@ -19,7 +19,7 @@ function normalize(body = {}) {
   if (cp && !/^\d{5}$/.test(cp)) throw new Error('INVALID_CP');
   if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw new Error('INVALID_EMAIL');
 
-  // Regla global GMX: teléfono = únicamente 0-9.
+  // Regla global Shiny: teléfono = únicamente 0-9.
   if (telefono && !/^\d+$/.test(telefono)) throw new Error('PHONE_DIGITS_ONLY');
   if (telefono && (telefono.length < 10 || telefono.length > 15)) throw new Error('INVALID_PHONE_LENGTH');
 
@@ -129,7 +129,7 @@ router.post('/', async (req, res) => {
   } catch (error) {
     const code = clientErrorCode(error);
     if (code) return res.status(400).json({ success: false, error: code, message: CLIENT_MESSAGES[code] });
-    console.error(brandText("[GMX][CLIENT_CREATE]"), error);
+    console.error(brandText("[Shiny][CLIENT_CREATE]"), error);
     res.status(500).json({ success: false, error: 'CLIENT_CREATE_FAILED', message: 'No fue posible crear el cliente.' });
   }
 });
@@ -153,7 +153,7 @@ router.put('/:rowId', async (req, res) => {
   } catch (error) {
     const code = clientErrorCode(error);
     if (code) return res.status(400).json({ success: false, error: code, message: CLIENT_MESSAGES[code] });
-    console.error(brandText("[GMX][CLIENT_UPDATE]"), error);
+    console.error(brandText("[Shiny][CLIENT_UPDATE]"), error);
     res.status(500).json({ success: false, error: 'CLIENT_UPDATE_FAILED', message: 'No fue posible actualizar el cliente.' });
   }
 });

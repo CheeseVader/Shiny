@@ -29,8 +29,8 @@ VISION_NAME = os.getenv("APP_VISION_NAME") or BRAND_CONFIG.get("visionName") or 
 app = FastAPI(title=f"{VISION_NAME} Beta", version="1.0")
 
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
-MODEL_NAME = os.getenv("GMX_VISUAL_MODEL", "ViT-B-32")
-PRETRAINED = os.getenv("GMX_VISUAL_PRETRAINED", "laion2b_s34b_b79k")
+MODEL_NAME = os.getenv("SHINY_VISUAL_MODEL", "ViT-B-32")
+PRETRAINED = os.getenv("SHINY_VISUAL_PRETRAINED", "laion2b_s34b_b79k")
 
 model, _, preprocess = open_clip.create_model_and_transforms(
     MODEL_NAME,

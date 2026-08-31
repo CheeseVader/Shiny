@@ -171,5 +171,5 @@
   }
 }
 
-/* GMX ADMIN UX PATCH 2026-08-21 — controles exclusivos SUPERADMIN */
+/* Shiny ADMIN UX PATCH 2026-08-21 — controles exclusivos SUPERADMIN */
 .branch-admin-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}

@@ -25,7 +25,7 @@ function pct(a,p){if(!a.length)return 0;const s=[...a].sort((x,y)=>x-y);return M
 function getJson(pathname){
   return new Promise(resolve=>{
     const t=performance.now();
-    const req=transport.get(new URL(pathname,base),{headers:{Accept:'application/json','User-Agent':'GMX-Mixed-Load/1.0'},agent:false},res=>{
+    const req=transport.get(new URL(pathname,base),{headers:{Accept:'application/json','User-Agent':'SHINY-Mixed-Load/1.0'},agent:false},res=>{
       let bytes=0;res.on('data',c=>bytes+=c.length);res.on('end',()=>resolve({status:res.statusCode||0,ms:performance.now()-t,bytes}));
     });
     req.setTimeout(10000,()=>req.destroy(new Error('HTTP_TIMEOUT')));
@@ -35,7 +35,7 @@ function getJson(pathname){
 function openSse(i){
   return new Promise(resolve=>{
     const u=new URL('/api/public/live-sync/events',base);
-    const req=transport.get(u,{headers:{Accept:'text/event-stream','User-Agent':`GMX-Mixed-SSE/${i}`},agent:false},res=>{
+    const req=transport.get(u,{headers:{Accept:'text/event-stream','User-Agent':`SHINY-Mixed-SSE/${i}`},agent:false},res=>{
       if(res.statusCode!==200){sseFailed++;res.resume();resolve();return;}
       let resolved=false;sseOpened++;sockets.push(req);
       res.once('data',()=>{if(!resolved){resolved=true;resolve();}});
@@ -56,15 +56,15 @@ async function metrics(){
   });
 }
 
-console.log(`[GMX MIXED] SSE ramp: ${sseClients} clients · ${rampPerSecond}/s`);
+console.log(`[Shiny MIXED] SSE ramp: ${sseClients} clients · ${rampPerSecond}/s`);
 for(let baseIndex=0;baseIndex<sseClients;baseIndex+=rampPerSecond){
   const batch=Math.min(rampPerSecond,sseClients-baseIndex);
   await Promise.all(Array.from({length:batch},(_,j)=>openSse(baseIndex+j)));
-  console.log(`[GMX MIXED] SSE requested=${Math.min(baseIndex+batch,sseClients)} opened=${sseOpened} failed=${sseFailed} closed=${sseClosed}`);
+  console.log(`[Shiny MIXED] SSE requested=${Math.min(baseIndex+batch,sseClients)} opened=${sseOpened} failed=${sseFailed} closed=${sseClosed}`);
   if(baseIndex+batch<sseClients)await sleep(1000);
 }
 const before=await metrics();
-console.log(`[GMX MIXED] holding ${holdSeconds}s + HTTP ${httpRps} req/s`);
+console.log(`[Shiny MIXED] holding ${holdSeconds}s + HTTP ${httpRps} req/s`);
 const start=performance.now();
 let seq=0;
 while((performance.now()-start)<holdSeconds*1000){

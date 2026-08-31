@@ -2,7 +2,7 @@ import 'dotenv/config';
 import { query, pool } from './src/db.js';
 import { hashPassword } from './src/security.js';
 
-const API = process.env.GMX_API_URL || 'http://127.0.0.1:8787';
+const API = process.env.SHINY_API_URL || 'http://127.0.0.1:8787';
 
 const REQUESTER_EMAIL = 'prueba@gmail.com';
 const REQUESTER_PASSWORD = 'prueba12345';
@@ -73,7 +73,7 @@ async function cleanup() {
   try {
     if (authorizationId) {
       await query(
-        `DELETE FROM gmx.autorizaciones_operacion
+        `DELETE FROM shiny.autorizaciones_operacion
          WHERE id_autorizacion=$1`,
         [authorizationId]
       );
@@ -87,7 +87,7 @@ async function cleanup() {
   try {
     if (tempAdmin) {
       await query(
-        `DELETE FROM gmx.permisos_admin
+        `DELETE FROM shiny.permisos_admin
          WHERE email=$1
            AND modulo='COMERCIAL'`,
         [AUTHORIZER_EMAIL]
@@ -95,7 +95,7 @@ async function cleanup() {
 
       if (originalPermission) {
         await query(
-          `INSERT INTO gmx.permisos_admin(
+          `INSERT INTO shiny.permisos_admin(
              email,modulo,leer,crear,editar,eliminar,autorizar,actualizacion
            )
            VALUES($1,$2,$3,$4,$5,$6,$7,NOW())`,
@@ -122,7 +122,7 @@ async function cleanup() {
   try {
     if (tempAdmin && originalPasswordHash !== null) {
       await query(
-        `UPDATE gmx.administradores
+        `UPDATE shiny.administradores
          SET password_hash=$2,
              sucursal_principal=$3,
              sucursales_permitidas=$4::jsonb,
@@ -147,7 +147,7 @@ async function cleanup() {
 try {
   console.log('');
   console.log('=============================================');
-  console.log(' GMX DEV-006C');
+  console.log(' Shiny DEV-006C');
   console.log(' REEMBOLSO TRANSFERENCIA');
   console.log(' PRUEBA REAL CONTROLADA');
   console.log('=============================================');
@@ -184,15 +184,15 @@ try {
       sucursal,
       referencia_pago,
       fecha
-    FROM gmx.pedidos
+    FROM shiny.pedidos
     WHERE UPPER(COALESCE(metodo_pago,''))='TRANSFERENCIA'
       AND UPPER(COALESCE(estado_pedido,''))='PAGADO'
       AND UPPER(COALESCE(estado_pago,''))='PAGADO'
       AND id_sucursal=$1
       AND NOT EXISTS (
         SELECT 1
-        FROM gmx.devoluciones d
-        WHERE d.referencia=gmx.pedidos.id_pedido
+        FROM shiny.devoluciones d
+        WHERE d.referencia=shiny.pedidos.id_pedido
       )
     ORDER BY fecha ASC
     LIMIT 10
@@ -237,7 +237,7 @@ try {
       precio_unitario,
       precio,
       tipo
-    FROM gmx.detalle_pedidos
+    FROM shiny.detalle_pedidos
     WHERE id_pedido=$1
     ORDER BY row_id
   `, [order.id_pedido]);
@@ -268,7 +268,7 @@ try {
       password_hash,
       sucursal_principal,
       sucursales_permitidas
-    FROM gmx.administradores
+    FROM shiny.administradores
     WHERE LOWER(email)=LOWER($1)
     LIMIT 1
   `, [AUTHORIZER_EMAIL]);
@@ -306,7 +306,7 @@ try {
       editar,
       eliminar,
       autorizar
-    FROM gmx.permisos_admin
+    FROM shiny.permisos_admin
     WHERE LOWER(email)=LOWER($1)
       AND modulo='COMERCIAL'
     LIMIT 1
@@ -330,7 +330,7 @@ try {
   // ---------------------------------------------------------
 
   await query(`
-    UPDATE gmx.administradores
+    UPDATE shiny.administradores
     SET password_hash=$2,
         sucursal_principal=$3,
         sucursales_permitidas=$4::jsonb,
@@ -344,13 +344,13 @@ try {
   ]);
 
   await query(`
-    DELETE FROM gmx.permisos_admin
+    DELETE FROM shiny.permisos_admin
     WHERE email=$1
       AND modulo='COMERCIAL'
   `, [AUTHORIZER_EMAIL]);
 
   await query(`
-    INSERT INTO gmx.permisos_admin(
+    INSERT INTO shiny.permisos_admin(
       email,
       modulo,
       leer,
@@ -500,7 +500,7 @@ try {
       id_producto,
       id_sucursal,
       cantidad
-    FROM gmx.inventario_sucursales
+    FROM shiny.inventario_sucursales
     WHERE id_inventario=$1
        OR id_producto=$2
     ORDER BY row_id
@@ -604,7 +604,7 @@ try {
       resolucion,
       estado,
       reintegra_stock
-    FROM gmx.devoluciones
+    FROM shiny.devoluciones
     WHERE id=$1
   `, [returnId]);
 
@@ -653,7 +653,7 @@ try {
       fecha_autorizacion,
       error_codigo,
       error_detalle
-    FROM gmx.devoluciones_reembolsos
+    FROM shiny.devoluciones_reembolsos
     WHERE id_devolucion=$1
     ORDER BY row_id DESC
   `, [returnId]);
@@ -737,7 +737,7 @@ try {
       detalle,
       id_admin,
       usuario
-    FROM gmx.devoluciones_eventos
+    FROM shiny.devoluciones_eventos
     WHERE id_devolucion=$1
       AND id_reembolso=$2
       AND tipo='REEMBOLSO_REGISTRADO'
@@ -769,7 +769,7 @@ try {
       id_producto,
       id_sucursal,
       cantidad
-    FROM gmx.inventario_sucursales
+    FROM shiny.inventario_sucursales
     WHERE id_inventario=$1
        OR id_producto=$2
     ORDER BY row_id

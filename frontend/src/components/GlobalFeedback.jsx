@@ -5,7 +5,7 @@ let confirmExternal = null;
 
 export function notify(message, options = {}) {
   if (notifyExternal) return notifyExternal(message, options);
-  console.info(brandText("[GMX]"), message);
+  console.info(brandText("[Shiny]"), message);
 }
 export function confirmAction(message, options = {}) {
   if (confirmExternal) return confirmExternal(message, options);
@@ -34,24 +34,24 @@ export default function GlobalFeedback() {
     const normalizedType = String(type || 'info').toLowerCase();
 
     /*
-     * GMX GLOBAL UX V5
+     * Shiny GLOBAL UX V5
      * Cuando GlobalOperationProgress ya representa un fallo en modal,
      * NO se admite ningún toast, sin importar cómo haya sido clasificado
      * (info/success/warning/error). Esto evita duplicados aun cuando
      * el mensaje automático haya sido inferido como "info".
      *
      * Cubre:
-     *   1) window.gmxNotify(...)
+     *   1) window.shinyNotify(...)
      *   2) notify(...) exportado
      *   3) MutationObserver de .message/.alert.error/etc.
      */
-    const suppressUntil = Number(window.__GMX_SUPPRESS_ERROR_TOAST_UNTIL || 0);
+    const suppressUntil = Number(window.__SHINY_SUPPRESS_ERROR_TOAST_UNTIL || 0);
     const operationSuppress =
-    typeof window.gmxOperation?.shouldSuppressErrorToast === 'function' ?
-    window.gmxOperation.shouldSuppressErrorToast() :
+    typeof window.shinyOperation?.shouldSuppressErrorToast === 'function' ?
+    window.shinyOperation.shouldSuppressErrorToast() :
 
-    typeof window.gmxOperation?.hasBlockingError === 'function' &&
-    window.gmxOperation.hasBlockingError();
+    typeof window.shinyOperation?.hasBlockingError === 'function' &&
+    window.shinyOperation.hasBlockingError();
 
 
     if (operationSuppress || suppressUntil > now) {
@@ -62,7 +62,7 @@ export default function GlobalFeedback() {
     if (now - last < 1200) return false;
     recent.current.set(text, now);
 
-    const id = `gmx-toast-${now}-${Math.random().toString(16).slice(2)}`;
+    const id = `shiny-toast-${now}-${Math.random().toString(16).slice(2)}`;
     const ttl = Number(options.duration ?? (normalizedType === 'error' ? 7000 : 4500));
     setToasts((current) => [...current.slice(-4), { id, text, type: normalizedType, title: options.title || '' }]);
     if (ttl > 0) setTimeout(() => setToasts((current) => current.filter((x) => x.id !== id)), ttl);
@@ -85,21 +85,21 @@ export default function GlobalFeedback() {
   useEffect(() => {
     notifyExternal = push;
     confirmExternal = ask;
-    window.gmxNotify = push;
-    window.gmxConfirm = ask;
+    window.shinyNotify = push;
+    window.shinyConfirm = ask;
 
     const clearOperationErrorToasts = () => {
       setToasts([]);
       recent.current.clear();
     };
-    window.addEventListener('gmx:operation-error-modal', clearOperationErrorToasts);
+    window.addEventListener('shiny:operation-error-modal', clearOperationErrorToasts);
 
     return () => {
-      window.removeEventListener('gmx:operation-error-modal', clearOperationErrorToasts);
+      window.removeEventListener('shiny:operation-error-modal', clearOperationErrorToasts);
       notifyExternal = null;
       confirmExternal = null;
-      delete window.gmxNotify;
-      delete window.gmxConfirm;
+      delete window.shinyNotify;
+      delete window.shinyConfirm;
     };
   }, []);
 
@@ -148,10 +148,10 @@ export default function GlobalFeedback() {
   const icons = useMemo(() => ({ success: '✓', error: '!', warning: '!', info: 'i' }), []);
 
   return <>
-    <div className="gmx-toast-stack" aria-live="polite" aria-atomic="false">
-      {toasts.map((t) => <div key={t.id} className={`gmx-toast ${t.type}`}>
-        <span className="gmx-toast-icon">{icons[t.type] || 'i'}</span>
-        <div className="gmx-toast-copy">
+    <div className="shiny-toast-stack" aria-live="polite" aria-atomic="false">
+      {toasts.map((t) => <div key={t.id} className={`shiny-toast ${t.type}`}>
+        <span className="shiny-toast-icon">{icons[t.type] || 'i'}</span>
+        <div className="shiny-toast-copy">
           {t.title ? <b>{t.title}</b> : null}
           <span>{t.text}</span>
         </div>
@@ -159,14 +159,14 @@ export default function GlobalFeedback() {
       </div>)}
     </div>
 
-    {dialog ? <div className="gmx-confirm-backdrop" role="presentation" onMouseDown={() => closeDialog(false)}>
-      <div className={`gmx-confirm-dialog ${dialog.type}`} role="dialog" aria-modal="true" aria-labelledby="gmx-confirm-title" onMouseDown={(e) => e.stopPropagation()}>
-        <div className="gmx-confirm-symbol">{icons[dialog.type] || '!'}</div>
-        <div className="gmx-confirm-body">
-          <h2 id="gmx-confirm-title">{dialog.title}</h2>
+    {dialog ? <div className="shiny-confirm-backdrop" role="presentation" onMouseDown={() => closeDialog(false)}>
+      <div className={`shiny-confirm-dialog ${dialog.type}`} role="dialog" aria-modal="true" aria-labelledby="shiny-confirm-title" onMouseDown={(e) => e.stopPropagation()}>
+        <div className="shiny-confirm-symbol">{icons[dialog.type] || '!'}</div>
+        <div className="shiny-confirm-body">
+          <h2 id="shiny-confirm-title">{dialog.title}</h2>
           <p>{dialog.message}</p>
         </div>
-        <div className="gmx-confirm-actions">
+        <div className="shiny-confirm-actions">
           <button className="secondary" autoFocus onClick={() => closeDialog(false)}>{dialog.cancelText}</button>
           <button className={dialog.type === 'error' ? 'danger' : ''} onClick={() => closeDialog(true)}>{dialog.confirmText}</button>
         </div>

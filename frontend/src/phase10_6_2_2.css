@@ -1,5 +1,5 @@
 
-/* GMX 10.6.2.2 — TCG master catalog + Excel import */
+/* Shiny 10.6.2.2 — TCG master catalog + Excel import */
 .tcg-master-add small,.tcg-store-games p,.tcg-import-card p{color:#667085;line-height:1.45}
 .tcg-master-summary{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0}.tcg-master-summary span{padding:6px 9px;border-radius:999px;background:#f2f4f7;color:#344054;font-size:11px;font-weight:850}
 .tcg-master-actions{display:grid;grid-template-columns:1fr 1fr;gap:7px}.tcg-master-actions button{min-height:40px}
@@ -16,14 +16,14 @@
 .tcg-scope-note{margin:-4px 0 10px;padding:9px 11px;border-radius:9px;background:#eff8ff;color:#175cd3;font-size:12px;font-weight:750}
 @media(max-width:800px){.tcg-scope-filter{grid-template-columns:1fr!important}}
 
-/* GMX global form validation */
-input[data-gmx-validation]:invalid:not(:placeholder-shown),
-textarea[data-gmx-validation]:invalid:not(:placeholder-shown){
+/* Shiny global form validation */
+input[data-shiny-validation]:invalid:not(:placeholder-shown),
+textarea[data-shiny-validation]:invalid:not(:placeholder-shown){
   border-color:#f04438!important;
   outline-color:#f04438!important;
   box-shadow:0 0 0 3px rgba(240,68,56,.10);
 }
-input[data-gmx-validation]:valid:not(:placeholder-shown){
+input[data-shiny-validation]:valid:not(:placeholder-shown){
   border-color:#12b76a;
 }
 .address-form .geo-select-grid{grid-column:1/-1}

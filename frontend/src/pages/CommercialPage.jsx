@@ -1,6 +1,6 @@
 import { brandText } from "../config/brand.js";import { useEffect, useMemo, useState } from 'react';
 import { api } from '../services/api.js';
-import '../phase_gmx_exact_views_r23.css';
+import '../phase_shiny_exact_views_r23.css';
 import '../commercial_minimal_r69.css';
 import '../commercial_quotes_wizard_r70.css';
 import '../commercial_module_purchaseflow_r71.css';
@@ -56,7 +56,7 @@ export default function CommercialPage() {
   const [returnOrder, setReturnOrder] = useState(null);
   const [returnQty, setReturnQty] = useState({});
   const [returnCondition, setReturnCondition] = useState({});
-  // TCG_STORE_TEMPLATE_DEV_001D_CONDICION_DESTINO
+  // Shiny_DEV_001D_CONDICION_DESTINO
   const [returnOptions, setReturnOptions] = useState({ reason: '', refund: false, refundMethod: 'EFECTIVO', refundReference: '', notes: '' });
   const [quoteClientSearch, setQuoteClientSearch] = useState('');
   const [quoteProductSearch, setQuoteProductSearch] = useState('');
@@ -154,7 +154,7 @@ export default function CommercialPage() {
     }
   }
 
-  // TCG_STORE_TEMPLATE_DEV_AUD_001B_RETURN_DEEPLINK
+  // Shiny_DEV_AUD_001B_RETURN_DEEPLINK
   // Permite abrir Gestión Comercial directamente desde un pedido PAGADO.
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -429,7 +429,7 @@ export default function CommercialPage() {
   async function loadReturnOrder() {
     const operationId = window.tcg_store_templateOperation?.start?.({
       title: 'Buscando pedido',
-      detail: brandText("TCG_STORE_TEMPLATE está validando el pedido y el alcance de sucursal.")
+      detail: brandText("Shiny está validando el pedido y el alcance de sucursal.")
     });
     try {
       const r = await api(`/api/v1/commercial/returns-order/${encodeURIComponent(returnOrderId)}`);
@@ -475,7 +475,7 @@ export default function CommercialPage() {
       if (!hasReturnableItems) {
         const operationId = window.tcg_store_templateOperation?.start?.({
           title: 'Validando devolución',
-          detail: brandText("TCG_STORE_TEMPLATE está validando las unidades disponibles para devolución.")
+          detail: brandText("Shiny está validando las unidades disponibles para devolución.")
         });
 
         if (operationId) {
@@ -1021,69 +1021,53 @@ export default function CommercialPage() {
       const selectedItems = (returnOrder?.detalles || []).filter((d)=>Number(returnQty[d.id_detalle]||0)>0);
       const selectedAmount = selectedItems.reduce((a,d)=>a+(Number(returnQty[d.id_detalle]||0)*Number(d.precio_unitario||d.precio||0)),0);
       const resetReturnWizard = () => { setReturnModal(false);setReturnWizardStep(1);setReturnOrder(null);setReturnOrderId('');setReturnQty({});setReturnCondition({});setReturnOptions({ reason:'',refund:false,refundMethod:'EFECTIVO',refundReference:'',notes:'' }); };
-      return <section className="commercial-section gmx-r73-returns">
-        <div className="gmx-r73-title"><div><div className="eyebrow">MÓDULO</div><h2>Devoluciones</h2><p>Gestiona devoluciones de venta, motivos, reembolsos y el destino del producto. El impacto se refleja automáticamente en inventario.</p></div><div className="gmx-r73-trust"><span><ReturnUiIcon name="box"/><b>Inventario actualizado</b><small>Ajuste automático</small></span><span><ReturnUiIcon name="trace"/><b>Trazabilidad completa</b><small>Venta y documentos</small></span><span><ReturnUiIcon name="shield"/><b>Control y autorización</b><small>Reglas y motivos</small></span></div></div>
-        {returnAuthCapability.canAuthorize ? <section className="gmx-r77-pin-card">
-          <div className="gmx-r77-pin-card-icon"><ReturnUiIcon name="shield"/></div>
-          <div className="gmx-r77-pin-copy">
-            <span className="eyebrow">AUTORIZACIÓN POS</span>
-            <strong>Código temporal para devoluciones</strong>
-            <small>Un solo uso · vigencia 5 minutos · validación en Punto de Venta</small>
-          </div>
-          {returnGeneratedPin?.pin ? <div className="gmx-r77-pin-value">
-            <span>Código activo</span>
-            <strong>{returnGeneratedPin.pin}</strong>
-            <small>Vence {returnGeneratedPin.expiresAt ? new Date(returnGeneratedPin.expiresAt).toLocaleTimeString('es-MX', {hour:'2-digit',minute:'2-digit'}) : 'en 5 min'}</small>
-          </div> : null}
-          <button type="button" className="gmx-r77-pin-generate" disabled={returnPinBusy} onClick={generateReturnAuthorizationPin}>
-            {returnPinBusy ? 'Generando…' : returnGeneratedPin?.pin ? 'Generar nuevo código' : 'Generar código'}
-          </button>
-        </section> : null}
-        <article className="commercial-panel gmx-r73-main">
-          <div className="gmx-r73-panel-head"><h3>Pantalla principal · Devoluciones</h3></div>
-          <div className="gmx-r73-kpis">
+      return <section className="commercial-section shiny-r73-returns">
+        <div className="shiny-r73-title"><div><div className="eyebrow">MÓDULO</div><h2>Devoluciones</h2><p>Gestiona devoluciones de venta, motivos, reembolsos y el destino del producto. El impacto se refleja automáticamente en inventario.</p></div><div className="shiny-r73-trust"><span><ReturnUiIcon name="box"/><b>Inventario actualizado</b><small>Ajuste automático</small></span><span><ReturnUiIcon name="trace"/><b>Trazabilidad completa</b><small>Venta y documentos</small></span><span><ReturnUiIcon name="shield"/><b>Control y autorización</b><small>Reglas y motivos</small></span></div></div>
+        <article className="commercial-panel shiny-r73-main">
+          <div className="shiny-r73-panel-head"><h3>Pantalla principal · Devoluciones</h3></div>
+          <div className="shiny-r73-kpis">
             <div className="violet"><ReturnUiIcon name="return"/><span><small>Devoluciones totales</small><strong>{returns.length}</strong><em>Todos los registros</em></span></div>
             <div className="green"><ReturnUiIcon name="check"/><span><small>Aprobadas</small><strong>{approved}</strong><em>{returns.length ? `${Math.round(approved*100/returns.length)}% del total` : 'Sin registros'}</em></span></div>
             <div className="orange"><ReturnUiIcon name="doc"/><span><small>Pendientes</small><strong>{pending}</strong><em>Por completar</em></span></div>
             <div className="blue"><ReturnUiIcon name="ban"/><span><small>Canceladas</small><strong>{cancelled}</strong><em>Anuladas / error</em></span></div>
             <div className="purple"><ReturnUiIcon name="money"/><span><small>Monto total</small><strong>{money(amount)}</strong><em>Importe acumulado</em></span></div>
           </div>
-          <div className="gmx-r73-toolbar">
-            <div className="gmx-r73-search"><ReturnUiIcon name="search"/><input value={returnSearch} onChange={(e)=>{setReturnSearch(e.target.value);setReturnPage(1);}} placeholder="Buscar por folio, cliente, referencia o motivo..."/></div>
+          <div className="shiny-r73-toolbar">
+            <div className="shiny-r73-search"><ReturnUiIcon name="search"/><input value={returnSearch} onChange={(e)=>{setReturnSearch(e.target.value);setReturnPage(1);}} placeholder="Buscar por folio, cliente, referencia o motivo..."/></div>
             <select value={returnStatusFilter} onChange={(e)=>{setReturnStatusFilter(e.target.value);setReturnPage(1);}}><option value="">Todos los estados</option><option value="COMPLETADA">Completada</option><option value="PENDIENTE">Pendiente</option><option value="PROCESANDO">Procesando</option><option value="CANCELADA">Cancelada</option></select>
             <select value={returnStockFilter} onChange={(e)=>{setReturnStockFilter(e.target.value);setReturnPage(1);}}><option value="">Impacto inventario</option><option value="SI">Reintegra stock</option><option value="NO">No reintegra</option></select>
-            <button className="gmx-r73-new" onClick={()=>{setReturnWizardStep(1);setReturnModal(true);}}>+ Nueva devolución</button>
+            <button className="shiny-r73-new" onClick={()=>{setReturnWizardStep(1);setReturnModal(true);}}>+ Nueva devolución</button>
           </div>
           <DataTable empty="No hay devoluciones con estos filtros." headers={['Fecha','Folio','Origen','Referencia','Cliente','Motivo','Estatus','Total','Inventario','Acciones']}>
-            {filteredReturns.slice((returnPage-1)*pageSize,returnPage*pageSize).map((x)=><tr key={x.row_id||x.id}><td>{x.fecha?new Date(x.fecha).toLocaleString('es-MX'):'—'}</td><td><b>{x.id||'—'}</b></td><td><span className="gmx-r73-type">Venta</span></td><td>{x.referencia||'—'}</td><td>{x.cliente_proveedor||'—'}</td><td>{x.motivo||'—'}</td><td><Status value={x.estado}/></td><td><b>{money(x.importe)}</b></td><td><span className={x.reintegra_stock?'gmx-r73-stock yes':'gmx-r73-stock no'}>{x.reintegra_stock?'Reintegra':'No reintegra'}</span></td><td>{['PENDIENTE','PROCESANDO','BORRADOR'].includes(String(x.estado||'').toUpperCase())?<button type="button" className="gmx-r75-return-pos" onClick={()=>{try{localStorage.setItem('GMX_POS_PENDING_RETURN',String(x.id||''));}catch{} window.location.assign(`/admin/pos?return=${encodeURIComponent(x.id||'')}`);}}>Cobrar en POS</button>:<span className="muted">—</span>}</td></tr>)}
+            {filteredReturns.slice((returnPage-1)*pageSize,returnPage*pageSize).map((x)=><tr key={x.row_id||x.id}><td>{x.fecha?new Date(x.fecha).toLocaleString('es-MX'):'—'}</td><td><b>{x.id||'—'}</b></td><td><span className="shiny-r73-type">Venta</span></td><td>{x.referencia||'—'}</td><td>{x.cliente_proveedor||'—'}</td><td>{x.motivo||'—'}</td><td><Status value={x.estado}/></td><td><b>{money(x.importe)}</b></td><td><span className={x.reintegra_stock?'shiny-r73-stock yes':'shiny-r73-stock no'}>{x.reintegra_stock?'Reintegra':'No reintegra'}</span></td><td>{['PENDIENTE','PROCESANDO','BORRADOR'].includes(String(x.estado||'').toUpperCase())?<button type="button" className="shiny-r75-return-pos" onClick={()=>{try{localStorage.setItem('SHINY_POS_PENDING_RETURN',String(x.id||''));}catch{} window.location.assign(`/admin/pos?return=${encodeURIComponent(x.id||'')}`);}}>Cobrar en POS</button>:<span className="muted">—</span>}</td></tr>)}
           </DataTable>
           <Pager page={returnPage} setPage={setReturnPage} total={filteredReturns.length} pageSize={pageSize}/>
         </article>
-        <div className="gmx-r73-impact">
+        <div className="shiny-r73-impact">
           <div><span className="up">↑</span><p><b>Incremento de inventario</b><small>Vendible / buen estado → Inventario disponible. Las unidades regresan a existencias.</small></p></div>
           <div><span className="down">↓</span><p><b>No incrementa inventario disponible</b><small>Dañado → Merma · Defectuoso → Garantía · Incompleto → Revisión · No vendible → No vendible.</small></p></div>
           <div className="info"><span>i</span><p><b>Trazabilidad automática</b><small>La devolución conserva referencia, motivo, reembolso y movimiento de inventario.</small></p></div>
         </div>
-        {returnModal ? <div className="modal-backdrop gmx-r73-backdrop" onMouseDown={resetReturnWizard}>
-          <div className="modal gmx-r73-modal" onMouseDown={(e)=>e.stopPropagation()}>
-            <div className="gmx-r73-modal-top"><div><div className="eyebrow">CREAR DEVOLUCIÓN · PASO {returnWizardStep} DE 4</div><h2>Nueva devolución</h2></div><button className="icon-btn" onClick={resetReturnWizard}>×</button></div>
-            <div className="gmx-r73-steps">{[['1','Información general'],['2','Productos'],['3','Detalles y motivo'],['4','Resumen']].map(([n,t])=><div key={n} className={returnWizardStep===Number(n)?'active':returnWizardStep>Number(n)?'done':''}><span>{returnWizardStep>Number(n)?'✓':n}</span><b>{t}</b></div>)}</div>
-            {returnWizardStep===1 ? <div className="gmx-r73-step"><h3>Información general</h3><p>Localiza la venta que originará la devolución.</p><div className="gmx-r73-form cols2"><label>Tipo de devolución<input value="De venta" disabled/></label><label>Pedido / referencia *<div className="gmx-r73-inline"><input autoFocus value={returnOrderId} onChange={(e)=>setReturnOrderId(e.target.value)} placeholder="Ej. PED-00037"/><button onClick={loadReturnOrder} disabled={!returnOrderId.trim()}>Buscar</button></div></label>{returnOrder?<><label>Cliente<input value={returnOrder.nombre_cliente||'—'} disabled/></label><label>Total de la venta<input value={money(returnOrder.total)} disabled/></label></>:null}</div><div className="modal-actions"><button className="secondary" onClick={resetReturnWizard}>Cancelar</button><button disabled={!returnOrder} onClick={()=>setReturnWizardStep(2)}>Siguiente</button></div></div>:null}
-            {returnWizardStep===2 ? <div className="gmx-r73-step"><h3>Productos</h3><p>Selecciona las unidades que regresará el cliente y su condición física.</p><DataTable empty="El pedido no contiene partidas." headers={['Producto','SKU','Vendido','Disponible','Cant. devolver','Condición','Destino']} dense>{(returnOrder?.detalles||[]).map((d)=><tr key={d.id_detalle}><td><b>{d.producto}</b><small className="table-subline">{d.detalle||''}</small></td><td>{d.sku}</td><td>{d.cantidad}</td><td><b>{d.cantidad_disponible_devolver}</b></td><td><input className="qty-small" type="number" min="0" max={d.cantidad_disponible_devolver} disabled={Number(d.cantidad_disponible_devolver)<=0} value={returnQty[d.id_detalle]||0} onChange={(e)=>setReturnQty((x)=>({...x,[d.id_detalle]:Math.min(Number(d.cantidad_disponible_devolver),Math.max(0,Number(e.target.value)||0))}))}/></td><td><select value={returnCondition[d.id_detalle]||'VENDIBLE'} disabled={Number(d.cantidad_disponible_devolver)<=0} onChange={(e)=>setReturnCondition((x)=>({...x,[d.id_detalle]:e.target.value}))}><option value="VENDIBLE">Vendible / buen estado</option><option value="DANADO">Dañado</option><option value="DEFECTUOSO">Defectuoso</option><option value="INCOMPLETO">Incompleto</option><option value="NO_VENDIBLE">No vendible</option></select></td><td><span className="gmx-r73-destination">{(returnCondition[d.id_detalle]||'VENDIBLE')==='VENDIBLE'?'Inventario disponible':(returnCondition[d.id_detalle]||'')==='DANADO'?'Merma':(returnCondition[d.id_detalle]||'')==='DEFECTUOSO'?'Garantía':(returnCondition[d.id_detalle]||'')==='INCOMPLETO'?'Revisión':'No vendible'}</span></td></tr>)}</DataTable><div className="modal-actions"><button className="secondary" onClick={()=>setReturnWizardStep(1)}>Anterior</button><button disabled={!selectedItems.length} onClick={()=>setReturnWizardStep(3)}>Siguiente</button></div></div>:null}
-            {returnWizardStep===3 ? <div className="gmx-r73-step"><h3>Detalles y motivo</h3><p>Define el motivo y, cuando corresponda, la forma de reembolso.</p><div className="gmx-r73-form cols2"><label className="span2">Motivo de devolución *<input value={returnOptions.reason} onChange={(e)=>setReturnOptions((x)=>({...x,reason:e.target.value}))} placeholder="Ej. Producto dañado, cambio de opinión..."/></label><label className="gmx-r73-check"><input type="checkbox" checked={returnOptions.refund} onChange={(e)=>setReturnOptions((x)=>({...x,refund:e.target.checked}))}/><span><b>Generar reembolso</b><small>Registra la salida asociada a esta devolución.</small></span></label>{returnOptions.refund?<><label>Método de reembolso<select value={returnOptions.refundMethod} onChange={(e)=>setReturnOptions((x)=>({...x,refundMethod:e.target.value}))}><option>EFECTIVO</option><option>TRANSFERENCIA</option><option>TARJETA</option><option>OTRO</option></select></label>{returnOptions.refundMethod!=='EFECTIVO'?<label className="span2">Referencia de reembolso<input value={returnOptions.refundReference} onChange={(e)=>setReturnOptions((x)=>({...x,refundReference:e.target.value}))}/></label>:null}</>:null}<label className="span2">Notas adicionales<textarea rows="3" value={returnOptions.notes} onChange={(e)=>setReturnOptions((x)=>({...x,notes:e.target.value}))}/></label></div><div className="modal-actions"><button className="secondary" onClick={()=>setReturnWizardStep(2)}>Anterior</button><button disabled={!returnOptions.reason.trim()} onClick={()=>setReturnWizardStep(4)}>Siguiente</button></div></div>:null}
-            {returnWizardStep===4 ? <div className="gmx-r73-step"><h3>Resumen</h3><p>Revisa el impacto antes de confirmar la devolución.</p><div className="gmx-r73-summary"><div><span>Tipo</span><b>De venta</b><span>Pedido</span><b>{returnOrder?.id_pedido}</b><span>Cliente</span><b>{returnOrder?.nombre_cliente||'—'}</b><span>Motivo</span><b>{returnOptions.reason}</b><span>Reembolso</span><b>{returnOptions.refund?returnOptions.refundMethod:'No'}</b></div><DataTable empty="Sin partidas seleccionadas." headers={['Producto','Cant.','Condición','Destino','Subtotal']} dense>{selectedItems.map((d)=>{const c=returnCondition[d.id_detalle]||'VENDIBLE';return <tr key={d.id_detalle}><td>{d.producto}</td><td>{returnQty[d.id_detalle]}</td><td>{c}</td><td>{c==='VENDIBLE'?'Inventario disponible':c==='DANADO'?'Merma':c==='DEFECTUOSO'?'Garantía':c==='INCOMPLETO'?'Revisión':'No vendible'}</td><td><b>{money(Number(returnQty[d.id_detalle]||0)*Number(d.precio_unitario||d.precio||0))}</b></td></tr>})}</DataTable><div className="gmx-r73-total"><span>Total devolución</span><strong>{money(selectedAmount)}</strong></div></div><div className="modal-actions"><button className="secondary" onClick={()=>setReturnWizardStep(3)}>Anterior</button><button className="gmx-r73-confirm" disabled={!selectedItems.length||!returnOptions.reason.trim()} onClick={async()=>{await createReturn();resetReturnWizard();}}>✓ Confirmar devolución</button></div></div>:null}
+        {returnModal ? <div className="modal-backdrop shiny-r73-backdrop" onMouseDown={resetReturnWizard}>
+          <div className="modal shiny-r73-modal" onMouseDown={(e)=>e.stopPropagation()}>
+            <div className="shiny-r73-modal-top"><div><div className="eyebrow">CREAR DEVOLUCIÓN · PASO {returnWizardStep} DE 4</div><h2>Nueva devolución</h2></div><button className="icon-btn" onClick={resetReturnWizard}>×</button></div>
+            <div className="shiny-r73-steps">{[['1','Información general'],['2','Productos'],['3','Detalles y motivo'],['4','Resumen']].map(([n,t])=><div key={n} className={returnWizardStep===Number(n)?'active':returnWizardStep>Number(n)?'done':''}><span>{returnWizardStep>Number(n)?'✓':n}</span><b>{t}</b></div>)}</div>
+            {returnWizardStep===1 ? <div className="shiny-r73-step"><h3>Información general</h3><p>Localiza la venta que originará la devolución.</p><div className="shiny-r73-form cols2"><label>Tipo de devolución<input value="De venta" disabled/></label><label>Pedido / referencia *<div className="shiny-r73-inline"><input autoFocus value={returnOrderId} onChange={(e)=>setReturnOrderId(e.target.value)} placeholder="Ej. PED-00037"/><button onClick={loadReturnOrder} disabled={!returnOrderId.trim()}>Buscar</button></div></label>{returnOrder?<><label>Cliente<input value={returnOrder.nombre_cliente||'—'} disabled/></label><label>Total de la venta<input value={money(returnOrder.total)} disabled/></label></>:null}</div><div className="modal-actions"><button className="secondary" onClick={resetReturnWizard}>Cancelar</button><button disabled={!returnOrder} onClick={()=>setReturnWizardStep(2)}>Siguiente</button></div></div>:null}
+            {returnWizardStep===2 ? <div className="shiny-r73-step"><h3>Productos</h3><p>Selecciona las unidades que regresará el cliente y su condición física.</p><DataTable empty="El pedido no contiene partidas." headers={['Producto','SKU','Vendido','Disponible','Cant. devolver','Condición','Destino']} dense>{(returnOrder?.detalles||[]).map((d)=><tr key={d.id_detalle}><td><b>{d.producto}</b><small className="table-subline">{d.detalle||''}</small></td><td>{d.sku}</td><td>{d.cantidad}</td><td><b>{d.cantidad_disponible_devolver}</b></td><td><input className="qty-small" type="number" min="0" max={d.cantidad_disponible_devolver} disabled={Number(d.cantidad_disponible_devolver)<=0} value={returnQty[d.id_detalle]||0} onChange={(e)=>setReturnQty((x)=>({...x,[d.id_detalle]:Math.min(Number(d.cantidad_disponible_devolver),Math.max(0,Number(e.target.value)||0))}))}/></td><td><select value={returnCondition[d.id_detalle]||'VENDIBLE'} disabled={Number(d.cantidad_disponible_devolver)<=0} onChange={(e)=>setReturnCondition((x)=>({...x,[d.id_detalle]:e.target.value}))}><option value="VENDIBLE">Vendible / buen estado</option><option value="DANADO">Dañado</option><option value="DEFECTUOSO">Defectuoso</option><option value="INCOMPLETO">Incompleto</option><option value="NO_VENDIBLE">No vendible</option></select></td><td><span className="shiny-r73-destination">{(returnCondition[d.id_detalle]||'VENDIBLE')==='VENDIBLE'?'Inventario disponible':(returnCondition[d.id_detalle]||'')==='DANADO'?'Merma':(returnCondition[d.id_detalle]||'')==='DEFECTUOSO'?'Garantía':(returnCondition[d.id_detalle]||'')==='INCOMPLETO'?'Revisión':'No vendible'}</span></td></tr>)}</DataTable><div className="modal-actions"><button className="secondary" onClick={()=>setReturnWizardStep(1)}>Anterior</button><button disabled={!selectedItems.length} onClick={()=>setReturnWizardStep(3)}>Siguiente</button></div></div>:null}
+            {returnWizardStep===3 ? <div className="shiny-r73-step"><h3>Detalles y motivo</h3><p>Define el motivo y, cuando corresponda, la forma de reembolso.</p><div className="shiny-r73-form cols2"><label className="span2">Motivo de devolución *<input value={returnOptions.reason} onChange={(e)=>setReturnOptions((x)=>({...x,reason:e.target.value}))} placeholder="Ej. Producto dañado, cambio de opinión..."/></label><label className="shiny-r73-check"><input type="checkbox" checked={returnOptions.refund} onChange={(e)=>setReturnOptions((x)=>({...x,refund:e.target.checked}))}/><span><b>Generar reembolso</b><small>Registra la salida asociada a esta devolución.</small></span></label>{returnOptions.refund?<><label>Método de reembolso<select value={returnOptions.refundMethod} onChange={(e)=>setReturnOptions((x)=>({...x,refundMethod:e.target.value}))}><option>EFECTIVO</option><option>TRANSFERENCIA</option><option>TARJETA</option><option>OTRO</option></select></label>{returnOptions.refundMethod!=='EFECTIVO'?<label className="span2">Referencia de reembolso<input value={returnOptions.refundReference} onChange={(e)=>setReturnOptions((x)=>({...x,refundReference:e.target.value}))}/></label>:null}</>:null}<label className="span2">Notas adicionales<textarea rows="3" value={returnOptions.notes} onChange={(e)=>setReturnOptions((x)=>({...x,notes:e.target.value}))}/></label></div><div className="modal-actions"><button className="secondary" onClick={()=>setReturnWizardStep(2)}>Anterior</button><button disabled={!returnOptions.reason.trim()} onClick={()=>setReturnWizardStep(4)}>Siguiente</button></div></div>:null}
+            {returnWizardStep===4 ? <div className="shiny-r73-step"><h3>Resumen</h3><p>Revisa el impacto antes de confirmar la devolución.</p><div className="shiny-r73-summary"><div><span>Tipo</span><b>De venta</b><span>Pedido</span><b>{returnOrder?.id_pedido}</b><span>Cliente</span><b>{returnOrder?.nombre_cliente||'—'}</b><span>Motivo</span><b>{returnOptions.reason}</b><span>Reembolso</span><b>{returnOptions.refund?returnOptions.refundMethod:'No'}</b></div><DataTable empty="Sin partidas seleccionadas." headers={['Producto','Cant.','Condición','Destino','Subtotal']} dense>{selectedItems.map((d)=>{const c=returnCondition[d.id_detalle]||'VENDIBLE';return <tr key={d.id_detalle}><td>{d.producto}</td><td>{returnQty[d.id_detalle]}</td><td>{c}</td><td>{c==='VENDIBLE'?'Inventario disponible':c==='DANADO'?'Merma':c==='DEFECTUOSO'?'Garantía':c==='INCOMPLETO'?'Revisión':'No vendible'}</td><td><b>{money(Number(returnQty[d.id_detalle]||0)*Number(d.precio_unitario||d.precio||0))}</b></td></tr>})}</DataTable><div className="shiny-r73-total"><span>Total devolución</span><strong>{money(selectedAmount)}</strong></div></div><div className="modal-actions"><button className="secondary" onClick={()=>setReturnWizardStep(3)}>Anterior</button><button className="shiny-r73-confirm" disabled={!selectedItems.length||!returnOptions.reason.trim()} onClick={async()=>{await createReturn();resetReturnWizard();}}>✓ Confirmar devolución</button></div></div>:null}
           </div>
         </div>:null}
-        {returnApprovalOpen ? <div className="modal-backdrop gmx-r77-pin-backdrop" onMouseDown={() => !returnApprovalBusy && setReturnApprovalOpen(false)}>
-          <div className="modal gmx-r77-pin-modal" onMouseDown={(event) => event.stopPropagation()}>
+        {returnApprovalOpen ? <div className="modal-backdrop shiny-r77-pin-backdrop" onMouseDown={() => !returnApprovalBusy && setReturnApprovalOpen(false)}>
+          <div className="modal shiny-r77-pin-modal" onMouseDown={(event) => event.stopPropagation()}>
             <div className="modal-head">
               <div><div className="eyebrow">AUTORIZACIÓN REQUERIDA</div><h2>Autorizar devolución</h2><p className="section-copy">Solicita a un administrador autorizado el código temporal de 4 dígitos.</p></div>
               <button className="icon-btn" type="button" disabled={returnApprovalBusy} onClick={() => setReturnApprovalOpen(false)}>×</button>
             </div>
-            <div className="gmx-r77-pin-modal-info">
+            <div className="shiny-r77-pin-modal-info">
               <span>Pedido</span><strong>{returnPendingPayload?.orderId || returnOrder?.id_pedido || '—'}</strong>
             </div>
-            <label className="gmx-r77-pin-modal-label">Código de autorización
+            <label className="shiny-r77-pin-modal-label">Código de autorización
               <input type="text" inputMode="numeric" pattern="[0-9]*" maxLength="4" autoFocus autoComplete="one-time-code" value={returnApprovalPin} onChange={(event) => setReturnApprovalPin(event.target.value.replace(/\D/g, '').slice(0, 4))} onKeyDown={(event) => { if (event.key === 'Enter' && !returnApprovalBusy) authorizeAndCompleteReturn(); }} placeholder="••••"/>
             </label>
             <div className="modal-actions">

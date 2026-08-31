@@ -1,5 +1,5 @@
-.gmx-approved-sync{--v:#334155;--v2:#475569;--text:#171927;--muted:#697386;--line:#e6e9ef;width:100%;color:var(--text);font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif}
-.gmx-approved-sync *{box-sizing:border-box}
+.shiny-approved-sync{--v:#334155;--v2:#475569;--text:#171927;--muted:#697386;--line:#e6e9ef;width:100%;color:var(--text);font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif}
+.shiny-approved-sync *{box-sizing:border-box}
 .gas-top{height:100px;padding:0 34px;display:flex;align-items:center;justify-content:space-between;background:#fff;border:1px solid var(--line);border-radius:15px 15px 0 0}
 .gas-title{display:flex;align-items:center;gap:17px}.gas-refresh{font-size:43px;color:var(--v);font-weight:300}.gas-title h2{margin:0 0 5px;font-size:26px}.gas-title p{margin:0;color:var(--muted);font-size:13px}
 .gas-ok{display:flex;align-items:center;gap:9px;padding:10px 18px;border:1px solid #cde9df;border-radius:999px;background:#f5fbf8;color:#087a53;font-size:13px;font-weight:600}.gas-ok i{width:7px;height:7px;border-radius:50%;background:#13a676}
@@ -46,10 +46,10 @@
 .gas-counter b,.gas-counter>span:first-child,.gas-steps button.active b,.gas-refresh{color:#475569!important}
 
 
-/* GMX_AUTO_SYNC_MULTI_NAV_R41
+/* SHINY_AUTO_SYNC_MULTI_NAV_R41
    Stepper: plain DIV controls, fully isolated from global button / role styles.
 */
-.gmx-approved-sync .gas-steps .gas-step-link{
+.shiny-approved-sync .gas-steps .gas-step-link{
   all:unset !important;
   box-sizing:border-box !important;
   position:relative !important;
@@ -64,11 +64,11 @@
   user-select:none !important;
 }
 
-.gmx-approved-sync .gas-steps .gas-step-link:hover,
-.gmx-approved-sync .gas-steps .gas-step-link:focus,
-.gmx-approved-sync .gas-steps .gas-step-link:active,
-.gmx-approved-sync .gas-steps .gas-step-link.active,
-.gmx-approved-sync .gas-steps .gas-step-link.done{
+.shiny-approved-sync .gas-steps .gas-step-link:hover,
+.shiny-approved-sync .gas-steps .gas-step-link:focus,
+.shiny-approved-sync .gas-steps .gas-step-link:active,
+.shiny-approved-sync .gas-steps .gas-step-link.active,
+.shiny-approved-sync .gas-steps .gas-step-link.done{
   background:transparent !important;
   background-color:transparent !important;
   background-image:none !important;
@@ -78,7 +78,7 @@
   transform:none !important;
 }
 
-.gmx-approved-sync .gas-steps .gas-step-link > span{
+.shiny-approved-sync .gas-steps .gas-step-link > span{
   all:unset !important;
   box-sizing:border-box !important;
   width:45px !important;
@@ -97,7 +97,7 @@
   line-height:1 !important;
 }
 
-.gmx-approved-sync .gas-steps .gas-step-link > div{
+.shiny-approved-sync .gas-steps .gas-step-link > div{
   all:unset !important;
   display:flex !important;
   flex-direction:column !important;
@@ -105,7 +105,7 @@
   min-width:0 !important;
 }
 
-.gmx-approved-sync .gas-steps .gas-step-link b{
+.shiny-approved-sync .gas-steps .gas-step-link b{
   all:unset !important;
   display:block !important;
   color:#334155 !important;
@@ -115,7 +115,7 @@
   line-height:1.2 !important;
 }
 
-.gmx-approved-sync .gas-steps .gas-step-link small{
+.shiny-approved-sync .gas-steps .gas-step-link small{
   all:unset !important;
   display:block !important;
   color:#7c8798 !important;
@@ -124,19 +124,19 @@
   line-height:1.2 !important;
 }
 
-.gmx-approved-sync .gas-steps .gas-step-link.active > span{
+.shiny-approved-sync .gas-steps .gas-step-link.active > span{
   background:#475569 !important;
   color:#fff !important;
   border-color:#475569 !important;
 }
 
-.gmx-approved-sync .gas-steps .gas-step-link.done > span{
+.shiny-approved-sync .gas-steps .gas-step-link.done > span{
   background:#f0fdf4 !important;
   color:#166534 !important;
   border-color:#bbf7d0 !important;
 }
 
-.gmx-approved-sync .gas-steps .gas-step-link.active::after{
+.shiny-approved-sync .gas-steps .gas-step-link.active::after{
   content:"" !important;
   position:absolute !important;
   left:0 !important;
@@ -147,24 +147,24 @@
 }
 
 /* Multi-TCG: selected card stays neutral, no electric blue */
-.gmx-approved-sync .gas-game.selected{
+.shiny-approved-sync .gas-game.selected{
   border-color:#64748b !important;
   background:#f8fafc !important;
   box-shadow:0 5px 16px rgba(15,23,42,.07) !important;
 }
-.gmx-approved-sync .gas-check.on{
+.shiny-approved-sync .gas-check.on{
   background:#475569 !important;
   border-color:#475569 !important;
 }
 
 /* No Continue button at bottom of step 1 */
-.gmx-approved-sync .gas-bottom-config{
+.shiny-approved-sync .gas-bottom-config{
   min-height:68px !important;
   justify-content:flex-start !important;
 }
 
 /* Selected TCG switcher for steps 2-4 */
-.gmx-approved-sync .gas-game-tabs{
+.shiny-approved-sync .gas-game-tabs{
   display:flex !important;
   flex-wrap:wrap !important;
   gap:8px !important;
@@ -172,7 +172,7 @@
   border-bottom:1px solid #e6e9ef !important;
   background:#f8fafc !important;
 }
-.gmx-approved-sync .gas-game-tabs button{
+.shiny-approved-sync .gas-game-tabs button{
   all:unset !important;
   box-sizing:border-box !important;
   display:inline-flex !important;
@@ -188,12 +188,12 @@
   font-weight:700 !important;
   cursor:pointer !important;
 }
-.gmx-approved-sync .gas-game-tabs button.active{
+.shiny-approved-sync .gas-game-tabs button.active{
   background:#334155 !important;
   border-color:#334155 !important;
   color:#fff !important;
 }
-.gmx-approved-sync .gas-empty-selection{
+.shiny-approved-sync .gas-empty-selection{
   min-height:160px !important;
   display:grid !important;
   place-items:center !important;
@@ -201,20 +201,20 @@
 }
 
 /* Kill any legacy bright blue step backgrounds with extra specificity */
-html body .gmx-approved-sync .gas-steps > .gas-step-link,
-html body .gmx-approved-sync .gas-steps > .gas-step-link.active,
-html body .gmx-approved-sync .gas-steps > .gas-step-link.done{
+html body .shiny-approved-sync .gas-steps > .gas-step-link,
+html body .shiny-approved-sync .gas-steps > .gas-step-link.active,
+html body .shiny-approved-sync .gas-steps > .gas-step-link.done{
   background:#fff0 !important;
   background-color:transparent !important;
   background-image:none !important;
 }
 
 @media(max-width:720px){
-  .gmx-approved-sync .gas-game-tabs{padding:12px 18px !important}
+  .shiny-approved-sync .gas-game-tabs{padding:12px 18px !important}
 }
 
-/* GMX_AUTO_SYNC_SORT_R43 */
-.gmx-approved-sync .gas-sort{
+/* SHINY_AUTO_SYNC_SORT_R43 */
+.shiny-approved-sync .gas-sort{
   display:flex !important;
   align-items:center !important;
   gap:9px !important;
@@ -223,7 +223,7 @@ html body .gmx-approved-sync .gas-steps > .gas-step-link.done{
   font-weight:600 !important;
 }
 
-.gmx-approved-sync .gas-sort select{
+.shiny-approved-sync .gas-sort select{
   min-height:36px !important;
   padding:0 30px 0 11px !important;
   border:1px solid #cbd5e1 !important;
@@ -237,25 +237,25 @@ html body .gmx-approved-sync .gas-steps > .gas-step-link.done{
   box-shadow:none !important;
 }
 
-.gmx-approved-sync .gas-sort select:focus{
+.shiny-approved-sync .gas-sort select:focus{
   border-color:#94a3b8 !important;
   box-shadow:0 0 0 3px rgba(148,163,184,.12) !important;
 }
-/* GMX_AUTO_SYNC_AUTO_SORT_R44 */
-.gmx-approved-sync .gas-head{
+/* SHINY_AUTO_SYNC_AUTO_SORT_R44 */
+.shiny-approved-sync .gas-head{
   align-items:flex-start !important;
 }
 
-.gmx-approved-sync .gas-set-tools{
+.shiny-approved-sync .gas-set-tools{
   padding-top:2px !important;
 }
 
-.gmx-approved-sync .gas-sort{
+.shiny-approved-sync .gas-sort{
   display:flex !important;
   align-items:center !important;
   gap:9px !important;
 }
 
-.gmx-approved-sync .gas-sort select{
+.shiny-approved-sync .gas-sort select{
   cursor:pointer !important;
 }

@@ -78,7 +78,7 @@
 @media(max-width:720px){.dash-toolbar{align-items:stretch;flex-direction:column}.dash-filters{justify-content:flex-start}.dash-filters>*{flex:1 1 140px}.dash-metrics-grid{grid-template-columns:1fr 1fr}.dash-performance-grid{grid-template-columns:1fr}.dash-ranking>div{grid-template-columns:24px minmax(0,1fr) 45px 82px}.dash-orders>div{grid-template-columns:minmax(0,1fr) 72px 80px}.dash-detail-backdrop{padding:0}.dash-detail-modal{width:100vw;height:100vh;max-height:none;border-radius:0}.dash-detail-row{grid-template-columns:90px minmax(0,1fr)}.dash-detail-numbers,.dash-detail-row>a{grid-column:2;justify-self:start}.dash-detail-numbers{justify-content:flex-start}.dash-detail-numbers span{justify-items:start}.dash-detail-footer span{display:none}}
 @media(max-width:520px){.dash-metrics-grid{grid-template-columns:1fr}.dash-state-grid{grid-template-columns:1fr}.dash-bar-row{grid-template-columns:48px 1fr 82px}.dash-metric{min-height:88px}.dash-detail-tools{grid-template-columns:1fr}.dash-detail-tools>div{display:none}.dash-detail-head{padding:16px}.dash-detail-content{padding-left:14px;padding-right:14px}}
 
-/* GMX Dashboard R20 â€” visualizaciÃ³n ejecutiva con grÃ¡ficos locales */
+/* Shiny Dashboard R20 — visualización ejecutiva con gráficos locales */
 .dash-chart-shell{position:relative;min-height:250px;padding:6px 2px 0}
 .dash-chart-legend{display:flex;justify-content:flex-end;gap:16px;margin:-4px 4px 0;color:var(--muted,#69758a);font-size:10px}
 .dash-chart-legend span{display:flex;align-items:center;gap:6px}.dash-chart-legend i{width:10px;height:10px;border-radius:3px}.dash-chart-legend i.sales{background:#34598a}.dash-chart-legend i.profit{height:3px;border-radius:999px;background:#12b76a}
@@ -105,7 +105,7 @@
 .dash-product-track{height:8px;margin-left:32px;border-radius:999px;background:rgba(100,116,139,.12);overflow:hidden}.dash-product-track i{display:block;height:100%;border-radius:inherit;background:linear-gradient(90deg,#079455,#32d583)}.dash-product-bars.orange .dash-product-track i{background:linear-gradient(90deg,#f79009,#fec84b)}
 @media(max-width:720px){.dash-chart-shell{overflow-x:auto}.dash-sales-chart{min-width:620px}.dash-donut-layout{grid-template-columns:100px minmax(0,1fr)}.dash-donut{width:98px;height:98px;padding:12px}.dash-donut>div{width:74px;height:74px}.dash-product-bar>div:first-child{grid-template-columns:24px minmax(0,1fr)}.dash-product-bar em{grid-column:2;text-align:left}.dash-product-track{margin-left:32px}}
 
-/* GMX_DASHBOARD_PREMIUM_R30_1_START */
+/* SHINY_DASHBOARD_PREMIUM_R30_1_START */
 /* SOLO DASHBOARD. NO SIDEBAR / MENU / LOGIN / LAYOUT GLOBAL */
 
 .dashboard-v1{
@@ -316,4 +316,4 @@
   .dashboard-v1 .dash-panel{padding:15px!important;border-radius:16px!important}
 }
 
-/* GMX_DASHBOARD_PREMIUM_R30_1_END */
+/* SHINY_DASHBOARD_PREMIUM_R30_1_END */

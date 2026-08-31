@@ -47,7 +47,7 @@ export default function VisualSearchBetaPage() {
   const [health, setHealth] = useState(null);
   const [result, setResult] = useState(null);
   const [betaCart, setBetaCart] = useState([]);
-  const [gmxVisualImageError, setVisualImageError] = useState({});
+  const [shinyVisualImageError, setVisualImageError] = useState({});
 
   const [cameraActive, setCameraActive] = useState(false);
   const [cameraBusy, setCameraBusy] = useState(false);
@@ -127,7 +127,7 @@ export default function VisualSearchBetaPage() {
       setFacingMode(mode);
       setCameraActive(true);
     } catch (e) {
-      console.error(brandText("[GMX Visual Beta] camera error"), e);
+      console.error(brandText("[Shiny Visual Beta] camera error"), e);
       const name = String(e?.name || '');
       let msg = 'No fue posible abrir la cámara.';
       if (name === 'NotAllowedError') msg = 'Permiso de cámara denegado. Autoriza la cámara para este sitio en el navegador.';
@@ -153,7 +153,7 @@ export default function VisualSearchBetaPage() {
       return;
     }
 
-    // GMX R5: capture only the centered TCG-card viewport (63:88).
+    // Shiny R5: capture only the centered TCG-card viewport (63:88).
     // The CSS viewport uses the same aspect ratio, so what the operator sees
     // is the same region that is sent to OpenCV/OpenCLIP.
     const cardRatio = 63 / 88;
@@ -294,8 +294,8 @@ export default function VisualSearchBetaPage() {
     (sum, item) => sum + Number(item.precio || 0) * Number(item.qty || 0),
     0
   );
-  return <div className="gmx-visual-beta-page">
-    <section className="content-card gmx-visual-beta-hero">
+  return <div className="shiny-visual-beta-page">
+    <section className="content-card shiny-visual-beta-hero">
       <div>
         <div className="eyebrow">LABORATORIO · FUNCIÓN EXPERIMENTAL</div>
         <h2>Búsqueda Visual Beta</h2>
@@ -304,7 +304,7 @@ export default function VisualSearchBetaPage() {
           Puedes usar cámara en vivo o seleccionar una imagen.
         </p>
       </div>
-      <div className={`gmx-visual-health ${health?.ok ? 'ok' : 'off'}`}>
+      <div className={`shiny-visual-health ${health?.ok ? 'ok' : 'off'}`}>
         <strong>{health?.ok ? 'Servicio visual activo' : 'Servicio visual sin conexión'}</strong>
         <span>{health?.ok ?
           `${health.openclip_model || 'OpenCLIP'} · ${health.device || 'CPU'}` :
@@ -312,13 +312,13 @@ export default function VisualSearchBetaPage() {
       </div>
     </section>
 
-    <section className="content-card gmx-visual-camera-panel">
-      <div className="gmx-visual-camera-head">
+    <section className="content-card shiny-visual-camera-panel">
+      <div className="shiny-visual-camera-head">
         <div>
           <h3>Cámara en vivo</h3>
           <p>Coloca la carta dentro del encuadre y toma la fotografía.</p>
         </div>
-        <div className="gmx-visual-camera-actions">
+        <div className="shiny-visual-camera-actions">
           {!cameraActive ?
           <button type="button" onClick={() => startCamera()} disabled={cameraBusy}>
               {cameraBusy ? 'Abriendo cámara…' : 'Abrir cámara'}
@@ -333,14 +333,14 @@ export default function VisualSearchBetaPage() {
         </div>
       </div>
 
-      <div className={`gmx-visual-camera-stage ${cameraActive ? 'active' : ''}`}>
+      <div className={`shiny-visual-camera-stage ${cameraActive ? 'active' : ''}`}>
         <video
           ref={videoRef}
           autoPlay
           playsInline
           muted />
         
-        {!cameraActive ? <div className="gmx-visual-camera-placeholder">
+        {!cameraActive ? <div className="shiny-visual-camera-placeholder">
           <strong>Cámara apagada</strong>
           <span>Presiona “Abrir cámara” para comenzar.</span>
         </div> : null}
@@ -349,11 +349,11 @@ export default function VisualSearchBetaPage() {
       {cameraError ? <div className="message warning">{cameraError}</div> : null}
     </section>
 
-    <section className="content-card gmx-visual-beta-workbench">
-      <div className="gmx-visual-capture">
+    <section className="content-card shiny-visual-beta-workbench">
+      <div className="shiny-visual-capture">
         <h3>1. Imagen capturada</h3>
 
-        <div className="gmx-visual-preview">
+        <div className="shiny-visual-preview">
           {image ?
           <img src={image} alt="Imagen para búsqueda visual" /> :
           <div>
@@ -362,8 +362,8 @@ export default function VisualSearchBetaPage() {
             </div>}
         </div>
 
-        <div className="gmx-visual-file-row">
-          <label className="secondary gmx-visual-file-button">
+        <div className="shiny-visual-file-row">
+          <label className="secondary shiny-visual-file-button">
             Seleccionar archivo
             <input
               type="file"
@@ -375,7 +375,7 @@ export default function VisualSearchBetaPage() {
           {fileName ? <small>{fileName}</small> : null}
         </div>
 
-        <div className="gmx-visual-actions">
+        <div className="shiny-visual-actions">
           <button type="button" onClick={search} disabled={busy || !image || health?.ok === false}>
             {busy ? 'Analizando…' : 'Buscar coincidencias'}
           </button>
@@ -388,43 +388,43 @@ export default function VisualSearchBetaPage() {
         {message ? <div className="message">{message}</div> : null}
       </div>
 
-      <div className="gmx-visual-results">
-        <div className="gmx-visual-results-head">
+      <div className="shiny-visual-results">
+        <div className="shiny-visual-results-head">
           <div>
             <h3>2. Coincidencias</h3>
             <p>Top 5 por similitud visual.</p>
           </div>
-          {result ? <div className="gmx-visual-metrics">
+          {result ? <div className="shiny-visual-metrics">
             <span>Catálogo local <strong>{result.catalog_count || 0}</strong></span>
             <span>Comparadas <strong>{result.indexed_count || 0}</strong></span>
             <span>Recorte OpenCV <strong>{result.card_detected ? 'Sí' : 'No'}</strong></span>
           </div> : null}
         </div>
 
-        {!result && !busy ? <div className="gmx-visual-empty">
+        {!result && !busy ? <div className="shiny-visual-empty">
           Los resultados aparecerán aquí después de analizar una imagen.
         </div> : null}
 
-        {busy ? <div className="gmx-visual-empty">Generando embedding y comparando imágenes…</div> : null}
+        {busy ? <div className="shiny-visual-empty">Generando embedding y comparando imágenes…</div> : null}
 
-        {matches.length ? <div className="gmx-visual-match-list">
-          {matches.map((item, index) => <article className="gmx-visual-match" key={item.row_id || item.id || `${item.sku}-${index}`}>
-            <div className="gmx-visual-rank">#{index + 1}</div>
-            <div className="gmx-visual-thumb">
-              {item.imagen && !gmxVisualImageError[item.row_id || item.id || item.sku] ? <img src={item.imagen} alt={item.nombre || item.sku || 'Producto'} onError={() => setVisualImageError((x) => ({ ...x, [item.row_id || item.id || item.sku]: true }))} /> : <span>{brandText("GMX")}</span>}
+        {matches.length ? <div className="shiny-visual-match-list">
+          {matches.map((item, index) => <article className="shiny-visual-match" key={item.row_id || item.id || `${item.sku}-${index}`}>
+            <div className="shiny-visual-rank">#{index + 1}</div>
+            <div className="shiny-visual-thumb">
+              {item.imagen && !shinyVisualImageError[item.row_id || item.id || item.sku] ? <img src={item.imagen} alt={item.nombre || item.sku || 'Producto'} onError={() => setVisualImageError((x) => ({ ...x, [item.row_id || item.id || item.sku]: true }))} /> : <span>{brandText("Shiny")}</span>}
             </div>
-            <div className="gmx-visual-match-info">
+            <div className="shiny-visual-match-info">
               <strong>{item.nombre || 'Producto sin nombre'}</strong>
               <span>{item.sku || 'Sin SKU'} · {item.categoria || 'Sin categoría'}</span>
-              <div className="gmx-visual-pos-meta">
+              <div className="shiny-visual-pos-meta">
                 <strong>{mxn(item.precio)}</strong>
                 <span className={Number(item.stock || 0) > 0 ? 'ok' : 'out'}>
                   {Number(item.stock || 0) > 0 ? `${item.stock} en stock` : 'Sin stock'}
                 </span>
               </div>
             </div>
-            <div className="gmx-visual-pos-actions">
-              <div className="gmx-visual-score">
+            <div className="shiny-visual-pos-actions">
+              <div className="shiny-visual-score">
                 <strong>{pct(item.similarity)}</strong>
                 <span>similitud</span>
               </div>
@@ -441,8 +441,8 @@ export default function VisualSearchBetaPage() {
       </div>
     </section>
 
-    <section className="content-card gmx-visual-pos-beta">
-      <div className="gmx-visual-pos-head">
+    <section className="content-card shiny-visual-pos-beta">
+      <div className="shiny-visual-pos-head">
         <div>
           <div className="eyebrow">PRUEBA AISLADA · NO GENERA VENTA</div>
           <h3>POS Visual Beta</h3>
@@ -452,34 +452,34 @@ export default function VisualSearchBetaPage() {
           </p>
         </div>
 
-                <div className="gmx-visual-pos-count">
+                <div className="shiny-visual-pos-count">
           <span>Productos en carrito</span>
           <strong>{betaCart.reduce((sum, item) => sum + Number(item.qty || 0), 0)}</strong>
         </div>
-<div className="gmx-visual-pos-total">
+<div className="shiny-visual-pos-total">
           <span>Subtotal Beta</span>
           <strong>{mxn(betaSubtotal)}</strong>
         </div>
       </div>
 
       {!betaCart.length ?
-      <div className="gmx-visual-pos-empty">
+      <div className="shiny-visual-pos-empty">
           Escanea un producto y agrégalo desde las coincidencias.
         </div> :
 
-      <div className="gmx-visual-pos-cart">
-          {betaCart.map((item) => <article className="gmx-visual-pos-line" key={item.key}>
-            <div className="gmx-visual-pos-cart-thumb">
-              {item.imagen ? <img src={item.imagen} alt={item.nombre || 'Producto'} /> : <span>{brandText("GMX")}</span>}
+      <div className="shiny-visual-pos-cart">
+          {betaCart.map((item) => <article className="shiny-visual-pos-line" key={item.key}>
+            <div className="shiny-visual-pos-cart-thumb">
+              {item.imagen ? <img src={item.imagen} alt={item.nombre || 'Producto'} /> : <span>{brandText("Shiny")}</span>}
             </div>
 
-            <div className="gmx-visual-pos-cart-info">
+            <div className="shiny-visual-pos-cart-info">
               <strong>{item.nombre || 'Producto'}</strong>
               <span>{item.sku || 'Sin SKU'}</span>
               <small>{mxn(item.precio)} c/u</small>
             </div>
 
-            <div className="gmx-visual-pos-qty">
+            <div className="shiny-visual-pos-qty">
               <button type="button" className="secondary" onClick={() => changeBetaQty(item.key, -1)}>−</button>
               <strong>{item.qty}</strong>
               <button
@@ -490,13 +490,13 @@ export default function VisualSearchBetaPage() {
               +</button>
             </div>
 
-            <div className="gmx-visual-pos-line-total">
+            <div className="shiny-visual-pos-line-total">
               <strong>{mxn(Number(item.precio || 0) * Number(item.qty || 0))}</strong>
               <span>Máx. stock: {item.stock}</span>
             </div>
           </article>)}
 
-          <div className="gmx-visual-pos-footer">
+          <div className="shiny-visual-pos-footer">
             <button type="button" className="secondary" onClick={() => setBetaCart([])}>
               Vaciar carrito Beta
             </button>
@@ -512,7 +512,7 @@ export default function VisualSearchBetaPage() {
           </div>
         </div>}
     </section>
-    <section className="content-card gmx-visual-beta-note">
+    <section className="content-card shiny-visual-beta-note">
       <strong>Alcance de esta Beta</strong>
       <p>
         Solo compara productos que ya tengan una imagen guardada localmente en /uploads/products.

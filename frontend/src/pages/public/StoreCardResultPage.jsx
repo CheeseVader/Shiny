@@ -15,8 +15,8 @@ export default function StoreCardResultPage(){
     publicApi('/api/payments/stripe/confirm',{method:'POST',body:JSON.stringify({token,sessionId})})
       .then(r=>{
         if(r.data?.paid){
-          cart.clear();sessionStorage.removeItem('GMX_PENDING_CARD_ORDER');setState('paid');
-          window.open(`/tienda/comprobante/${token}`,'gmx_receipt');
+          cart.clear();sessionStorage.removeItem('SHINY_PENDING_CARD_ORDER');setState('paid');
+          window.open(`/tienda/comprobante/${token}`,'shiny_receipt');
         }else setState('pending');
       }).catch(()=>setState('error'));
   },[token,sessionId]);

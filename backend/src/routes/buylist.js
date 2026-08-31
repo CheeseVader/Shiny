@@ -11,7 +11,7 @@ const router=Router();
 function friendlyBuylistError(error){
   const code=String(error?.message||error||'');
   if(code==='BUYLIST_USD_MXN_RATE_REQUIRED')
-    return 'Existe precio de mercado en USD, pero no hay un tipo de cambio vigente. Configúralo en Configuración → Finanzas.';
+    return 'Existe precio de mercado en USD, pero este TCG no tiene TDC configurado. Configúralo en TCG → Auto Sync.';
   if(code==='BUYLIST_PRICE_REQUIRED'||code==='PRICE_REFERENCE_REQUIRED')
     return 'No hay precio de mercado ni precio de tienda disponible para esta carta.';
   if(code.startsWith('BUYLIST_UNSUPPORTED_MARKET_CURRENCY:'))
@@ -99,7 +99,7 @@ router.get('/template.xlsx',(_req,res)=>{
 
     res.setHeader(
       'Content-Disposition',
-      'attachment; filename="GMX_Buylist_Plantilla.xlsx"'
+      'attachment; filename="SHINY_Buylist_Plantilla.xlsx"'
     );
 
     res.setHeader(

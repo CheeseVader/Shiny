@@ -1003,7 +1003,7 @@ export default function VisionScannerModal({
 
       setCameraReady(true);
 
-      setStatus(brandText("Centra la carta completa. GMX buscara primero el passcode.")
+      setStatus(brandText("Centra la carta completa. Shiny buscara primero el passcode.")
 
       );
 
@@ -1058,7 +1058,7 @@ export default function VisionScannerModal({
       ) :
       canvas;
 
-      console.log(brandText("[GMX Vision] card detection"),
+      console.log(brandText("[Shiny Vision] card detection"),
 
       cardRect || {
         detected: false
@@ -1091,7 +1091,7 @@ export default function VisionScannerModal({
           }
         );
 
-        console.log(brandText("[GMX Vision] local visual match"),
+        console.log(brandText("[Shiny Vision] local visual match"),
 
         visual
         );
@@ -1124,7 +1124,7 @@ export default function VisionScannerModal({
           return;
         }
       } catch (e) {
-        console.warn(brandText("[GMX Vision] visual match fallback"),
+        console.warn(brandText("[Shiny Vision] visual match fallback"),
 
         e
         );
@@ -1165,7 +1165,7 @@ export default function VisionScannerModal({
 
     } catch (e) {
 
-      console.error(brandText("[GMX Vision OCR]"),
+      console.error(brandText("[Shiny Vision OCR]"),
 
       e
       );
@@ -1305,10 +1305,10 @@ export default function VisionScannerModal({
 
   return createPortal(
 
-    <div className="modal-backdrop gmx-vision-backdrop">
+    <div className="modal-backdrop shiny-vision-backdrop">
 
       <div
-        className="modal gmx-vision-modal"
+        className="modal shiny-vision-modal"
         onMouseDown={(e) => e.stopPropagation()}>
         
 
@@ -1316,7 +1316,7 @@ export default function VisionScannerModal({
 
           <div>
 
-            <div className="eyebrow">{brandText("\n              GMX VISION\n            ")}
+            <div className="eyebrow">{brandText("\n              Shiny VISION\n            ")}
 
             </div>
 
@@ -1340,7 +1340,7 @@ export default function VisionScannerModal({
 
         </div>
 
-        <div className="gmx-vision-camera-stage">
+        <div className="shiny-vision-camera-stage">
 
           {!snapshotReady ?
           <>
@@ -1352,26 +1352,26 @@ export default function VisionScannerModal({
             
 
               {!cameraReady ?
-            <div className="gmx-vision-camera-placeholder">
+            <div className="shiny-vision-camera-placeholder">
                   Activa la camara o selecciona una fotografia.
                 </div> :
             null}
 
               {cameraReady ?
-            <div className="gmx-vision-card-guide" aria-hidden="true">
-                  <div className="gmx-vision-card-guide-label">
+            <div className="shiny-vision-card-guide" aria-hidden="true">
+                  <div className="shiny-vision-card-guide-label">
                     Centra la carta aqui
                   </div>
                 </div> :
             null}
             </> :
 
-          <div className="gmx-vision-snapshot-preview">
+          <div className="shiny-vision-snapshot-preview">
               <img
               src={snapshotUrl}
               alt="Foto capturada para reconocimiento" />
             
-              <div className="gmx-vision-snapshot-badge">
+              <div className="shiny-vision-snapshot-badge">
                 FOTO CAPTURADA
               </div>
             </div>}
@@ -1385,7 +1385,7 @@ export default function VisionScannerModal({
         null}
 
         {error ?
-        <div className="gmx-pos-camera-error">
+        <div className="shiny-pos-camera-error">
             {error}
           </div> :
         null}

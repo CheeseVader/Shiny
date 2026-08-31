@@ -1,5 +1,5 @@
 .tcg_store_template-pos-host{padding:0!important;overflow:visible!important}.tcg_store_template-pos-host>.section-head,.tcg_store_template-pos-host>.tabs{display:none!important}.tcg_store_template-pos-host>.message,.tcg_store_template-pos-host>.pos-sale-completed{margin:12px 14px}
-/* TCG_STORE_TEMPLATE POS UX-002 — terminal style. Uses host theme variables whenever available. */
+/* Shiny POS UX-002 — terminal style. Uses host theme variables whenever available. */
 .tcg_store_template-pos-terminal{--pos-accent:var(--primary,var(--accent-color,var(--accent,#2563eb)));--pos-accent-soft:color-mix(in srgb,var(--pos-accent) 10%,white);--pos-ink:var(--text-primary,#182130);--pos-muted:var(--text-secondary,#667085);--pos-border:var(--border-color,#d9e0ea);--pos-surface:var(--surface,#fff);--pos-bg:var(--background,#f5f7fa);background:var(--pos-bg);border:1px solid var(--pos-border);border-radius:14px;overflow:hidden;box-shadow:0 10px 30px rgba(15,23,42,.08)}
 .tcg_store_template-pos-topline{min-height:58px;padding:0 18px;display:flex;align-items:center;justify-content:space-between;background:var(--header-background,#111827);color:#fff;border-bottom:3px solid var(--pos-accent)}
 .tcg_store_template-pos-brand{font-size:21px;font-weight:900;letter-spacing:.02em;color:color-mix(in srgb,var(--pos-accent) 72%,white)}
@@ -96,7 +96,7 @@
 @media(max-width:1100px){.tcg_store_template-pos-promo-banner{min-height:155px}.tcg_store_template-pos-info-card{align-self:stretch}}
 
 
-/* TCG_STORE_TEMPLATE_DEV_001_ORDER_LOOKUP_UI */
+/* Shiny_DEV_001_ORDER_LOOKUP_UI */
 .tcg_store_template-pos-order-backdrop{
   z-index:1450;
 }

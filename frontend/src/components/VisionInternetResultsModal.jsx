@@ -94,13 +94,13 @@ export default function VisionInternetResultsModal({
   const visibleError = manualError || (manualItems === null ? error : '');
 
   return createPortal(
-    <div className="modal-backdrop gmx-vision-backdrop">
-      <div className="modal gmx-vision-internet-modal" onMouseDown={(e) => e.stopPropagation()}>
+    <div className="modal-backdrop shiny-vision-backdrop">
+      <div className="modal shiny-vision-internet-modal" onMouseDown={(e) => e.stopPropagation()}>
         <div className="modal-head">
           <div>
-            <div className="eyebrow">{brandText("GMX VISION - INTERNET DISCOVERY")}</div>
+            <div className="eyebrow">{brandText("Shiny VISION - INTERNET DISCOVERY")}</div>
             <h2>Buscar carta en Internet</h2>
-            <p className="section-copy">{brandText("\n              GMX consulta el proveedor externo. Si OCR no leyo bien la carta,\n              puedes corregir la busqueda aqui.\n            ")}
+            <p className="section-copy">{brandText("\n              Shiny consulta el proveedor externo. Si OCR no leyo bien la carta,\n              puedes corregir la busqueda aqui.\n            ")}
 
 
             </p>
@@ -108,7 +108,7 @@ export default function VisionInternetResultsModal({
           <button type="button" className="icon-btn" onClick={onClose}>X</button>
         </div>
 
-        <div className="gmx-vision-manual-search">
+        <div className="shiny-vision-manual-search">
           <input
             value={manualQuery}
             onChange={(e) => setManualQuery(e.target.value)}
@@ -126,33 +126,33 @@ export default function VisionInternetResultsModal({
           </button>
         </div>
 
-        <div className="gmx-vision-search-help">
+        <div className="shiny-vision-search-help">
           Puedes buscar por <strong>nombre</strong>, <strong>set code</strong> o
           <strong> passcode</strong>. Para D. Human: SDK-030 / 81057959.
         </div>
 
         {busy ? <div className="message">Consultando proveedor externo...</div> : null}
-        {visibleError ? <div className="gmx-pos-camera-error">{visibleError}</div> : null}
+        {visibleError ? <div className="shiny-pos-camera-error">{visibleError}</div> : null}
 
         {!busy && !visibleError && !rows.length ?
         <div className="public-empty">
             No hay una coincidencia suficientemente confiable.
           </div> : null}
 
-        <div className="gmx-vision-external-grid">
+        <div className="shiny-vision-external-grid">
           {rows.map((x, i) =>
-          <article className="gmx-vision-external-card" key={`${x.externalId}-${i}`}>
-              <div className="gmx-vision-external-image">
+          <article className="shiny-vision-external-card" key={`${x.externalId}-${i}`}>
+              <div className="shiny-vision-external-image">
                 {x.imageSmall || x.imageUrl ?
               <img src={x.imageSmall || x.imageUrl} alt={x.name} /> :
-              <div className="gmx-vision-no-image">Sin imagen</div>}
+              <div className="shiny-vision-no-image">Sin imagen</div>}
               </div>
 
-              <div className="gmx-vision-external-info">
+              <div className="shiny-vision-external-info">
                 <small>{x.source || 'INTERNET'} - Yu-Gi-Oh!</small>
                 <h3>{x.name}</h3>
 
-                <div className="gmx-vision-external-meta">
+                <div className="shiny-vision-external-meta">
                   {x.passcode ? <span>Passcode {x.passcode}</span> : null}
                   {x.setCode ? <span>{x.setCode}</span> : null}
                   {x.setName ? <span>{x.setName}</span> : null}
@@ -161,7 +161,7 @@ export default function VisionInternetResultsModal({
                   <span>Coincidencia {Math.round(Number(x.score || 0) * 100)}%</span>
                 </div>
 
-                <div className="gmx-vision-external-prices">
+                <div className="shiny-vision-external-prices">
                   {price(x.prices?.tcgplayer) ?
                 <span>TCGplayer {price(x.prices.tcgplayer)}</span> :
                 null}

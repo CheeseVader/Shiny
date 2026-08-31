@@ -5,11 +5,10 @@ import TopBar from '../components/TopBar.jsx';
 import { api } from '../services/api.js';
 
 const pageMeta = {
-  '/admin/dashboard': ['Dashboard', brandText("TCG_STORE_TEMPLATE LOCAL")],
+  '/admin/dashboard': ['Dashboard', brandText("Shiny LOCAL")],
   '/admin/productos': ['Productos', 'CATÁLOGO'],
 
 
-  '/admin/alta-externa-beta': ['Alta Externa Beta', 'LABORATORIO · CONSULTA EXTERNA'],
   '/admin/busqueda-visual-beta': ['Búsqueda Visual Beta', 'LABORATORIO · OPENCV + OPENCLIP'],
   '/admin/categorias': ['Categorías', 'CATÁLOGO MAESTRO'],
   '/admin/clientes': ['Clientes', 'CRM'],
@@ -20,8 +19,9 @@ const pageMeta = {
   '/admin/compras': ['Compras / Recepción', 'OPERACIÓN'],
   '/admin/caja': ['Caja / Arqueo', 'EFECTIVO'],
   '/admin/devoluciones': ['Devoluciones', 'OPERACIÓN'],
+  '/admin/generar-codigo': ['Generar código', 'AUTORIZACIÓN POS'],
   '/admin/comercial': ['Gestión Comercial', 'OPERACIÓN'],
-  '/admin/promociones': ['Promociones / Fidelidad', 'BENEFICIOS'],
+  '/admin/promociones': ['Promociones', 'BENEFICIOS'],
   '/admin/notificaciones': ['Notificaciones / Alertas', 'CONTROL OPERATIVO'],
   '/admin/contenido': ['Contenido / Marketing', 'MARKETING'],
   '/admin/tcg': ['TCG', 'TRADING CARD GAME'],
@@ -42,12 +42,12 @@ export default function AppShell() {
   const [alertChecking, setAlertChecking] = useState(false);
   const [alertDockExpanded, setAlertDockExpanded] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [title, staticSubtitle] = pageMeta[location.pathname] || [brandText("TCG_STORE_TEMPLATE"), 'LOCAL'];
+  const [title, staticSubtitle] = pageMeta[location.pathname] || [brandText("Shiny"), 'LOCAL'];
   const [dashboardBranchLabelR54D,setDashboardBranchLabelR54D]=useState(
-    localStorage.getItem('GMX_DASHBOARD_BRANCH_NAME') || 'Todas las sucursales'
-  ); // GMX_DASHBOARD_BRANCH_ID_R54D
+    localStorage.getItem('SHINY_DASHBOARD_BRANCH_NAME') || 'Todas las sucursales'
+  ); // SHINY_DASHBOARD_BRANCH_ID_R54D
   const subtitle = location.pathname==='/admin/dashboard' ? dashboardBranchLabelR54D : staticSubtitle;
-  const currentUser = (() => {try {return JSON.parse(localStorage.getItem('GMX_AUTH_USER') || '{}');} catch {return {};}})();
+  const currentUser = (() => {try {return JSON.parse(localStorage.getItem('SHINY_AUTH_USER') || '{}');} catch {return {};}})();
   const operatorMode = String(currentUser?.rol || '').toUpperCase() === 'OPERADOR';
 
   useEffect(()=>{
@@ -55,23 +55,23 @@ export default function AppShell() {
 
     const refreshDashboardBranchLabelR54D=()=>{
       setDashboardBranchLabelR54D(
-        localStorage.getItem('GMX_DASHBOARD_BRANCH_NAME') || 'Todas las sucursales'
+        localStorage.getItem('SHINY_DASHBOARD_BRANCH_NAME') || 'Todas las sucursales'
       );
     };
 
     const onChanged=(event)=>{
       const branchName=String(event?.detail?.branchName||'').trim();
       if(branchName){
-        localStorage.setItem('GMX_DASHBOARD_BRANCH_NAME',branchName);
+        localStorage.setItem('SHINY_DASHBOARD_BRANCH_NAME',branchName);
       }
       refreshDashboardBranchLabelR54D();
     };
 
     refreshDashboardBranchLabelR54D();
-    window.addEventListener('gmx:dashboard-branch-changed',onChanged);
+    window.addEventListener('shiny:dashboard-branch-changed',onChanged);
 
     return()=>{
-      window.removeEventListener('gmx:dashboard-branch-changed',onChanged);
+      window.removeEventListener('shiny:dashboard-branch-changed',onChanged);
     };
   },[location.pathname]);
 
@@ -93,22 +93,22 @@ export default function AppShell() {
 
   function canReadNotifications() {
     try {
-      const access = JSON.parse(localStorage.getItem('GMX_AUTH_ACCESS') || '{}');
-      const user = JSON.parse(localStorage.getItem('GMX_AUTH_USER') || '{}');
+      const access = JSON.parse(localStorage.getItem('SHINY_AUTH_ACCESS') || '{}');
+      const user = JSON.parse(localStorage.getItem('SHINY_AUTH_USER') || '{}');
       const role = String(access?.role || user?.rol || '').toUpperCase();
       return role === 'SUPERADMIN' || access?.permissions?.NOTIFICACIONES?.read === true;
     } catch {return false;}
   }
 
   function announcedIds() {
-    try {return new Set(JSON.parse(sessionStorage.getItem('TCG_STORE_TEMPLATE_ALERTS_ANNOUNCED') || '[]').map(String));}
+    try {return new Set(JSON.parse(sessionStorage.getItem('Shiny_ALERTS_ANNOUNCED') || '[]').map(String));}
     catch {return new Set();}
   }
 
   function rememberAnnounced(id) {
     const ids = announcedIds();
     ids.add(String(id));
-    sessionStorage.setItem('TCG_STORE_TEMPLATE_ALERTS_ANNOUNCED', JSON.stringify([...ids].slice(-200)));
+    sessionStorage.setItem('Shiny_ALERTS_ANNOUNCED', JSON.stringify([...ids].slice(-200)));
   }
 
   async function checkGlobalAlerts({ silent = true } = {}) {
@@ -223,7 +223,7 @@ export default function AppShell() {
       </div> : null}
 
       <style>{brandText(`
-        /* TCG_STORE_TEMPLATE-ALERTAS-FLOATING-FIX-20260815
+        /* Shiny-ALERTAS-FLOATING-FIX-20260815
            El acceso a Alertas queda compacto por defecto para no cubrir
            botones/acciones de las tablas. Se expande sólo con hover/focus. */
         .global-alert-dock{
@@ -279,7 +279,7 @@ export default function AppShell() {
         <div className="global-unread-alert-body">
           <div className="global-unread-alert-top">
             <span>ALERTA {activeGlobalAlert.prioridad || 'MEDIA'}</span>
-            <small>{activeGlobalAlert.sucursal || activeGlobalAlert.modulo || brandText("TCG_STORE_TEMPLATE")}</small>
+            <small>{activeGlobalAlert.sucursal || activeGlobalAlert.modulo || brandText("Shiny")}</small>
           </div>
           <h3>{activeGlobalAlert.titulo}</h3>
           <p>{activeGlobalAlert.mensaje}</p>

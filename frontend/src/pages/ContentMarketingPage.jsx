@@ -3,11 +3,11 @@ import { api } from '../services/api.js';
 import { authenticatedDownload } from '../utils/download.js';
 import DualAppearanceDesigner from '../components/DualAppearanceDesigner.jsx';
 import SecureMedia from '../components/SecureMedia.jsx';
-import '../phase_gmx_exact_views_r23.css';
+import '../phase_shiny_exact_views_r23.css';
 import '../content_marketing_option3.css';
 
 const DEFAULT_APPEARANCE = {
-  'appearance.brand_name': brandText("TCG_STORE_TEMPLATE"), 'appearance.logo_text': 'G', 'appearance.primary': '#101828',
+  'appearance.brand_name': brandText("Shiny"), 'appearance.logo_text': 'G', 'appearance.primary': '#101828',
   'appearance.surface': '#ffffff', 'appearance.background': '#f2f4f7', 'appearance.radius': '14',
   'appearance.density': 'comfortable', 'appearance.sidebar_compact': 'false'
 };
@@ -23,7 +23,7 @@ function AuthenticatedMediaImage({ mediaId, className = '', alt = '' }) {
     setFailed(false);
     if (!mediaId) return undefined;
 
-    const token = localStorage.getItem('GMX_AUTH_TOKEN') || localStorage.getItem('TCG_STORE_TEMPLATE_AUTH_TOKEN') || '';
+    const token = localStorage.getItem('SHINY_AUTH_TOKEN') || localStorage.getItem('Shiny_AUTH_TOKEN') || '';
     fetch(`/api/v1/content/media/${encodeURIComponent(mediaId)}/file`, {
       headers: token ? { Authorization: `Bearer ${token}` } : {}
     })
@@ -89,21 +89,21 @@ export default function ContentMarketingPage() {
     if (!file) return;
     setUploading(true);
     try {
-      const token = localStorage.getItem('GMX_AUTH_TOKEN') || localStorage.getItem('TCG_STORE_TEMPLATE_AUTH_TOKEN') || '';
+      const token = localStorage.getItem('SHINY_AUTH_TOKEN') || localStorage.getItem('Shiny_AUTH_TOKEN') || '';
       const r = await fetch('/api/v1/content/media/upload', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/octet-stream',
           'Authorization': `Bearer ${token}`,
-          'X-GMX-File-Name': encodeURIComponent(file.name),
-          'X-GMX-File-Type': file.type || 'application/octet-stream',
-          'X-GMX-Category': encodeURIComponent(category)
+          'X-SHINY-File-Name': encodeURIComponent(file.name),
+          'X-SHINY-File-Type': file.type || 'application/octet-stream',
+          'X-SHINY-Category': encodeURIComponent(category)
         }, body: file
       });
       const b = await r.json();
       if (!r.ok || b.success === false) throw new Error(b.message || b.error || `HTTP ${r.status}`);
       setMessage(b.data?.duplicate ? brandText(
-        `"${file.name}" ya existía en Multimedia. TCG_STORE_TEMPLATE evitó crear un duplicado.`) :
+        `"${file.name}" ya existía en Multimedia. Shiny evitó crear un duplicado.`) :
       `Multimedia cargada: ${file.name}`);
       await load();
       window.dispatchEvent(new CustomEvent('tcg_store_template-media-library-updated', { detail: { id_media: b.data?.id_media } }));
@@ -168,12 +168,12 @@ export default function ContentMarketingPage() {
     setUploading(true);let ok = 0,failed = 0;const errors = [];
     for (const file of list) {
       try {
-        const token = localStorage.getItem('GMX_AUTH_TOKEN') || localStorage.getItem('TCG_STORE_TEMPLATE_AUTH_TOKEN') || '';
+        const token = localStorage.getItem('SHINY_AUTH_TOKEN') || localStorage.getItem('Shiny_AUTH_TOKEN') || '';
         const r = await fetch('/api/v1/content/media/upload', {
           method: 'POST',
           headers: { 'Content-Type': 'application/octet-stream', 'Authorization': `Bearer ${token}`,
-            'X-GMX-File-Name': encodeURIComponent(file.name),
-            'X-GMX-File-Type': file.type || 'application/octet-stream', 'X-GMX-Category': 'GENERAL' },
+            'X-SHINY-File-Name': encodeURIComponent(file.name),
+            'X-SHINY-File-Type': file.type || 'application/octet-stream', 'X-SHINY-Category': 'GENERAL' },
           body: file
         });
         const b = await r.json().catch(() => ({}));
@@ -206,14 +206,14 @@ export default function ContentMarketingPage() {
     <header className="contentmk-hero">
       <div>
         <div className="eyebrow">CONTENIDO · MARKETING</div>
-        <h1>{settings['appearance.brand_name'] || brandText("TCG_STORE_TEMPLATE")} Content Center</h1>
+        <h1>Shiny Content Center</h1>
         <p>Apariencia de la tienda/backoffice y biblioteca multimedia. Hero y slideshow se administran dentro de Apariencia.</p>
       </div>
       <div className="contentmk-kpis"><span><b>{media.length}</b> multimedia</span></div>
     </header>
 
     <section className="contentmk-overview-kpis" aria-label="Resumen de contenido y marca">
-      <article><span>Marca activa</span><strong>{settings['appearance.brand_name'] || brandText("TCG_STORE_TEMPLATE")}</strong><small>Identidad de tienda y administración</small></article>
+      <article><span>Marca activa</span><strong>{settings['appearance.brand_name'] || brandText("Shiny")}</strong><small>Identidad de tienda y administración</small></article>
       <article><span>Recursos activos</span><strong>{contentOverview.active}</strong><small>de {media.length} archivos</small></article>
       <article><span>Imágenes</span><strong>{contentOverview.images}</strong><small>Biblioteca visual disponible</small></article>
       <article className={contentOverview.hero ? '' : 'attention'}><span>Hero / slideshow</span><strong>{contentOverview.hero}</strong><small>{contentOverview.hero ? 'Recursos listos' : 'Conviene agregar una portada'}</small></article>
@@ -254,7 +254,7 @@ export default function ContentMarketingPage() {
         <summary><div><h3>Importar imágenes desde URL</h3><p>Descarga recursos externos y guárdalos localmente en la biblioteca.</p></div><span>＋ Importar URL</span></summary>
         <div className="media-import-body">
         <div><h3>Importar imágenes desde URL</h3>
-          <p>{brandText("Pega una o varias URLs, una por línea. TCG_STORE_TEMPLATE las descarga y guarda localmente, por lo que el portal deja de depender del servidor externo.")}</p></div>
+          <p>{brandText("Pega una o varias URLs, una por línea. Shiny las descarga y guarda localmente, por lo que el portal deja de depender del servidor externo.")}</p></div>
         <textarea rows="5" value={urlText} onChange={(e) => setUrlText(e.target.value)}
         placeholder={"https://sitio.com/imagen1.jpg\nhttps://sitio.com/imagen2.webp"} />
         <div className="media-import-actions">
@@ -308,7 +308,7 @@ export default function ContentMarketingPage() {
           {!checkingImpact && !impact?.error && Number(impact?.totalReferences || 0) > 0 ? <div className="impact-warning">
             <strong>Actualmente está en uso en {impact.totalReferences} referencia(s):</strong>
             <ul>{(impact.references || []).map((x, i) => <li key={`${x.source}-${x.reference}-${i}`}>{x.label}</li>)}</ul>
-            <p>{brandText("Si continúas, TCG_STORE_TEMPLATE retirará automáticamente el archivo de estas configuraciones y después lo eliminará.")}</p>
+            <p>{brandText("Si continúas, Shiny retirará automáticamente el archivo de estas configuraciones y después lo eliminará.")}</p>
           </div> : null}
           {!checkingImpact && !impact?.error && Number(impact?.totalReferences || 0) === 0 ? <div className="impact-safe">No hay configuraciones activas que dependan de este archivo.</div> : null}
 

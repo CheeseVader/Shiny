@@ -94,7 +94,7 @@ function dbConfig() {
 }
 
 async function main() {
-  section(brandText("GMX — CLIENTES-LOYALTY-005 IDEMPOTENCY CONTROLLED SMOKE")
+  section(brandText("Shiny — CLIENTES-LOYALTY-005 IDEMPOTENCY CONTROLLED SMOKE")
 
   );
 
@@ -133,7 +133,7 @@ async function main() {
       SELECT
         (
           SELECT COUNT(*)
-          FROM gmx.clientes
+          FROM shiny.clientes
           WHERE email=$1
              OR telefono=$2
              OR nombre=$3
@@ -141,13 +141,13 @@ async function main() {
 
         (
           SELECT COUNT(*)
-          FROM gmx.pedidos
+          FROM shiny.pedidos
           WHERE id_pedido=$4
         )::bigint AS pedidos,
 
         (
           SELECT COUNT(*)
-          FROM gmx.fidelidad_movimientos
+          FROM shiny.fidelidad_movimientos
           WHERE id_pedido=$4
         )::bigint AS movimientos
       `,
@@ -173,9 +173,9 @@ async function main() {
 
     const forbiddenBefore = await db.query(`
       SELECT
-        (SELECT COUNT(*) FROM gmx.pedido_pagos)::bigint
+        (SELECT COUNT(*) FROM shiny.pedido_pagos)::bigint
           AS pedido_pagos,
-        (SELECT COUNT(*) FROM gmx.caja_movimientos)::bigint
+        (SELECT COUNT(*) FROM shiny.caja_movimientos)::bigint
           AS caja_movimientos
     `);
 
@@ -190,7 +190,7 @@ async function main() {
 
     const createdClient = await db.query(
       `
-      INSERT INTO gmx.clientes(
+      INSERT INTO shiny.clientes(
         nombre,
         telefono,
         email,
@@ -238,7 +238,7 @@ async function main() {
 
     const order = await db.query(
       `
-      INSERT INTO gmx.pedidos(
+      INSERT INTO shiny.pedidos(
         id_pedido,
         fecha,
         id_cliente,
@@ -344,7 +344,7 @@ async function main() {
           0
         )::bigint AS generated_points
 
-      FROM gmx.fidelidad_movimientos
+      FROM shiny.fidelidad_movimientos
       WHERE id_pedido=$1
       `,
       [orderId]
@@ -435,7 +435,7 @@ async function main() {
           0
         )::bigint AS generated_points
 
-      FROM gmx.fidelidad_movimientos
+      FROM shiny.fidelidad_movimientos
       WHERE id_pedido=$1
       `,
       [orderId]
@@ -502,13 +502,13 @@ async function main() {
       const residue = await db.query(
         `
         SELECT
-          (SELECT COUNT(*) FROM gmx.clientes
+          (SELECT COUNT(*) FROM shiny.clientes
            WHERE email=$1)::bigint AS clientes,
 
-          (SELECT COUNT(*) FROM gmx.pedidos
+          (SELECT COUNT(*) FROM shiny.pedidos
            WHERE id_pedido=$2)::bigint AS pedidos,
 
-          (SELECT COUNT(*) FROM gmx.fidelidad_movimientos
+          (SELECT COUNT(*) FROM shiny.fidelidad_movimientos
            WHERE id_pedido=$2)::bigint AS movimientos
         `,
         [
@@ -570,7 +570,7 @@ async function main() {
     await db.query(
       `
         SELECT *
-        FROM gmx.pedidos
+        FROM shiny.pedidos
         WHERE id_pedido=$1
         `,
       [orderId]
@@ -592,7 +592,7 @@ async function main() {
         COUNT(*) FILTER (
           WHERE tipo='REVERSA'
         )::bigint AS reversal_rows
-      FROM gmx.fidelidad_movimientos
+      FROM shiny.fidelidad_movimientos
       WHERE id_pedido=$1
       `,
       [orderId]
@@ -628,7 +628,7 @@ async function main() {
     await db.query(
       `
         SELECT *
-        FROM gmx.pedidos
+        FROM shiny.pedidos
         WHERE id_pedido=$1
         `,
       [orderId]
@@ -650,7 +650,7 @@ async function main() {
         COUNT(*) FILTER (
           WHERE tipo='REVERSA'
         )::bigint AS reversal_rows
-      FROM gmx.fidelidad_movimientos
+      FROM shiny.fidelidad_movimientos
       WHERE id_pedido=$1
       `,
       [orderId]
@@ -691,9 +691,9 @@ async function main() {
           AS original_id,
         original.tipo
           AS original_tipo
-      FROM gmx.fidelidad_movimientos r
+      FROM shiny.fidelidad_movimientos r
 
-      LEFT JOIN gmx.fidelidad_movimientos original
+      LEFT JOIN shiny.fidelidad_movimientos original
         ON original.id_movimiento=r.reversa_de
 
       WHERE
@@ -729,9 +729,9 @@ async function main() {
 
     const forbiddenAfter = await db.query(`
       SELECT
-        (SELECT COUNT(*) FROM gmx.pedido_pagos)::bigint
+        (SELECT COUNT(*) FROM shiny.pedido_pagos)::bigint
           AS pedido_pagos,
-        (SELECT COUNT(*) FROM gmx.caja_movimientos)::bigint
+        (SELECT COUNT(*) FROM shiny.caja_movimientos)::bigint
           AS caja_movimientos
     `);
 
@@ -786,7 +786,7 @@ async function main() {
       SELECT
         (
           SELECT COUNT(*)
-          FROM gmx.clientes
+          FROM shiny.clientes
           WHERE email=$1
              OR telefono=$2
              OR nombre=$3
@@ -794,23 +794,23 @@ async function main() {
 
         (
           SELECT COUNT(*)
-          FROM gmx.pedidos
+          FROM shiny.pedidos
           WHERE id_pedido=$4
         )::bigint AS pedidos,
 
         (
           SELECT COUNT(*)
-          FROM gmx.fidelidad_cuentas
+          FROM shiny.fidelidad_cuentas
           WHERE id_cliente IN (
             SELECT id_cliente
-            FROM gmx.clientes
+            FROM shiny.clientes
             WHERE email=$1
           )
         )::bigint AS cuentas,
 
         (
           SELECT COUNT(*)
-          FROM gmx.fidelidad_movimientos
+          FROM shiny.fidelidad_movimientos
           WHERE id_pedido=$4
         )::bigint AS movimientos
       `,

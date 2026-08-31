@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { useLocation } from 'react-router';
 import { api } from '../services/api.js';
 import { R23DualBars, r23DayKey } from '../components/VisualKitR23.jsx';
-import '../phase_gmx_exact_views_r23.css';
+import '../phase_shiny_exact_views_r23.css';
 
 
 import '../cash_arqueo_option_b_r56.css';
@@ -760,7 +760,7 @@ export default function PurchasesCashPage() {
               <div style={{ padding: 12, border: '1px solid #e5e7eb', borderRadius: 12 }}><small>Proveedor</small><br /><strong>{suppliers.find((x) => x.id_proveedor === supplierId)?.nombre_comercial || suppliers.find((x) => x.id_proveedor === supplierId)?.razon_social || supplierId}</strong></div>
               <div style={{ padding: 12, border: '1px solid #e5e7eb', borderRadius: 12 }}><small>Sucursal</small><br /><strong>{branches.find((x) => x.id_sucursal === branchId)?.nombre_sucursal || branchId}</strong></div>
               <div style={{ padding: 12, border: '1px solid #e5e7eb', borderRadius: 12 }}><small>Unidades</small><br /><strong>{items.reduce((a, x) => a + Number(x.quantity || 0), 0)}</strong></div>
-              <div style={{ padding: 12, border: '1px solid #e5e7eb', borderRadius: 12 }}><small>{brandText("Total TCG_STORE_TEMPLATE")}</small><br /><strong>{money(total)}</strong></div>
+              <div style={{ padding: 12, border: '1px solid #e5e7eb', borderRadius: 12 }}><small>{brandText("Total Shiny")}</small><br /><strong>{money(total)}</strong></div>
             </div>
 
             <label style={{ display: 'grid', gap: 6, marginTop: 20 }}>
@@ -780,7 +780,7 @@ export default function PurchasesCashPage() {
                   <div style={{ marginTop: 6, fontSize: 13 }}>XML: {doc.xmlName || 'No adjunto'} · PDF: {doc.documentName || 'No adjunto'}</div>
                 </div> :
               <div style={{ marginTop: 14, padding: 14, borderRadius: 12, background: '#f0fdf4', border: '1px solid #bbf7d0' }}>
-                  <strong>Recepción permitida sin XML/PDF</strong><br />{brandText("\n                  TCG_STORE_TEMPLATE recibirá la mercancía y conservará el estado fiscal seleccionado. Más adelante podrás usar Historial → Gestionar / Adjuntar factura sin volver a modificar inventario.\n                ")}
+                  <strong>Recepción permitida sin XML/PDF</strong><br />{brandText("\n                  Shiny recibirá la mercancía y conservará el estado fiscal seleccionado. Más adelante podrás usar Historial → Gestionar / Adjuntar factura sin volver a modificar inventario.\n                ")}
 
               </div>}
 
@@ -1178,7 +1178,7 @@ function PurchasePager({ page, setPage, total, pageSize = 5 }) {
 function NewProductDialog({ onClose, onAdd }) {
   const [x, setX] = useState({ name: '', sku: '', barcode: '', category: '', quantity: 1, unitCost: 0, price: 0, minimumStock: 0 });
   return <div className="modal-backdrop"><div className="modal-card purchase-new-product"><div className="modal-head"><h3>Producto nuevo dentro de la compra</h3><button className="secondary compact" onClick={onClose}>×</button></div><div className="form-grid">
-    <label>Nombre *<input value={x.name} onChange={(e) => setX((v) => ({ ...v, name: e.target.value }))} /></label><label>SKU<input value={x.sku} onChange={(e) => setX((v) => ({ ...v, sku: e.target.value }))} /></label><label>Código de barras<input value={x.barcode} onChange={(e) => setX((v) => ({ ...v, barcode: e.target.value }))} /></label><label>Categoría<input value={x.category} onChange={(e) => setX((v) => ({ ...v, category: e.target.value }))} /></label><label>Cantidad<input type="number" min="1" value={x.quantity} onChange={(e) => setX((v) => ({ ...v, quantity: e.target.value }))} /></label><label>Costo unitario<input type="number" min="0" step=".01" value={x.unitCost} onChange={(e) => setX((v) => ({ ...v, unitCost: e.target.value }))} /></label><label>Precio venta<input type="number" min="0" step=".01" value={x.price} onChange={(e) => setX((v) => ({ ...v, price: e.target.value }))} /></label><label>Stock mínimo<input type="number" min="0" value={x.minimumStock} onChange={(e) => setX((v) => ({ ...v, minimumStock: e.target.value }))} /></label>
+    <label>Nombre *<input value={x.name} onChange={(e) => setX((v) => ({ ...v, name: e.target.value }))} /></label><label>Código / SKU *<input value={x.sku} placeholder="Escanear código o escribir SKU interno" onChange={(e) => { const code=e.target.value; setX((v) => ({ ...v, sku: code, barcode: /^(?:\d{8}|\d{12}|\d{13}|\d{14})$/.test(String(code).trim()) ? String(code).trim() : '' })); }} /></label><label>Categoría<input value={x.category} onChange={(e) => setX((v) => ({ ...v, category: e.target.value }))} /></label><label>Cantidad<input type="number" min="1" value={x.quantity} onChange={(e) => setX((v) => ({ ...v, quantity: e.target.value }))} /></label><label>Costo unitario<input type="number" min="0" step=".01" value={x.unitCost} onChange={(e) => setX((v) => ({ ...v, unitCost: e.target.value }))} /></label><label>Precio venta<input type="number" min="0" step=".01" value={x.price} onChange={(e) => setX((v) => ({ ...v, price: e.target.value }))} /></label><label>Stock mínimo<input type="number" min="0" value={x.minimumStock} onChange={(e) => setX((v) => ({ ...v, minimumStock: e.target.value }))} /></label>
   </div><div className="modal-actions"><button className="secondary" onClick={onClose}>Cancelar</button><button onClick={() => onAdd(x)}>Agregar a compra</button></div></div></div>;
 }
 

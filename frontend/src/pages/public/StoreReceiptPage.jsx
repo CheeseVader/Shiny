@@ -15,7 +15,7 @@ export default function StoreReceiptPage() {
   return <main className="receipt-page">
     <div className="receipt-actions no-print"><button onClick={() => window.print()}>Imprimir / Guardar PDF</button></div>
     <article className="receipt-paper">
-      <header><div className="receipt-logo">{brandText("GMX")}</div><div><h1>Comprobante de pedido</h1><b>{order.numero_comprobante || order.id_pedido}</b></div></header>
+      <header><div className="receipt-logo">{brandText("Shiny")}</div><div><h1>Comprobante de pedido</h1><b>{order.numero_comprobante || order.id_pedido}</b></div></header>
       <div className="receipt-meta"><span>Pedido <b>{order.id_pedido}</b></span><span>Fecha <b>{new Date(order.fecha).toLocaleString('es-MX')}</b></span><span>Estado <b>{order.estado_pedido}</b></span><span>Pago <b>{order.metodo_pago_publico || 'PENDIENTE'} · {order.estado_pago || 'PENDIENTE'}</b></span></div>
       <section><h2>Cliente</h2><p>{order.nombre_cliente}<br />{order.email || ''}<br />{order.telefono || ''}</p></section>
       <section><h2>Detalle</h2>{(order.detalles || []).map((x, i) => <div className="receipt-line" key={i}><span>{x.cantidad} × {x.producto}<small>{x.detalle || x.sku || ''}</small></span><b>{money(x.subtotal, currency)}</b></div>)}</section>

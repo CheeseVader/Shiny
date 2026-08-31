@@ -1,4 +1,4 @@
-﻿import { brandText } from '../config/brand.js';
+import { brandText } from '../config/brand.js';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { api } from '../services/api.js';
 import '../externalCardLookupBeta.css';
@@ -39,7 +39,7 @@ function imageSrc(value) {
   return url;
 }
 
-/* GMX_OCR_IDENTITY_R14C */
+/* SHINY_OCR_IDENTITY_R14C */
 function extractStrongIdentifiers(text) {
   const raw=String(text||'').toUpperCase();
   const found=new Set();
@@ -69,7 +69,7 @@ function statusLabel(status) {
   if (status === 'INTERNET_IDENTIFIED') return 'Identificada en Internet';
   if (status === 'MATCHED') return 'Relacionado localmente';
   if (status === 'AMBIGUOUS') return 'Revisar identidad';
-  if (status === 'NOT_FOUND') return 'Fuera del catálogo GMX';
+  if (status === 'NOT_FOUND') return 'Fuera del catálogo Shiny';
   if (status === 'ERROR') return 'Error de enriquecimiento';
   return 'En cola';
 }
@@ -107,19 +107,19 @@ function PricePanel({ resolution }) {
     <p className="visual-r2-cache-note">
       {resolution.tcgplayer_prices?.length ? `TCGplayer por proveedor de Internet · ${resolution.tcgplayer_prices.length} variante(s)` :
         'El proveedor de Internet no entregó precio TCGplayer; se muestra otra fuente cuando existe.'}
-      {' · '}Origen {cache.origin === 'INTERNET' ? 'Internet consultado ahora' : 'caché GMX'}.
+      {' · '}Origen {cache.origin === 'INTERNET' ? 'Internet consultado ahora' : 'caché Shiny'}.
     </p>
     <div className="visual-r2-id-grid">
       <div><span>Master Card ID local</span><strong>{resolution.master?.row_id || 'No existe localmente'}</strong></div>
       <div><span>TCGplayer productId</span><strong>{resolution.tcgplayer?.product_id || 'No guardado'}</strong></div>
       <div><span>TCGplayer SKU</span><strong>{resolution.tcgplayer?.sku || 'No guardado'}</strong></div>
-      <div><span>Producto GMX</span><strong>{resolution.operational?.card?.id_carta || 'Aún no creado'}</strong></div>
+      <div><span>Producto Shiny</span><strong>{resolution.operational?.card?.id_carta || 'Aún no creado'}</strong></div>
     </div>
   </div>;
 }
 
-/* GMX_EXTERNAL_REFERENCE_R13E */
-function gmxExternalMarketplaceUrls(item,query){
+/* SHINY_EXTERNAL_REFERENCE_R13E */
+function shinyExternalMarketplaceUrls(item,query){
   const name=String(item?.name||query||'').trim();
   const set=String(item?.set_code||item?.set_name||'').trim();
   const number=String(item?.collector_number||'').trim();
@@ -135,7 +135,7 @@ export default function ExternalCardLookupBetaPage() {
   const videoRef = useRef(null);
   const streamRef = useRef(null);
 
-  /* GMX_YUGIOH_SET_CODE_R25 */
+  /* SHINY_YUGIOH_SET_CODE_R25 */
   const latestOcrIdentifiersR25 = useRef([]);
   const [mode, setMode] = useState('individual');
   const [game, setGame] = useState('YUGIOH');
@@ -144,13 +144,13 @@ export default function ExternalCardLookupBetaPage() {
   const [ocrText, setOcrText] = useState('');
   const [rows, setRows] = useState([]);
   const [selected, setSelected] = useState(null);
-  const [gmxRefOpen,setGmxRefOpen]=useState(false);
-  const [gmxRefSource,setGmxRefSource]=useState('TCGplayer');
-  const [gmxRefUrl,setGmxRefUrl]=useState('');
-  const [gmxRefPrice,setGmxRefPrice]=useState('');
-  const [gmxRefCondition,setGmxRefCondition]=useState('Near Mint');
-  const [gmxRefVariant,setGmxRefVariant]=useState('');
-  const [gmxRefSaved,setGmxRefSaved]=useState(null);
+  const [shinyRefOpen,setGmxRefOpen]=useState(false);
+  const [shinyRefSource,setGmxRefSource]=useState('TCGplayer');
+  const [shinyRefUrl,setGmxRefUrl]=useState('');
+  const [shinyRefPrice,setGmxRefPrice]=useState('');
+  const [shinyRefCondition,setGmxRefCondition]=useState('Near Mint');
+  const [shinyRefVariant,setGmxRefVariant]=useState('');
+  const [shinyRefSaved,setGmxRefSaved]=useState(null);
   const [resolution, setResolution] = useState(null);
   const [branches, setBranches] = useState([]);
   const [cameraActive, setCameraActive] = useState(false);
@@ -217,14 +217,14 @@ export default function ExternalCardLookupBetaPage() {
       await videoRef.current.play();
       setCameraActive(true);
     } catch (error) {
-      console.error(brandText('[GMX Visual TCG Camera]'), error);
+      console.error(brandText('[Shiny Visual TCG Camera]'), error);
       setMessage(error?.name === 'NotAllowedError' ? 'Permiso de cámara denegado.' : 'No fue posible abrir la cámara.');
     } finally {
       setCameraBusy(false);
     }
   }
 
-  /* GMX_CARD_FRAME_R15 */
+  /* SHINY_CARD_FRAME_R15 */
   function prepareImage(img) {
     const ratio = 63 / 88;
     const sw = img.videoWidth || img.width;
@@ -257,7 +257,7 @@ export default function ExternalCardLookupBetaPage() {
     return canvas.toDataURL('image/jpeg', 0.94);
   }
 
-  /* GMX_YUGIOH_ORIGINAL_UPLOAD_R26H2 */
+  /* SHINY_YUGIOH_ORIGINAL_UPLOAD_R26H2 */
   
   function cropDataUrlRegion(dataUrl, topRatio, heightRatio) {
     return new Promise((resolve, reject) => {
@@ -285,7 +285,7 @@ export default function ExternalCardLookupBetaPage() {
     });
   }
 
-  /* GMX_TITLE_PREPROCESS_R15B */
+  /* SHINY_TITLE_PREPROCESS_R15B */
   function preprocessTitleZone(dataUrl) {
     return new Promise((resolve, reject) => {
       const source = new Image();
@@ -333,7 +333,7 @@ export default function ExternalCardLookupBetaPage() {
     });
   }
 
-  /* GMX_TITLE_FOCUS_R21 */
+  /* SHINY_TITLE_FOCUS_R21 */
   function preprocessTitleFocusR21(dataUrl) {
     return new Promise((resolve, reject) => {
       const source = new Image();
@@ -386,7 +386,7 @@ export default function ExternalCardLookupBetaPage() {
     });
   }
 
-  /* GMX_POKEMON_OCR_PROFILE_R22 */
+  /* SHINY_POKEMON_OCR_PROFILE_R22 */
   function cropDataUrlBoxR22(dataUrl, x1, y1, x2, y2) {
     return new Promise((resolve, reject) => {
       const img = new Image();
@@ -475,10 +475,10 @@ export default function ExternalCardLookupBetaPage() {
     });
   }
 
-  /* GMX_YUGIOH_SET_HINT_R26B */
+  /* SHINY_YUGIOH_SET_HINT_R26B */
   const latestYugiohSetHintR26B = useRef('');
 
-  /* GMX_YUGIOH_DEDICATED_CODE_OCR_R26E */
+  /* SHINY_YUGIOH_DEDICATED_CODE_OCR_R26E */
   async function preprocessYugiohCodeStripR26E(sourceDataUrl, scale=8, mode='contrast') {
     const img = await loadImage(sourceDataUrl);
 
@@ -556,8 +556,8 @@ export default function ExternalCardLookupBetaPage() {
     };
   }
 
-  /* GMX_YUGIOH_LOWER_CODE_ZONE_R26F3 */
-/* GMX_YUGIOH_FULL_IMAGE_CODE_OCR_R26G */
+  /* SHINY_YUGIOH_LOWER_CODE_ZONE_R26F3 */
+/* SHINY_YUGIOH_FULL_IMAGE_CODE_OCR_R26G */
 async function readYugiohDedicatedCodeR26E(worker, sourceImage) {
   /*
    * R26G intentionally stops depending on one fixed card coordinate.
@@ -686,7 +686,7 @@ async function readYugiohDedicatedCodeR26E(worker, sourceImage) {
     ].join('\n')
   };
 }
-  /* GMX_YUGIOH_SET_CODE_MULTI_ZONE_R26C */
+  /* SHINY_YUGIOH_SET_CODE_MULTI_ZONE_R26C */
   function extractYugiohLooseTokensR26C(value) {
     const text = String(value || '').toUpperCase().replace(/[‐‑‒–—−]/g, '-');
     const tokens = text.match(/\b[A-Z0-9]{3,10}\b/g) || [];
@@ -718,7 +718,7 @@ async function readYugiohDedicatedCodeR26E(worker, sourceImage) {
       diagnostic:diagnostics.join('\n')
     };
   }
-  /* GMX_YUGIOH_SET_CODE_ZONE_R26 */
+  /* SHINY_YUGIOH_SET_CODE_ZONE_R26 */
   function extractYugiohSetCodesR26(value) {
     const text = String(value || '')
       .toUpperCase()
@@ -807,7 +807,7 @@ async function readYugiohDedicatedCodeR26E(worker, sourceImage) {
   }
 
   
-  /* GMX_OFFICIAL_NAME_CLEANUP_R21 */
+  /* SHINY_OFFICIAL_NAME_CLEANUP_R21 */
   function normalizeOfficialNameR21(value) {
     return String(value || '')
       .normalize('NFD')
@@ -845,9 +845,9 @@ async function readYugiohDedicatedCodeR26E(worker, sourceImage) {
     return score;
   }
 
-  /* GMX_TITLE_CLEANUP_R15C */
-  /* GMX_MINIMUM_READABLE_AREA_R16 */
-  /* GMX_OCR_CONSENSUS_R17 */
+  /* SHINY_TITLE_CLEANUP_R15C */
+  /* SHINY_MINIMUM_READABLE_AREA_R16 */
+  /* SHINY_OCR_CONSENSUS_R17 */
   function preprocessTitleZoneBinaryR17(dataUrl) {
     return new Promise((resolve, reject) => {
       const source = new Image();
@@ -1164,8 +1164,8 @@ async function readYugiohDedicatedCodeR26E(worker, sourceImage) {
     return '';
   }
 
-  /* GMX_AUTO_IDENTIFY_R20 */
-  /* GMX_CAMERA_ONLY_R28B */
+  /* SHINY_AUTO_IDENTIFY_R20 */
+  /* SHINY_CAMERA_ONLY_R28B */
   async function capturePhoto() {
     if (!videoRef.current?.videoWidth) return setMessage('La cámara todavía no está lista.');
 
@@ -1185,7 +1185,7 @@ async function readYugiohDedicatedCodeR26E(worker, sourceImage) {
     setRows([]); setSelected(null); setResolution(null); setOcrText(''); setImageErrors({});
   }
 
-  /* GMX_OCR_CATALOG_CLUE_R19B */
+  /* SHINY_OCR_CATALOG_CLUE_R19B */
   function bestCatalogClueR19B(values) {
     const usable = values
       .map((value)=>cleanPrimaryTitleR15C(String(value||'').trim()))
@@ -1472,7 +1472,7 @@ async function readYugiohDedicatedCodeR26E(worker, sourceImage) {
 
       return candidate;
     } catch (error) {
-      console.error(brandText('[GMX Visual TCG OCR R17]'), error);
+      console.error(brandText('[Shiny Visual TCG OCR R17]'), error);
       if (!silent) setMessage('No fue posible obtener consenso OCR. Vuelve a encuadrar la carta.');
       return '';
     } finally {
@@ -1484,13 +1484,13 @@ async function readYugiohDedicatedCodeR26E(worker, sourceImage) {
     setResolveBusy(true);
     setResolution(null);
     try {
-      const response = await api('/api/v1/external-card-beta/resolve-gmx', {
+      const response = await api('/api/v1/external-card-beta/resolve-shiny', {
         method: 'POST', body: JSON.stringify({ identity: candidateIdentity(item) })
       });
       setResolution(response?.data || null);
       return response?.data || null;
     } catch (error) {
-      setMessage(error?.message || 'La carta fue encontrada en Internet, pero no fue posible comprobar su existencia en GMX.');
+      setMessage(error?.message || 'La carta fue encontrada en Internet, pero no fue posible comprobar su existencia en Shiny.');
       return null;
     } finally {
       setResolveBusy(false);
@@ -1567,7 +1567,7 @@ async function readYugiohDedicatedCodeR26E(worker, sourceImage) {
         setQuery(officialNameR21);
       }
 
-      setMessage(`Identidad encontrada en Internet mediante ${source}. Comprobando después si ya existe en GMX…`);
+      setMessage(`Identidad encontrada en Internet mediante ${source}. Comprobando después si ya existe en Shiny…`);
       await choose(found[0]);
     } catch (error) {
       setMessage(error?.message || 'No fue posible identificar la carta.');
@@ -1628,7 +1628,7 @@ async function readYugiohDedicatedCodeR26E(worker, sourceImage) {
     const keys = new Set(items.map((item) => item.key));
     setBulkItems((current) => current.map((item) => keys.has(item.key) && item.resolve_status === 'PENDING' ? { ...item, resolve_status: 'RESOLVING' } : item));
     try {
-      const response = await api('/api/v1/external-card-beta/bulk-resolve-gmx', {
+      const response = await api('/api/v1/external-card-beta/bulk-resolve-shiny', {
         method: 'POST', body: JSON.stringify({ identities: items.map((item) => item.identity) })
       });
       const results = new Map((response?.data?.rows || []).map((row) => [row.key, row]));
@@ -1697,22 +1697,22 @@ async function readYugiohDedicatedCodeR26E(worker, sourceImage) {
     <label>Precio venta<input type="number" min="0" step="0.01" value={entry.precio_venta} onChange={(event) => setEntry((current) => ({ ...current, precio_venta: Number(event.target.value) || 0 }))}/></label>
     <label>Precio oferta<input type="number" min="0" step="0.01" value={entry.precio_oferta} onChange={(event) => setEntry((current) => ({ ...current, precio_oferta: Number(event.target.value) || 0 }))}/></label>
   </div>;
-  function gmxOpenMarketplace(kind){
+  function shinyOpenMarketplace(kind){
     if(!selected){
       setMessage?.('Selecciona primero una coincidencia.');
       return;
     }
-    const urls=gmxExternalMarketplaceUrls(selected,query);
+    const urls=shinyExternalMarketplaceUrls(selected,query);
     const url=kind==='collectr'?urls.collectr:urls.tcgplayer;
     window.open(url,'_blank','noopener,noreferrer');
   }
 
-  function gmxStartReference(sourceName='TCGplayer'){
+  function shinyStartReference(sourceName='TCGplayer'){
     if(!selected){
       setMessage?.('Selecciona primero una coincidencia.');
       return;
     }
-    const urls=gmxExternalMarketplaceUrls(selected,query);
+    const urls=shinyExternalMarketplaceUrls(selected,query);
     setGmxRefSource(sourceName);
     setGmxRefUrl(sourceName==='Collectr'?urls.collectr:urls.tcgplayer);
     setGmxRefPrice(Number(selected?.market_price_usd)>0?Number(selected.market_price_usd).toFixed(2):'');
@@ -1722,7 +1722,7 @@ async function readYugiohDedicatedCodeR26E(worker, sourceImage) {
     setGmxRefOpen(true);
   }
 
-  async function gmxPaste(setter){
+  async function shinyPaste(setter){
     try{
       const text=await navigator.clipboard.readText();
       setter(String(text||'').trim());
@@ -1733,8 +1733,8 @@ async function readYugiohDedicatedCodeR26E(worker, sourceImage) {
     }
   }
 
-  /* GMX_TCGPLAYER_SESSION_PRICE_R27B */
-  function gmxApplyTcgplayerSessionPriceR27B(payload, parsedPrice){
+  /* SHINY_TCGPLAYER_SESSION_PRICE_R27B */
+  function shinyApplyTcgplayerSessionPriceR27B(payload, parsedPrice){
     if(
       !payload ||
       payload?.reference?.marketplace !== 'TCGplayer' ||
@@ -1814,16 +1814,16 @@ async function readYugiohDedicatedCodeR26E(worker, sourceImage) {
     return true;
   }
 
-  function gmxSaveReferenceTest(){
+  function shinySaveReferenceTest(){
     if(!selected)return;
 
-    const cleaned=String(gmxRefPrice||'')
+    const cleaned=String(shinyRefPrice||'')
       .replace(/[^0-9.,]/g,'')
       .replace(',','.');
     const parsed=cleaned?Number(cleaned):null;
 
     const payload={
-      id:`gmx-ref-${Date.now()}`,
+      id:`shiny-ref-${Date.now()}`,
       card:{
         source:selected.source||source||'',
         game:selected.game||game||'',
@@ -1838,17 +1838,17 @@ async function readYugiohDedicatedCodeR26E(worker, sourceImage) {
         image:selected.image||''
       },
       reference:{
-        marketplace:gmxRefSource,
-        url:String(gmxRefUrl||'').trim(),
-        condition:gmxRefCondition,
-        variant:String(gmxRefVariant||'').trim(),
+        marketplace:shinyRefSource,
+        url:String(shinyRefUrl||'').trim(),
+        condition:shinyRefCondition,
+        variant:String(shinyRefVariant||'').trim(),
         price_usd:Number.isFinite(parsed)?parsed:null,
         captured_at:new Date().toISOString(),
         capture_method:'manual_user_confirmed'
       }
     };
 
-    const key='gmx.externalReferenceTests.v1';
+    const key='shiny.externalReferenceTests.v1';
     let current=[];
     try{
       current=JSON.parse(localStorage.getItem(key)||'[]');
@@ -1862,7 +1862,7 @@ async function readYugiohDedicatedCodeR26E(worker, sourceImage) {
     setGmxRefSaved(payload);
 
     const tcgplayerAppliedR27B =
-      gmxApplyTcgplayerSessionPriceR27B(
+      shinyApplyTcgplayerSessionPriceR27B(
         payload,
         parsed
       );
@@ -1871,15 +1871,15 @@ async function readYugiohDedicatedCodeR26E(worker, sourceImage) {
       setMessage(
         tcgplayerAppliedR27B
           ? `Referencia TCGplayer guardada. Precio $${parsed.toFixed(2)} USD aplicado a esta impresión durante la sesión. Inventario sin cambios.`
-          : `Referencia de prueba guardada desde ${gmxRefSource}. Inventario sin cambios.`
+          : `Referencia de prueba guardada desde ${shinyRefSource}. Inventario sin cambios.`
       );
     }
   }
 
-  return <div className="gmx-external-parity visual-r2">
+  return <div className="shiny-external-parity visual-r2">
     <section className="content-card visual-r2-hero">
       <div><div className="eyebrow">BÚSQUEDA VISUAL · INTERNET PRIMERO</div><h2>Alta Externa Beta R3</h2>
-        <p>Identifica la carta en Internet aunque no exista en GMX; después comprueba producto, precio e inventario local.</p></div>
+        <p>Identifica la carta en Internet aunque no exista en Shiny; después comprueba producto, precio e inventario local.</p></div>
       <div className="visual-r2-mode"><button className={mode === 'individual' ? 'active' : ''} onClick={() => setMode('individual')}>Individual</button>
         <button className={mode === 'bulk' ? 'active' : ''} onClick={() => setMode('bulk')}>Bulk</button></div>
     </section>
@@ -1888,9 +1888,9 @@ async function readYugiohDedicatedCodeR26E(worker, sourceImage) {
       <div className="visual-r2-toolbar"><div className="external-game-tabs">{GAMES.map((item) => <button key={item.id} className={game === item.id ? 'active' : ''} onClick={() => { setGame(item.id); clearIdentification(); }}>{item.label}</button>)}</div>
         {mode === 'bulk' ? <div className="visual-r2-counters"><strong>{physicalCount}</strong><span>físicas</span><strong>{bulkItems.length}</strong><span>únicas</span></div> : null}</div>
       <div className="visual-r2-capture-grid">
-        <div><div className={`external-parity-camera ${cameraActive ? 'active' : ''}`}><video ref={videoRef} autoPlay playsInline muted/><div className="gmx-card-frame-r15" aria-hidden="true">
-  <div className="gmx-card-frame-r15-label">COLOCA LA CARTA AQUÍ</div><div className="gmx-card-frame-r16-hint">La carta debe llenar el marco</div>
-  <div className="gmx-card-frame-r15-name">NOMBRE</div>
+        <div><div className={`external-parity-camera ${cameraActive ? 'active' : ''}`}><video ref={videoRef} autoPlay playsInline muted/><div className="shiny-card-frame-r15" aria-hidden="true">
+  <div className="shiny-card-frame-r15-label">COLOCA LA CARTA AQUÍ</div><div className="shiny-card-frame-r16-hint">La carta debe llenar el marco</div>
+  <div className="shiny-card-frame-r15-name">NOMBRE</div>
 </div>{!cameraActive ? <div className="external-parity-camera-placeholder"><strong>Cámara apagada</strong><span>Abre la cámara o selecciona un archivo.</span></div> : null}</div>
           <div className="external-parity-camera-actions">{cameraActive ? <><button onClick={capturePhoto}>Capturar foto</button><button className="secondary" onClick={stopCamera}>Cerrar</button></> : <button onClick={startCamera} disabled={cameraBusy}>{cameraBusy ? 'Abriendo…' : 'Abrir cámara'}</button>}
             </div></div>
@@ -1908,7 +1908,7 @@ async function readYugiohDedicatedCodeR26E(worker, sourceImage) {
     </section>
 
     <section className="content-card visual-r2-results">
-      <div className="visual-r2-section-head"><div><h3>Identidad desde Internet</h3><p>{rows.length ? `${rows.length} candidato(s) en ${source}` : 'Sin candidatos todavía.'}</p></div>{resolveBusy ? <span className="visual-r2-working">Comprobando existencia en GMX…</span> : null}</div>
+      <div className="visual-r2-section-head"><div><h3>Identidad desde Internet</h3><p>{rows.length ? `${rows.length} candidato(s) en ${source}` : 'Sin candidatos todavía.'}</p></div>{resolveBusy ? <span className="visual-r2-working">Comprobando existencia en Shiny…</span> : null}</div>
       <div className="visual-r2-result-grid"><div className="external-parity-match-list">{rows.slice(0, 10).map((item, index) => {
         const key = `${identityKey(item)}|${index}`; const src = imageSrc(item.image);
         return <article key={key} className={`external-parity-match ${selected === item ? 'selected' : ''}`} onClick={() => choose(item)}>
@@ -1932,20 +1932,20 @@ async function readYugiohDedicatedCodeR26E(worker, sourceImage) {
         <h4>Valores comunes para recepción</h4>{entryFields}<div className="visual-r2-operation-actions"><button onClick={receiveBulk} disabled={mutationBusy || !bulkItems.length}>{mutationBusy ? 'Procesando lote…' : 'Crear faltantes y recibir lote'}</button></div>
       </section>}
   
-    {selected?<section className="content-card gmx-ref-r13e">
-      <div className="gmx-ref-r13e-head">
+    {selected?<section className="content-card shiny-ref-r13e">
+      <div className="shiny-ref-r13e-head">
         <div>
           <div className="eyebrow">PRUEBA · REFERENCIA EXTERNA</div>
           <h3>Usar selección desde marketplace</h3>
           <p>
             Abre la búsqueda en el marketplace, selecciona visualmente la impresión correcta
-            y vuelve a GMX para confirmar precio, condición, variante y URL.
+            y vuelve a Shiny para confirmar precio, condición, variante y URL.
           </p>
         </div>
-        <div className="gmx-ref-r13e-badge">NO MODIFICA INVENTARIO</div>
+        <div className="shiny-ref-r13e-badge">NO MODIFICA INVENTARIO</div>
       </div>
 
-      <div className="gmx-ref-r13e-card">
+      <div className="shiny-ref-r13e-card">
         <strong>{selected?.name||'Carta seleccionada'}</strong>
         <span>
           {[selected?.set_name,selected?.set_code,selected?.collector_number]
@@ -1953,25 +1953,25 @@ async function readYugiohDedicatedCodeR26E(worker, sourceImage) {
         </span>
       </div>
 
-      <div className="gmx-ref-r13e-actions">
-        <button type="button" onClick={()=>gmxOpenMarketplace('tcgplayer')}>Abrir en TCGplayer</button>
-        <button type="button" className="secondary" onClick={()=>gmxOpenMarketplace('collectr')}>Abrir en Collectr</button>
-        <button type="button" className="secondary" onClick={()=>gmxStartReference('TCGplayer')}>Capturar referencia</button>
+      <div className="shiny-ref-r13e-actions">
+        <button type="button" onClick={()=>shinyOpenMarketplace('tcgplayer')}>Abrir en TCGplayer</button>
+        <button type="button" className="secondary" onClick={()=>shinyOpenMarketplace('collectr')}>Abrir en Collectr</button>
+        <button type="button" className="secondary" onClick={()=>shinyStartReference('TCGplayer')}>Capturar referencia</button>
       </div>
 
-      {gmxRefOpen?<div className="gmx-ref-r13e-form">
-        <div className="gmx-ref-r13e-form-head">
+      {shinyRefOpen?<div className="shiny-ref-r13e-form">
+        <div className="shiny-ref-r13e-form-head">
           <strong>Confirmar datos observados</strong>
           <button type="button" className="secondary" onClick={()=>setGmxRefOpen(false)}>Cerrar</button>
         </div>
 
-        <div className="gmx-ref-r13e-grid">
+        <div className="shiny-ref-r13e-grid">
           <label>
             <span>Marketplace</span>
-            <select value={gmxRefSource} onChange={e=>{
+            <select value={shinyRefSource} onChange={e=>{
               const next=e.target.value;
               setGmxRefSource(next);
-              const urls=gmxExternalMarketplaceUrls(selected,query);
+              const urls=shinyExternalMarketplaceUrls(selected,query);
               if(next==='TCGplayer')setGmxRefUrl(urls.tcgplayer);
               if(next==='Collectr')setGmxRefUrl(urls.collectr);
             }}>
@@ -1983,7 +1983,7 @@ async function readYugiohDedicatedCodeR26E(worker, sourceImage) {
 
           <label>
             <span>Condición</span>
-            <select value={gmxRefCondition} onChange={e=>setGmxRefCondition(e.target.value)}>
+            <select value={shinyRefCondition} onChange={e=>setGmxRefCondition(e.target.value)}>
               <option>Near Mint</option>
               <option>Lightly Played</option>
               <option>Moderately Played</option>
@@ -1995,40 +1995,40 @@ async function readYugiohDedicatedCodeR26E(worker, sourceImage) {
 
           <label>
             <span>Precio observado (USD)</span>
-            <div className="gmx-ref-r13e-input-action">
-              <input value={gmxRefPrice} onChange={e=>setGmxRefPrice(e.target.value)} placeholder="Ej. 2.49"/>
-              <button type="button" className="secondary" onClick={()=>gmxPaste(setGmxRefPrice)}>Pegar</button>
+            <div className="shiny-ref-r13e-input-action">
+              <input value={shinyRefPrice} onChange={e=>setGmxRefPrice(e.target.value)} placeholder="Ej. 2.49"/>
+              <button type="button" className="secondary" onClick={()=>shinyPaste(setGmxRefPrice)}>Pegar</button>
             </div>
           </label>
 
           <label>
             <span>Variante / impresión</span>
-            <div className="gmx-ref-r13e-input-action">
-              <input value={gmxRefVariant} onChange={e=>setGmxRefVariant(e.target.value)} placeholder="Ej. Foil / Alt Art"/>
-              <button type="button" className="secondary" onClick={()=>gmxPaste(setGmxRefVariant)}>Pegar</button>
+            <div className="shiny-ref-r13e-input-action">
+              <input value={shinyRefVariant} onChange={e=>setGmxRefVariant(e.target.value)} placeholder="Ej. Foil / Alt Art"/>
+              <button type="button" className="secondary" onClick={()=>shinyPaste(setGmxRefVariant)}>Pegar</button>
             </div>
           </label>
 
-          <label className="gmx-ref-r13e-url">
+          <label className="shiny-ref-r13e-url">
             <span>URL exacta</span>
-            <div className="gmx-ref-r13e-input-action">
-              <input value={gmxRefUrl} onChange={e=>setGmxRefUrl(e.target.value)} placeholder="Pega la URL exacta del producto"/>
-              <button type="button" className="secondary" onClick={()=>gmxPaste(setGmxRefUrl)}>Pegar</button>
+            <div className="shiny-ref-r13e-input-action">
+              <input value={shinyRefUrl} onChange={e=>setGmxRefUrl(e.target.value)} placeholder="Pega la URL exacta del producto"/>
+              <button type="button" className="secondary" onClick={()=>shinyPaste(setGmxRefUrl)}>Pegar</button>
             </div>
           </label>
         </div>
 
-        <div className="gmx-ref-r13e-save">
-          <button type="button" onClick={gmxSaveReferenceTest}>Guardar prueba en GMX</button>
+        <div className="shiny-ref-r13e-save">
+          <button type="button" onClick={shinySaveReferenceTest}>Guardar prueba en Shiny</button>
           <span>Se guarda sólo en localStorage de este navegador. No toca BD, producto ni stock.</span>
         </div>
 
-        {gmxRefSaved?<div className="gmx-ref-r13e-success">
+        {shinyRefSaved?<div className="shiny-ref-r13e-success">
           <strong>✓ Referencia guardada</strong>
           <span>
-            {gmxRefSaved.card.name} · {gmxRefSaved.reference.marketplace}
-            {gmxRefSaved.reference.price_usd!==null?` · $${gmxRefSaved.reference.price_usd.toFixed(2)} USD`:''}
-            {gmxRefSaved.reference.condition?` · ${gmxRefSaved.reference.condition}`:''}
+            {shinyRefSaved.card.name} · {shinyRefSaved.reference.marketplace}
+            {shinyRefSaved.reference.price_usd!==null?` · $${shinyRefSaved.reference.price_usd.toFixed(2)} USD`:''}
+            {shinyRefSaved.reference.condition?` · ${shinyRefSaved.reference.condition}`:''}
           </span>
 
           {selected?.tcgplayer_price_applied_r27b ? (

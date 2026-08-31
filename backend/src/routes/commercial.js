@@ -39,7 +39,7 @@ router.post('/quotes/:rowId/send', async (req, res) => {
     const messages = {
       QUOTE_EMAIL_REQUIRED: 'La cotización no tiene un correo de cliente.',
       QUOTE_EMAIL_INVALID: 'El correo del cliente no tiene un formato válido.',
-      QUOTE_SMTP_NOT_CONFIGURED: brandText("El servicio de correo SMTP de GMX no está configurado."),
+      QUOTE_SMTP_NOT_CONFIGURED: brandText("El servicio de correo SMTP de Shiny no está configurado."),
       QUOTE_EMAIL_SEND_FAILED: 'No fue posible enviar el correo. La cotización permanece sin marcar como enviada.',
       QUOTE_NOT_SENDABLE: 'Esta cotización ya no puede enviarse por su estado actual.'
     };
@@ -249,7 +249,7 @@ router.post('/returns/sale', async (req, res) => {
 
 
 /* ============================================================
-   GMX_DEV_008_REFUND_STATE_ROUTE
+   SHINY_DEV_008_REFUND_STATE_ROUTE
 
    PATCH
    /returns/refunds/:refundId/status

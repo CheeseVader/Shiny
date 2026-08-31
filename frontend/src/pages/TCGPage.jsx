@@ -6,18 +6,18 @@ import { visionQueries, scoreVisionCandidate } from '../utils/vision.js';
 import TCGAutoSyncPanel from '../components/tcg/TCGAutoSyncPanel.jsx';
 import TCGMasterCatalogBrowser from '../components/tcg/TCGMasterCatalogBrowser.jsx';
 import { strictTcgRuleR16, categoriesR16, categoryRuleR16, normalizeR16List, serializeClassificationR16 } from '../utils/tcgReceptionRulesR16.js';
-import { tcgReceptionPreset, mergeReceptionOptions, GMX_TCG_R12_COVERED_CODES } from '../utils/tcgReceptionPresetsR12.js';
-import '../phase_gmx_exact_views_r23.css';
+import { tcgReceptionPreset, mergeReceptionOptions, SHINY_TCG_R12_COVERED_CODES } from '../utils/tcgReceptionPresetsR12.js';
+import '../phase_shiny_exact_views_r23.css';
 import '../phase10_6_2_3.css';
 import './TCGDesign4Exact.css';
 import '../tcgReceptionManualR4.css';
 import '../tcgReceptionIndividualR1.css';
-import '../gmx_tcg_inventory_final.css';
+import '../shiny_tcg_inventory_final.css';
 import '../tcg_nav_icons_r76.css';
 const money = (v) => Number(v || 0).toLocaleString('es-MX', { style: 'currency', currency: 'MXN' });
 
 
-/* TCG_STORE_TEMPLATE_TCG_INVENTORY_FILTER_R1 */
+/* Shiny_TCG_INVENTORY_FILTER_R1 */
 function tcg_store_templateNorm(value = '') {
   return String(value ?? '').
   normalize('NFD').
@@ -52,7 +52,7 @@ function tcg_store_templateInventoryRowGameCode(row) {
   if (sku.includes('YGO')) return 'YUGIOH';
   if (sku.includes('POK')) return 'POKEMON';
   if (sku.includes('MTG')) return 'MAGIC';
-  if (sku.includes('ONEPIECE') || sku.includes('TCG_STORE_TEMPLATESEAOP')) return 'ONEPIECE';
+  if (sku.includes('ONEPIECE') || sku.includes('ShinySEAOP')) return 'ONEPIECE';
   if (sku.includes('RIF')) return 'RIFTBOUND';
 
   const text = tcg_store_templateNorm([
@@ -117,7 +117,7 @@ function tcg_store_templateInventorySearchText(row) {
   toUpperCase();
 }
 
-/* TCG_STORE_TEMPLATE_TCG_FILTER_R2 */
+/* Shiny_TCG_FILTER_R2 */
 function tcg_store_templateR2Norm(value = '') {
   return String(value ?? '').
   normalize('NFD').
@@ -183,11 +183,11 @@ function tcg_store_templateR2RowGameKey(row = {}) {
 
   const sku = tcg_store_templateR2Norm(row.sku || '');
 
-  if (sku.includes('TCG_STORE_TEMPLATESEAYGO') || sku.includes('YGO')) return 'YUGIOH';
-  if (sku.includes('TCG_STORE_TEMPLATESEAPOK') || sku.includes('POK')) return 'POKEMON';
-  if (sku.includes('TCG_STORE_TEMPLATESEAMTG') || sku.includes('MTG')) return 'MAGIC';
-  if (sku.includes('TCG_STORE_TEMPLATESEAOP')) return 'ONEPIECE';
-  if (sku.includes('TCG_STORE_TEMPLATESEARIF') || sku.includes('RIF')) return 'RIFTBOUND';
+  if (sku.includes('ShinySEAYGO') || sku.includes('YGO')) return 'YUGIOH';
+  if (sku.includes('ShinySEAPOK') || sku.includes('POK')) return 'POKEMON';
+  if (sku.includes('ShinySEAMTG') || sku.includes('MTG')) return 'MAGIC';
+  if (sku.includes('ShinySEAOP')) return 'ONEPIECE';
+  if (sku.includes('ShinySEARIF') || sku.includes('RIF')) return 'RIFTBOUND';
 
   return tcg_store_templateR2GameKeyFromText([
   row.juego,
@@ -332,7 +332,7 @@ export default function TCGPage() {
   const [entryGameFilter, setEntryGameFilter] = useState('');
   const [entrySetFilter, setEntrySetFilter] = useState('');
   const [visionOpen, setVisionOpen] = useState(false);
-  /* GMX_RECEPCION_INDIVIDUAL_R1 */
+  /* SHINY_RECEPCION_INDIVIDUAL_R1 */
   const [entryReceptionName, setEntryReceptionName] = useState('');
   const [entryReceptionCode, setEntryReceptionCode] = useState('');
   const [entryReceptionRarity, setEntryReceptionRarity] = useState('');
@@ -360,7 +360,7 @@ export default function TCGPage() {
     precio_venta: 0, precio_oferta: 0, tipo_entrada: 'COMPRA', origen_nombre: '', origen_referencia: '', documento: '', notas: ''
   });
 
-  /* GMX_TCG_RECEPCION_MANUAL_R4 */
+  /* SHINY_TCG_RECEPCION_MANUAL_R4 */
   const [manualReceptionR4, setManualReceptionR4] = useState({
     nombre: '',
     numero: '',
@@ -370,25 +370,25 @@ export default function TCGPage() {
     artista: ''
   });
 
-  /* GMX_TCG_RECEPCION_EXPANSIONES_R8 */
-  /* GMX_TCG_RECEPCION_R9_FIX_PANTALLA_GRIS */
+  /* SHINY_TCG_RECEPCION_EXPANSIONES_R8 */
+  /* SHINY_TCG_RECEPCION_R9_FIX_PANTALLA_GRIS */
   const [manualSetNameR8, setManualSetNameR8] = useState('');
   const [manualSetModeR8, setManualSetModeR8] = useState(false);
   const [manualSetBusyR8, setManualSetBusyR8] = useState(false);
 
-  /* GMX_TCG_RECEPCION_BUSCADOR_EXPANSIONES_R13 */
+  /* SHINY_TCG_RECEPCION_BUSCADOR_EXPANSIONES_R13 */
   const [expansionSearchR13, setExpansionSearchR13] = useState('');
   const [expansionOpenR13, setExpansionOpenR13] = useState(false);
   const [masterExpansionSetsR13, setMasterExpansionSetsR13] = useState([]);
   const [masterExpansionLoadingR13, setMasterExpansionLoadingR13] = useState(false);
   const [expansionSelectBusyR13, setExpansionSelectBusyR13] = useState(false);
 
-  /* GMX_TCG_RECEPCION_REGLAS_ESTRICTAS_R16 */
+  /* SHINY_TCG_RECEPCION_REGLAS_ESTRICTAS_R16 */
   const [cardVariantR16, setCardVariantR16] = useState('');
   const [cardTypeR16, setCardTypeR16] = useState('');
   const [cardAttributeR16, setCardAttributeR16] = useState('');
 
-  /* GMX_TCG_RECEPCION_SINGLE_MANUAL_R10 */
+  /* SHINY_TCG_RECEPCION_SINGLE_MANUAL_R10 */
   const [manualFieldModeR10, setManualFieldModeR10] = useState({
     rareza:false,
     tipo:false,
@@ -399,7 +399,7 @@ export default function TCGPage() {
 
 
 
-  /* GMX_TCG_RECEPCION_MANUAL_R5 */
+  /* SHINY_TCG_RECEPCION_MANUAL_R5 */
   const manualReceptionRaritiesR5 = useMemo(() => {
     if (!entryGameFilter) return [];
     const seen=new Set();
@@ -415,7 +415,7 @@ export default function TCGPage() {
       });
   }, [rarities, entryGameFilter]);
 
-  /* GMX_TCG_RECEPCION_CATALOGOS_DINAMICOS_R7 */
+  /* SHINY_TCG_RECEPCION_CATALOGOS_DINAMICOS_R7 */
   const manualReceptionCardsR7 = useMemo(() => {
     if (!entryGameFilter) return [];
     return (Array.isArray(cards) ? cards : []).filter((c) => String(c.id_juego || '') === String(entryGameFilter));
@@ -448,7 +448,7 @@ export default function TCGPage() {
     return [...new Set([...values,...cardValues])]
       .sort((a,b)=>a.localeCompare(b,'es',{sensitivity:'base'}));
   }, [inventory, manualReceptionCardsR7, entryGameFilter]);
-  /* GMX_TCG_RECEPCION_CATALOGOS_TODOS_R12_FIX */
+  /* SHINY_TCG_RECEPCION_CATALOGOS_TODOS_R12_FIX */
   const manualReceptionGameR11 = useMemo(
     ()=> (Array.isArray(games)?games:[]).find((g)=>String(g.id_juego||'')===String(entryGameFilter||'')) || null,
     [games,entryGameFilter]
@@ -483,7 +483,7 @@ export default function TCGPage() {
   const manualReceptionCatalogCoverageR12 = useMemo(()=>{
     const all=(Array.isArray(games)?games:[]);
     const unknown=all.filter((g)=>!tcgReceptionPreset(g||{}).covered);
-    return {total:all.length,covered:all.length-unknown.length,unknown,presetCodes:GMX_TCG_R12_COVERED_CODES};
+    return {total:all.length,covered:all.length-unknown.length,unknown,presetCodes:SHINY_TCG_R12_COVERED_CODES};
   },[games]);
 
 
@@ -593,7 +593,7 @@ export default function TCGPage() {
   }
 
   async function loadAll() {
-    const [g, s, r, c, i, a, b, p, mg] = await Promise.all([
+    const [g, s, r, c, i, a, b, mg] = await Promise.all([
     api('/api/v1/tcg/games'),
     api('/api/v1/tcg/sets'),
     api('/api/v1/tcg/rarities'),
@@ -601,7 +601,6 @@ export default function TCGPage() {
     api('/api/v1/tcg/inventory?limit=1000'),
     api('/api/v1/tcg/acquisitions?limit=300'),
     api('/api/v1/branches?includeInactive=false'),
-    api('/api/v1/products?limit=1000'),
     api('/api/v1/tcg/master/games')]
     );
     setGames(Array.isArray(g?.data) ? g.data : []);
@@ -612,7 +611,7 @@ export default function TCGPage() {
     setInventory(Array.isArray(i?.data) ? i.data : []);
     setAcquisitions(Array.isArray(a?.data) ? a.data : []);
     setBranches(Array.isArray(b?.data) ? b.data : []);
-    setGeneralProducts(Array.isArray(p?.data) ? p.data : []);
+
     if (!setForm.id_juego && Array.isArray(g?.data) && g.data[0]) setSetForm((x) => ({ ...x, id_juego: g.data[0].id_juego }));
     if (!rarityForm.id_juego && Array.isArray(g?.data) && g.data[0]) setRarityForm((x) => ({ ...x, id_juego: g.data[0].id_juego }));
     if (!cardForm.id_juego && Array.isArray(g?.data) && g.data[0]) setCardForm((x) => ({ ...x, id_juego: g.data[0].id_juego }));
@@ -799,7 +798,7 @@ if (!masterGameCode && mg.data?.[0]) setMasterGameCode(mg.data[0].codigo);
       const r = await api(`/api/v1/tcg/master/games/${encodeURIComponent(code)}/activate`, {
         method: 'POST', body: JSON.stringify({ visiblePortal })
       });
-      setMessage(brandText(`${r.data.game.nombre} agregado a TCG_STORE_TEMPLATE con ${r.data.sets} sets y ${r.data.rarities} rarezas.`));
+      setMessage(brandText(`${r.data.game.nombre} agregado a Shiny con ${r.data.sets} sets y ${r.data.rarities} rarezas.`));
       await loadAll();
     } catch (e) {setMessage(e.message);}
   }
@@ -811,7 +810,7 @@ if (!masterGameCode && mg.data?.[0]) setMasterGameCode(mg.data[0].codigo);
       });
       setMessage(value ? `${game.nombre} visible en portal cliente.` : `${game.nombre} oculto del portal cliente.`);
       try {
-        localStorage.setItem('TCG_STORE_TEMPLATE_TCG_VISIBILITY_VERSION', String(Date.now()));
+        localStorage.setItem('Shiny_TCG_VISIBILITY_VERSION', String(Date.now()));
         window.dispatchEvent(new CustomEvent('tcg_store_template:tcg-visibility-changed'));
       } catch {}
       await loadAll();
@@ -820,7 +819,7 @@ if (!masterGameCode && mg.data?.[0]) setMasterGameCode(mg.data[0].codigo);
 
   async function downloadDynamicTemplate() {
     try {
-      const token = localStorage.getItem('TCG_STORE_TEMPLATE_AUTH_TOKEN') || '';
+      const token = localStorage.getItem('Shiny_AUTH_TOKEN') || '';
       const response = await fetch('/api/v1/tcg/template.xlsx', {
         headers: { Authorization: `Bearer ${token}` },
         cache: 'no-store'
@@ -829,7 +828,7 @@ if (!masterGameCode && mg.data?.[0]) setMasterGameCode(mg.data[0].codigo);
       const blob = await response.blob();
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
-      a.href = url;a.download = 'TCG_STORE_TEMPLATE_Plantillas_Importacion_Dinamica.xlsx';
+      a.href = url;a.download = 'Shiny_Plantillas_Importacion_Dinamica.xlsx';
       document.body.appendChild(a);a.click();a.remove();
       URL.revokeObjectURL(url);
       setMessage('Plantilla generada con juegos, expansiones y rarezas actuales.');
@@ -912,7 +911,7 @@ if (!masterGameCode && mg.data?.[0]) setMasterGameCode(mg.data[0].codigo);
 
   async function downloadReceiptTemplate() {
     try {
-      const token = localStorage.getItem('TCG_STORE_TEMPLATE_AUTH_TOKEN') || '';
+      const token = localStorage.getItem('Shiny_AUTH_TOKEN') || '';
       const response = await fetch('/api/v1/tcg/inventory/receipt-template.xlsx', {
         headers: { Authorization: `Bearer ${token}` }, cache: 'no-store'
       });
@@ -920,7 +919,7 @@ if (!masterGameCode && mg.data?.[0]) setMasterGameCode(mg.data[0].codigo);
       const blob = await response.blob();
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
-      a.href = url;a.download = 'TCG_STORE_TEMPLATE_TCG_Recepcion_Masiva.xlsx';
+      a.href = url;a.download = 'Shiny_TCG_Recepcion_Masiva.xlsx';
       document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(url);
       setMessage('Plantilla de recepción generada desde la DBA actual.');
     } catch (e) {setMessage(e.message);}
@@ -1076,7 +1075,7 @@ if (!masterGameCode && mg.data?.[0]) setMasterGameCode(mg.data[0].codigo);
     setMessage(`Carta reconocida: ${card.nombre || card.id_carta}. Confirma idioma, condición, acabado, cantidad y precio antes de recibir.`);
   }
 
-  /* GMX_RECEPCION_INDIVIDUAL_R1_FUNCTIONS */
+  /* SHINY_RECEPCION_INDIVIDUAL_R1_FUNCTIONS */
   function receptionImage(card = {}) {
     return card.image_local_url || card.image_large_url || card.image_small_url || card.image || card.imagen_url || card.imagen || '';
   }
@@ -1110,21 +1109,21 @@ if (!masterGameCode && mg.data?.[0]) setMasterGameCode(mg.data[0].codigo);
       if (entryGameFilter) localRows = localRows.filter((x) => String(x.id_juego || '') === String(entryGameFilter));
       if (entrySetFilter) localRows = localRows.filter((x) => String(x.id_set || '') === String(entrySetFilter));
       if (entryReceptionRarity) localRows = localRows.filter((x) => String(x.rareza || '').toLowerCase() === String(entryReceptionRarity).toLowerCase());
-      localRows = localRows.map((x) => ({ ...x, _gmxSource: 'CATALOGO_GMX' }));
+      localRows = localRows.map((x) => ({ ...x, _shinySource: 'CATALOGO_Shiny' }));
 
       let internetRows = [];
       const gameCode = receptionGameCode();
       if (gameCode && q.length >= 2) {
         try {
           const external = await api(`/api/v1/external-card-beta/search?${new URLSearchParams({ game: gameCode, q })}`);
-          internetRows = (Array.isArray(external?.data?.rows) ? external.data.rows : []).map((x) => ({ ...x, _gmxSource: 'INTERNET' }));
+          internetRows = (Array.isArray(external?.data?.rows) ? external.data.rows : []).map((x) => ({ ...x, _shinySource: 'INTERNET' }));
           if (code) {
             const wanted = code.toUpperCase().replace(/[^A-Z0-9]/g, '');
             const exactCode = internetRows.filter((x) => String(x.collector_number || '').toUpperCase().replace(/[^A-Z0-9]/g, '') === wanted);
             if (exactCode.length) internetRows = exactCode;
           }
         } catch {
-          // El formulario sigue funcionando con el catalogo GMX aunque un proveedor externo no soporte el TCG.
+          // El formulario sigue funcionando con el catalogo Shiny aunque un proveedor externo no soporte el TCG.
         }
       }
 
@@ -1151,7 +1150,7 @@ if (!masterGameCode && mg.data?.[0]) setMasterGameCode(mg.data[0].codigo);
     setEntryReceptionBusy(true);
     try {
       let operational = card;
-      if (!card.id_carta && card._gmxSource === 'INTERNET') {
+      if (!card.id_carta && card._shinySource === 'INTERNET') {
         const identity = {
           game: card.game, source: card.source, external_id: card.external_id,
           name: card.name, set_name: card.set_name, set_code: card.set_code,
@@ -1162,10 +1161,10 @@ if (!masterGameCode && mg.data?.[0]) setMasterGameCode(mg.data[0].codigo);
         const ensured = await api('/api/v1/external-card-beta/ensure-operational', {
           method: 'POST', body: JSON.stringify({ identity })
         });
-        operational = { ...card, ...(ensured?.data || {}), _gmxSource: 'INTERNET' };
+        operational = { ...card, ...(ensured?.data || {}), _shinySource: 'INTERNET' };
       }
 
-      if (!operational.id_carta) throw new Error('La carta no pudo relacionarse con un producto TCG de GMX.');
+      if (!operational.id_carta) throw new Error('La carta no pudo relacionarse con un producto TCG de Shiny.');
       if (operational.id_juego) setEntryGameFilter(operational.id_juego);
       if (operational.id_set) setEntrySetFilter(operational.id_set);
       setEntry((current) => ({ ...current, id_carta: operational.id_carta }));
@@ -1180,7 +1179,7 @@ if (!masterGameCode && mg.data?.[0]) setMasterGameCode(mg.data[0].codigo);
       setEntryReceptionBusy(false);
     }
   }
-  /* GMX_TCG_RECEPCION_EXPANSIONES_R8_FUNCTION */
+  /* SHINY_TCG_RECEPCION_EXPANSIONES_R8_FUNCTION */
   async function createManualSetR8() {
     try {
       const gameId=String(entryGameFilter||'').trim();
@@ -1240,8 +1239,8 @@ if (!masterGameCode && mg.data?.[0]) setMasterGameCode(mg.data[0].codigo);
     }
   }
 
-  /* GMX_TCG_RECEPCION_MANUAL_R4_FUNCTION */
-  /* GMX_TCG_RECEPCION_MANUAL_R5_FUNCTION */
+  /* SHINY_TCG_RECEPCION_MANUAL_R4_FUNCTION */
+  /* SHINY_TCG_RECEPCION_MANUAL_R5_FUNCTION */
   async function receiveManualR4() {
     try {
       const gameId=String(entryGameFilter||'').trim();
@@ -1254,7 +1253,7 @@ if (!masterGameCode && mg.data?.[0]) setMasterGameCode(mg.data[0].codigo);
       if(!entry.id_sucursal) throw new Error('Selecciona la sucursal.');
       if(Number(entry.cantidad||0)<1) throw new Error('La cantidad debe ser mayor a cero.');
 
-      /* GMX_TCG_RECEPCION_MANUAL_R6 */
+      /* SHINY_TCG_RECEPCION_MANUAL_R6 */
       let cardId=String(entry.id_carta||'').trim();
       let createdNow=false;
 
@@ -1373,41 +1372,26 @@ if (!masterGameCode && mg.data?.[0]) setMasterGameCode(mg.data[0].codigo);
   tcg_store_templateR2MatchesSearch(row, inventorySearch)
   );
 
-  /* TCG_STORE_TEMPLATE_PRODUCT_TABLE_FILTER_R23 */
+  /* Shiny_PRODUCT_TABLE_FILTER_R23 */
   const tcg_store_templateVisibleProducts = (visibleGeneralProducts || []).filter((row) =>
   tcg_store_templateR2MatchesGame(row, inventoryGameFilter, games) &&
   tcg_store_templateR2MatchesSearch(row, inventorySearch)
   );
 
-  const gmxInventoryDashboard = useMemo(() => {
+  const shinyInventoryDashboard = useMemo(() => {
     const singles = tcg_store_templateVisibleInventory || [];
-    const products = tcg_store_templateVisibleProducts || [];
-    const allRows = [
-      ...singles.map((x) => ({
-        kind: 'SINGLE',
-        name: x.carta || x.nombre || x.id_carta || 'Carta',
-        sku: x.sku || x.id_inventario || '',
-        category: x.rareza || 'Single TCG',
-        stock: Number(x.stock || 0),
-        price: Number(x.precio_oferta || x.precio || 0),
-        gameId: x.id_juego || '',
-        setName: x.set_nombre || x.expansion || x.edicion || '',
-        status: x.estado_venta || 'DISPONIBLE',
-        raw: x
-      })),
-      ...products.map((x) => ({
-        kind: String(x.categoria || '').trim().toLowerCase() === 'tcg sellado' ? 'SELLADO' : 'ACCESORIO',
-        name: x.nombre || x.producto || 'Producto',
-        sku: x.sku || x.codigo_barras || '',
-        category: x.categoria || 'Producto',
-        stock: Number(x.stock || 0),
-        price: Number(x.precio_oferta || x.precio || 0),
-        gameId: x.id_juego || '',
-        setName: x.set_nombre || x.expansion || '',
-        status: x.estado || 'ACTIVO',
-        raw: x
-      }))
-    ];
+    const allRows = singles.map((x) => ({
+      kind: 'SINGLE',
+      name: x.carta || x.nombre || x.id_carta || 'Carta',
+      sku: x.sku || x.id_inventario || '',
+      category: x.rareza || 'Single TCG',
+      stock: Number(x.stock || 0),
+      price: Number(x.precio_oferta || x.precio || 0),
+      gameId: x.id_juego || '',
+      setName: x.set_nombre || x.expansion || x.edicion || '',
+      status: x.estado_venta || 'DISPONIBLE',
+      raw: x
+    }));
 
     const units = allRows.reduce((sum, x) => sum + x.stock, 0);
     const value = allRows.reduce((sum, x) => sum + (x.stock * x.price), 0);
@@ -1434,33 +1418,21 @@ if (!masterGameCode && mg.data?.[0]) setMasterGameCode(mg.data[0].codigo);
       .slice(0, 5);
 
     return { allRows, units, value, skuCount, lowStock, byGame, top };
-  }, [tcg_store_templateVisibleInventory, tcg_store_templateVisibleProducts, games]);
-  const gmxInventoryFinal=useMemo(()=>{
-    const singles=(tcg_store_templateVisibleInventory||[]).map(x=>({
+  }, [tcg_store_templateVisibleInventory, games]);
+  const shinyInventoryFinal=useMemo(()=>{
+    const rows=(tcg_store_templateVisibleInventory||[]).map(x=>({
       type:'SINGLE',
       name:x.carta||x.nombre||x.id_carta||'Carta',
       sku:x.sku||x.id_inventario||'',
       category:x.rareza||'Single TCG',
       stock:Number(x.stock||0),
+      cost:Number(x.costo||0),
       price:Number(x.precio_oferta||x.precio||0),
       gameId:x.id_juego||'',
       raw:x
     }));
-
-    const products=(tcg_store_templateVisibleProducts||[]).map(x=>({
-      type:String(x.categoria||'').trim().toLowerCase()==='tcg sellado'?'SELLADO':'ACCESORIO',
-      name:x.nombre||x.producto||'Producto',
-      sku:x.sku||x.codigo_barras||'',
-      category:x.categoria||'Producto',
-      stock:Number(x.stock||0),
-      price:Number(x.precio_oferta||x.precio||0),
-      gameId:x.id_juego||'',
-      raw:x
-    }));
-
-    const rows=[...singles,...products];
     const units=rows.reduce((n,x)=>n+x.stock,0);
-    const value=rows.reduce((n,x)=>n+(x.stock*x.price),0);
+    const value=rows.reduce((n,x)=>n+(x.stock*x.cost),0);
     const skuCount=new Set(rows.map(x=>x.sku).filter(Boolean)).size;
     const lowStock=rows.filter(x=>x.stock>0&&x.stock<=2).length;
 
@@ -1480,11 +1452,11 @@ if (!masterGameCode && mg.data?.[0]) setMasterGameCode(mg.data[0].codigo);
     }).filter(x=>x.units||x.items).sort((a,b)=>b.units-a.units);
 
     const top=[...rows]
-      .sort((a,b)=>(b.stock*b.price)-(a.stock*a.price))
+      .sort((a,b)=>(b.stock*b.cost)-(a.stock*a.cost))
       .slice(0,5);
 
     return {rows,units,value,skuCount,lowStock,byGame,top};
-  },[tcg_store_templateVisibleInventory,tcg_store_templateVisibleProducts,games]);
+  },[tcg_store_templateVisibleInventory,games]);
   const proposalAFilteredAcquisitions = useMemo(() => {
     const q = acqSearch.trim().toLowerCase();
     return (acquisitions || []).filter((a) => {
@@ -1505,17 +1477,17 @@ if (!masterGameCode && mg.data?.[0]) setMasterGameCode(mg.data[0].codigo);
         <button className={tab === 'autosync' ? 'tab active' : 'tab'} onClick={() => setTab('autosync')}><TcgR76NavIcon name="sync" /><span className="tcg-r76-nav-label">Auto Sync</span></button>
       </div>
 
-      {tab === 'inventory' ? <div className="tcg-body gmx-inventory-final">
-  <div className="gmx-inv-final-head">
+      {tab === 'inventory' ? <div className="tcg-body shiny-inventory-final">
+  <div className="shiny-inv-final-head">
     <div>
       <span className="eyebrow">INVENTARIO</span>
       <h2>Inventario TCG</h2>
-      <p>Consulta qué tienes, cuánto vale y dónde está disponible.</p>
+      <p>Consulta únicamente singles TCG disponibles, su valor y ubicación.</p>
     </div>
-    <span className="gmx-inv-final-count">{gmxInventoryFinal.rows.length} artículos</span>
+    <span className="shiny-inv-final-count">{shinyInventoryFinal.rows.length} artículos</span>
   </div>
 
-  <div className="gmx-inv-final-filters">
+  <div className="shiny-inv-final-filters">
     <label>TCG
       <select value={inventoryGameFilter} onChange={(e)=>{setInventoryGameFilter(e.target.value);setInventorySetFilter('');setInventoryRarityFilter('');}}>
         <option value="">Todos los TCG</option>
@@ -1535,7 +1507,7 @@ if (!masterGameCode && mg.data?.[0]) setMasterGameCode(mg.data[0].codigo);
         type="search"
         value={inventorySearch}
         onChange={(e)=>setInventorySearch(e.target.value)}
-        placeholder="Buscar carta, producto, SKU o código..."
+        placeholder="Buscar carta, SKU o código..."
       />
     </label>
 
@@ -1546,48 +1518,41 @@ if (!masterGameCode && mg.data?.[0]) setMasterGameCode(mg.data[0].codigo);
       </select>
     </label>
 
-    <label>Tipo
-      <select value={inventoryTypeFilter} onChange={(e)=>setInventoryTypeFilter(e.target.value)}>
-        <option value="TODO">Todos</option>
-        <option value="SINGLES">Singles</option>
-        <option value="SELLADO">Sellados</option>
-        <option value="ACCESORIOS">Accesorios</option>
-      </select>
-    </label>
+
   </div>
 
-  <div className="gmx-inv-final-kpis">
-    <article><span>Valor de inventario</span><strong>{money(gmxInventoryFinal.value)}</strong><small>estimado filtrado</small></article>
-    <article><span>Unidades</span><strong>{gmxInventoryFinal.units.toLocaleString('es-MX')}</strong><small>en existencia</small></article>
-    <article><span>SKUs únicos</span><strong>{gmxInventoryFinal.skuCount.toLocaleString('es-MX')}</strong><small>referencias</small></article>
-    <article><span>Stock bajo</span><strong>{gmxInventoryFinal.lowStock}</strong><small>1–2 unidades</small></article>
+  <div className="shiny-inv-final-kpis">
+    <article><span>Valor de inventario</span><strong>{money(shinyInventoryFinal.value)}</strong><small>costo × existencias</small></article>
+    <article><span>Unidades</span><strong>{shinyInventoryFinal.units.toLocaleString('es-MX')}</strong><small>en existencia</small></article>
+    <article><span>SKUs únicos</span><strong>{shinyInventoryFinal.skuCount.toLocaleString('es-MX')}</strong><small>referencias</small></article>
+    <article><span>Stock bajo</span><strong>{shinyInventoryFinal.lowStock}</strong><small>1–2 unidades</small></article>
   </div>
 
-  <div className="gmx-inv-final-overview">
-    <section className="gmx-inv-final-card">
-      <div className="gmx-inv-final-title"><div><h3>Distribución por TCG</h3><p>Unidades disponibles por juego.</p></div></div>
-      <div className="gmx-inv-final-bars">
-        {gmxInventoryFinal.byGame.length ? gmxInventoryFinal.byGame.slice(0,6).map(item=>{
-          const max=Math.max(1,...gmxInventoryFinal.byGame.map(x=>x.units));
-          return <div key={item.id} className="gmx-inv-final-bar">
+  <div className="shiny-inv-final-overview">
+    <section className="shiny-inv-final-card">
+      <div className="shiny-inv-final-title"><div><h3>Distribución por TCG</h3><p>Unidades disponibles por juego.</p></div></div>
+      <div className="shiny-inv-final-bars">
+        {shinyInventoryFinal.byGame.length ? shinyInventoryFinal.byGame.slice(0,6).map(item=>{
+          const max=Math.max(1,...shinyInventoryFinal.byGame.map(x=>x.units));
+          return <div key={item.id} className="shiny-inv-final-bar">
             <div><strong>{item.name}</strong><small>{item.items} referencias</small></div>
             <span><i style={{width:`${Math.max(4,(item.units/max)*100)}%`}} /></span>
             <b>{item.units.toLocaleString('es-MX')}</b>
           </div>;
-        }) : <div className="gmx-inv-final-empty">Sin datos para mostrar.</div>}
+        }) : <div className="shiny-inv-final-empty">Sin datos para mostrar.</div>}
       </div>
     </section>
 
-    <section className="gmx-inv-final-card">
-      <div className="gmx-inv-final-title"><div><h3>Top 5 por valor</h3><p>Artículos con mayor valor en existencia.</p></div></div>
-      <div className="gmx-inv-final-top">
-        {gmxInventoryFinal.top.length ? gmxInventoryFinal.top.map((item,i)=>
+    <section className="shiny-inv-final-card">
+      <div className="shiny-inv-final-title"><div><h3>Top 5 singles por valor</h3><p>Valor de inventario calculado por costo × existencias.</p></div></div>
+      <div className="shiny-inv-final-top">
+        {shinyInventoryFinal.top.length ? shinyInventoryFinal.top.map((item,i)=>
           <div key={`${item.sku}-${i}`}>
             <span>{String(i+1).padStart(2,'0')}</span>
             <div><strong>{item.name}</strong><small>{item.sku||item.category}</small></div>
-            <b>{money(item.stock*item.price)}</b>
+            <b>{money(item.stock*item.cost)}</b>
           </div>
-        ) : <div className="gmx-inv-final-empty">Sin artículos para mostrar.</div>}
+        ) : <div className="shiny-inv-final-empty">Sin singles para mostrar.</div>}
       </div>
     </section>
   </div>
@@ -1603,28 +1568,27 @@ if (!masterGameCode && mg.data?.[0]) setMasterGameCode(mg.data[0].codigo);
     </div>
   </section> : null}
 
-  <section className="gmx-inv-final-card gmx-inv-final-list">
-    <div className="gmx-inv-final-title">
+  <section className="shiny-inv-final-card shiny-inv-final-list">
+    <div className="shiny-inv-final-title">
       <div><h3>Listado de inventario</h3><p>Existencias filtradas.</p></div>
-      <span>{gmxInventoryFinal.rows.length} artículos</span>
+      <span>{shinyInventoryFinal.rows.length} singles</span>
     </div>
     <div className="table-wrap">
       <table>
-        <thead><tr><th>Tipo</th><th>Producto</th><th>SKU</th><th>Categoría</th><th>Stock</th><th>Precio</th><th>Estado</th><th></th></tr></thead>
+        <thead><tr><th>Tipo</th><th>Carta</th><th>SKU</th><th>Rareza</th><th>Stock</th><th>Precio</th><th>Estado</th><th></th></tr></thead>
         <tbody>
-          {tcg_store_templateVisibleProducts.map((x,i)=><tr key={x.row_id||x.id||x.sku||i}><td>PRODUCTO</td><td><strong>{x.nombre||'—'}</strong></td><td>{x.sku||'—'}</td><td>{x.categoria||'—'}</td><td><strong>{Number(x.stock||0)}</strong></td><td>{money(Number(x.precio||0))}</td><td>{x.estado||'Activo'}</td><td></td></tr>)}
           {tcg_store_templateVisibleInventory.map((x,i)=><tr key={`${x.row_id}-${x.id_sucursal||i}`}><td>SINGLE</td><td><strong>{x.carta||x.id_carta}</strong></td><td>{x.sku}</td><td>{x.rareza||'Single TCG'}</td><td><strong>{x.stock??0}</strong></td><td>{money(x.precio)}</td><td>{x.estado_venta||'DISPONIBLE'}</td><td><button type="button" className="secondary compact" onClick={()=>editInventoryCommercial(x)}>Editar</button></td></tr>)}
         </tbody>
       </table>
     </div>
-    {!tcg_store_templateVisibleProducts.length&&!tcg_store_templateVisibleInventory.length?<div className="public-empty">No hay artículos para estos filtros.</div>:null}
+    {!tcg_store_templateVisibleInventory.length?<div className="public-empty">No hay singles para estos filtros.</div>:null}
   </section>
 </div> : null}
 {tab === 'entry' ? <div className="tcg-body proposal-a-reception">
         <div className="proposal-a-module-head"><div><span className="eyebrow">RECEPCIÓN</span><h2>Recepción TCG</h2></div></div>
         <div className="proposal-a-switch"><button type="button" className={entryMode==='individual'?'active':''} onClick={()=>setEntryMode('individual')}>Individual</button><button type="button" className={entryMode==='bulk'?'active':''} onClick={()=>setEntryMode('bulk')}>Masiva</button></div>
 
-        {entryMode === 'individual' ? <section className="proposal-a-reception-card gmx-manual-r4-card">
+        {entryMode === 'individual' ? <section className="proposal-a-reception-card shiny-manual-r4-card">
           <div className="proposal-a-section-title">
             <div>
               <span className="eyebrow">RECEPCIÓN</span>
@@ -1634,34 +1598,34 @@ if (!masterGameCode && mg.data?.[0]) setMasterGameCode(mg.data[0].codigo);
 
           </div>
 
-          <div className="gmx-manual-r4-note">
+          <div className="shiny-manual-r4-note">
             <b>CAPTURA MANUAL</b>
-            <span>No necesitas buscar la carta en internet. Si no existe en GMX, se crea en el catálogo local al registrar la recepción.</span>
+            <span>No necesitas buscar la carta en internet. Si no existe en Shiny, se crea en el catálogo local al registrar la recepción.</span>
           </div>
 
-          <div className="gmx-manual-r4-section gmx-r14-identify-section">
-            <div className="gmx-r14-section-head">
+          <div className="shiny-manual-r4-section shiny-r14-identify-section">
+            <div className="shiny-r14-section-head">
               <div>
                 <h3>1. Identificar carta</h3>
                 <p>Selecciona el TCG y escribe el nombre de la expansión para encontrarla rápidamente.</p>
               </div>
             </div>
 
-            <div className="gmx-r14-expansion-help">
+            <div className="shiny-r14-expansion-help">
               <b>BUSCADOR DE EXPANSIONES</b>
               <span>El catálogo permanece oculto hasta que escribas. Ejemplo: <strong>L</strong> muestra las expansiones que empiezan con L; <strong>Lo</strong> reduce a las que empiezan con Lo; y así sucesivamente.</span>
             </div>
 
-            <div className="proposal-a-form-grid gmx-manual-r4-grid gmx-r14-identify-grid">
-              <label className="gmx-r14-tcg-field">TCG *
+            <div className="proposal-a-form-grid shiny-manual-r4-grid shiny-r14-identify-grid">
+              <label className="shiny-r14-tcg-field">TCG *
                 <select value={entryGameFilter} onChange={(e)=>{setEntryGameFilter(e.target.value);setExpansionSearchR13('');setExpansionOpenR13(false);setEntrySetFilter('');setEntry((x)=>({...x,id_carta:''}));setManualReceptionR4((x)=>({...x,nombre:'',numero:'',rareza:'',tipo_carta:'',subtipo:'',artista:''}));setEntry((x)=>({...x,id_carta:'',edicion:''}));setCardVariantR16('');setCardTypeR16('');setCardAttributeR16('');setManualFieldModeR10({rareza:false,tipo:false,subtipo:false,artista:false,edicion:false});}}>
                   <option value="">Selecciona TCG</option>
                   {(Array.isArray(games)?games:[]).map((g)=><option key={g.row_id||g.id_juego} value={g.id_juego}>{g.nombre}</option>)}
                 </select>
               </label>
 
-              <label className="gmx-r14-expansion-field">Expansión / Set *
-                <div className="gmx-r13-expansion-search">
+              <label className="shiny-r14-expansion-field">Expansión / Set *
+                <div className="shiny-r13-expansion-search">
                   <input
                     value={expansionSearchR13}
                     disabled={!entryGameFilter || expansionSelectBusyR13}
@@ -1702,9 +1666,9 @@ if (!masterGameCode && mg.data?.[0]) setMasterGameCode(mg.data[0].codigo);
                   />
 
                   {expansionOpenR13 && String(expansionSearchR13||'').trim() ? (
-                    <div className="gmx-r13-expansion-results">
+                    <div className="shiny-r13-expansion-results">
                       {masterExpansionLoadingR13 ? (
-                        <div className="gmx-r13-expansion-status">Cargando catálogo de expansiones...</div>
+                        <div className="shiny-r13-expansion-status">Cargando catálogo de expansiones...</div>
                       ) : expansionMatchesR13.length ? (
                         expansionMatchesR13.map((s)=>(
                           <button
@@ -1719,7 +1683,7 @@ if (!masterGameCode && mg.data?.[0]) setMasterGameCode(mg.data[0].codigo);
                           </button>
                         ))
                       ) : (
-                        <div className="gmx-r13-expansion-status">
+                        <div className="shiny-r13-expansion-status">
                           No hay expansiones que comiencen con “{expansionSearchR13}”.
                         </div>
                       )}
@@ -1729,9 +1693,9 @@ if (!masterGameCode && mg.data?.[0]) setMasterGameCode(mg.data[0].codigo);
 
 
               </label>
-              <label className="wide gmx-r14-card-name">Nombre exacto de la carta *
+              <label className="wide shiny-r14-card-name">Nombre exacto de la carta *
                 <input value={manualReceptionR4.nombre} onChange={(e)=>{setManualReceptionR4((x)=>({...x,nombre:e.target.value}));setEntry((x)=>({...x,id_carta:''}));}} placeholder="Ej. D.Human"/>
-                <small>Se guarda exactamente como lo escribes. GMX no cambia ni interpreta el nombre.</small>
+                <small>Se guarda exactamente como lo escribes. Shiny no cambia ni interpreta el nombre.</small>
               </label>
 
               <label>Número / código
@@ -1767,7 +1731,7 @@ if (!masterGameCode && mg.data?.[0]) setMasterGameCode(mg.data[0].codigo);
               </label>
 
 
-              {/* GMX_TCG_RECEPCION_REGLAS_ESTRICTAS_R16 */}
+              {/* SHINY_TCG_RECEPCION_REGLAS_ESTRICTAS_R16 */}
               <label>Tipo de carta
                 <select value={manualReceptionR4.tipo_carta} disabled={!entryGameFilter}
                   onChange={(e)=>{
@@ -1840,15 +1804,15 @@ if (!masterGameCode && mg.data?.[0]) setMasterGameCode(mg.data[0].codigo);
             </div>
           </div>
 
-          <div className="gmx-manual-r4-section gmx-r15-inventory-section">
-            <div className="gmx-r15-section-head">
+          <div className="shiny-manual-r4-section shiny-r15-inventory-section">
+            <div className="shiny-r15-section-head">
               <div>
                 <h3>2. Datos del ejemplar / inventario</h3>
                 <p>Captura el estado físico, cantidades, costos y datos comerciales del ejemplar que entra a inventario.</p>
               </div>
             </div>
 
-            <div className="proposal-a-form-grid gmx-manual-r4-grid gmx-r15-inventory-grid">
+            <div className="proposal-a-form-grid shiny-manual-r4-grid shiny-r15-inventory-grid">
               <label>Idioma
                 <select value={entry.idioma} onChange={(e)=>setEntry((x)=>({...x,idioma:e.target.value}))}>
                   <option>ES</option><option>EN</option><option>JP</option>
@@ -1876,7 +1840,7 @@ if (!masterGameCode && mg.data?.[0]) setMasterGameCode(mg.data[0].codigo);
               <label>Proveedor / origen<input value={entry.origen_nombre} onChange={(e)=>setEntry((x)=>({...x,origen_nombre:e.target.value}))} placeholder="Proveedor / cliente"/></label>
               <label>Referencia / lote<input value={entry.origen_referencia} onChange={(e)=>setEntry((x)=>({...x,origen_referencia:e.target.value}))} placeholder="Factura, lote, compra..."/></label>
 
-              <label className="check-label gmx-r15-graded-check">
+              <label className="check-label shiny-r15-graded-check">
                 <input type="checkbox" checked={entry.graded} onChange={(e)=>setEntry((x)=>({...x,graded:e.target.checked}))}/> Graded
               </label>
 
@@ -1886,12 +1850,12 @@ if (!masterGameCode && mg.data?.[0]) setMasterGameCode(mg.data[0].codigo);
                 <label>Certificado<input value={entry.certificado} onChange={(e)=>setEntry((x)=>({...x,certificado:e.target.value}))}/></label>
               </> : null}
 
-              <label className="wide gmx-r15-notes">Notas
+              <label className="wide shiny-r15-notes">Notas
                 <textarea rows="3" maxLength="250" value={entry.notas} onChange={(e)=>setEntry((x)=>({...x,notas:e.target.value}))} placeholder="Notas adicionales"/>
               </label>
             </div>
 
-            <button className="proposal-a-primary-wide gmx-manual-r4-register" onClick={receiveManualR4}>Registrar recepción manual</button>
+            <button className="proposal-a-primary-wide shiny-manual-r4-register" onClick={receiveManualR4}>Registrar recepción manual</button>
           </div>
 
         </section> : <section className="proposal-a-reception-card">
@@ -1908,8 +1872,8 @@ if (!masterGameCode && mg.data?.[0]) setMasterGameCode(mg.data[0].codigo);
       {tab === 'mastercatalog' ? <div className="tcg-master-unified proposal-a-master-wrap">
         <TCGMasterCatalogBrowser onNavigate={setTab} />
         <details className="proposal-a-admin-details"><summary>Administración avanzada</summary><div className="proposal-a-admin-inner">
-          <div className="tcg-master-admin-grid"><article><h4>{brandText("Agregar TCG a TCG_STORE_TEMPLATE")}</h4><label>TCG<select value={masterGameCode} onChange={(e)=>setMasterGameCode(e.target.value)}><option value="">Selecciona</option>{masterGames.map((g)=><option key={g.codigo} value={g.codigo}>{g.nombre}{g.agregado_tienda?' · ya agregado':''}</option>)}</select></label>{masterGameCode?<div className="tcg-master-summary"><span>{masterSets.length} expansiones</span><span>{masterRarities.length} rarezas</span></div>:null}<div className="tcg-master-actions"><button onClick={()=>activateMaster(masterGameCode,false)} disabled={!masterGameCode}>Agregar oculto</button><button onClick={()=>activateMaster(masterGameCode,true)} disabled={!masterGameCode}>Agregar y mostrar</button></div></article><article><h4>TCG publicados</h4><div className="tcg-game-toggle-grid tcg-game-toggle-compact">{games.map((g)=><div key={g.row_id} className="tcg-store-game-row"><span><strong>{g.nombre}</strong><small>{g.codigo||g.catalogo_codigo||g.id_juego}</small></span><label className="tcg-visible-toggle"><input type="checkbox" checked={g.visible_portal!==false} onChange={(e)=>setVisibility(g,e.target.checked)}/><span>{g.visible_portal!==false?'Visible':'Oculto'}</span></label></div>)}</div></article></div>
-          <details className="proposal-a-more"><summary>Importación manual / mantenimiento</summary><div className="tcg-import-center tcg-import-center-inline"><section className="tcg-import-card"><h4>{brandText("Plantilla TCG_STORE_TEMPLATE")}</h4><button type="button" onClick={downloadDynamicTemplate}>Descargar plantilla</button></section><section className="tcg-import-card"><h4>Importar cartas</h4><label className="file-action">{importing?'Importando':'Seleccionar Excel'}<input type="file" accept=".xlsx,.xls" disabled={importing} onChange={(e)=>importExcel('cards',e.target.files?.[0])}/></label></section><section className="tcg-import-card"><h4>Actualizar estructura</h4><label className="file-action">{importing?'Importando':'Seleccionar Excel maestro'}<input type="file" accept=".xlsx,.xls" disabled={importing} onChange={(e)=>importExcel('master',e.target.files?.[0])}/></label></section></div></details>
+          <div className="tcg-master-admin-grid"><article><h4>{brandText("Agregar TCG a Shiny")}</h4><label>TCG<select value={masterGameCode} onChange={(e)=>setMasterGameCode(e.target.value)}><option value="">Selecciona</option>{masterGames.map((g)=><option key={g.codigo} value={g.codigo}>{g.nombre}{g.agregado_tienda?' · ya agregado':''}</option>)}</select></label>{masterGameCode?<div className="tcg-master-summary"><span>{masterSets.length} expansiones</span><span>{masterRarities.length} rarezas</span></div>:null}<div className="tcg-master-actions"><button onClick={()=>activateMaster(masterGameCode,false)} disabled={!masterGameCode}>Agregar oculto</button><button onClick={()=>activateMaster(masterGameCode,true)} disabled={!masterGameCode}>Agregar y mostrar</button></div></article><article><h4>TCG publicados</h4><div className="tcg-game-toggle-grid tcg-game-toggle-compact">{games.map((g)=><div key={g.row_id} className="tcg-store-game-row"><span><strong>{g.nombre}</strong><small>{g.codigo||g.catalogo_codigo||g.id_juego}</small></span><label className="tcg-visible-toggle"><input type="checkbox" checked={g.visible_portal!==false} onChange={(e)=>setVisibility(g,e.target.checked)}/><span>{g.visible_portal!==false?'Visible':'Oculto'}</span></label></div>)}</div></article></div>
+          <details className="proposal-a-more"><summary>Importación manual / mantenimiento</summary><div className="tcg-import-center tcg-import-center-inline"><section className="tcg-import-card"><h4>{brandText("Plantilla Shiny")}</h4><button type="button" onClick={downloadDynamicTemplate}>Descargar plantilla</button></section><section className="tcg-import-card"><h4>Importar cartas</h4><label className="file-action">{importing?'Importando':'Seleccionar Excel'}<input type="file" accept=".xlsx,.xls" disabled={importing} onChange={(e)=>importExcel('cards',e.target.files?.[0])}/></label></section><section className="tcg-import-card"><h4>Actualizar estructura</h4><label className="file-action">{importing?'Importando':'Seleccionar Excel maestro'}<input type="file" accept=".xlsx,.xls" disabled={importing} onChange={(e)=>importExcel('master',e.target.files?.[0])}/></label></section></div></details>
         </div></details>
       </div> : null}
 

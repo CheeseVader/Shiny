@@ -1,5 +1,5 @@
 
-/* GMX 10.5.5 — Slideshow image diagnostics + loyalty business rules */
+/* Shiny 10.5.5 — Slideshow image diagnostics + loyalty business rules */
 .slideshow-media-diagnostic,.slideshow-media-loading{
   position:absolute;inset:0;z-index:1;display:grid;place-content:center;gap:7px;
   padding:24px;text-align:center;background:linear-gradient(135deg,#3b1f3f,#6b3fa8);color:#fff

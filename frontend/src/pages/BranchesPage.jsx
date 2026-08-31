@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { api } from '../services/api.js';
 import BranchModal from '../components/BranchModal.jsx';
-import '../phase_gmx_exact_views_r23.css';
+import '../phase_shiny_exact_views_r23.css';
 import './BranchesOption3.css';
 
 const SALES_PERIOD_DAYS = 30;
@@ -106,7 +106,7 @@ function ComparisonBars({ rows, field, color, format = number }) {
 export default function BranchesPage() {
   const currentUser = useMemo(() => {
     try {
-      return JSON.parse(localStorage.getItem('TCG_STORE_TEMPLATE_AUTH_USER') || '{}');
+      return JSON.parse(localStorage.getItem('Shiny_AUTH_USER') || '{}');
     } catch {
       return {};
     }

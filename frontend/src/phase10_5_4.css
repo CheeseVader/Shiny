@@ -1,5 +1,5 @@
 
-/* GMX 10.5.4 - storefront closer to real TCG commerce layouts */
+/* Shiny 10.5.4 - storefront closer to real TCG commerce layouts */
 .store-preview{background:#f7f8fa}
 .store-main-flow{position:relative;z-index:2;display:grid;gap:var(--home-gap,18px);padding:0 14px 24px}
 .store-header{display:grid;grid-template-columns:auto minmax(260px,1fr) auto;gap:18px;align-items:center}

@@ -3,7 +3,7 @@ const fs=require('fs');
 const path=require('path');
 const {spawnSync}=require('child_process');
 
-const root=process.argv[2]||'C:\\Users\\SrsGarciaEspinoza\\Videos\\GMX';
+const root=process.argv[2]||'C:\\Users\\SrsGarciaEspinoza\\Videos\\Shiny';
 const front=path.join(root,'frontend','src','pages','CommercialPage.jsx');
 const back=path.join(root,'backend','src','repositories','commercialRepository.js');
 
@@ -40,13 +40,13 @@ function rep(src,a,b,label){
 }
 
 let fsrc=fs.readFileSync(front,'utf8');
-if(!fsrc.includes('GMX_DEV_001D_CONDICION_DESTINO')){
+if(!fsrc.includes('SHINY_DEV_001D_CONDICION_DESTINO')){
   backup(front,'DEV_001D');
 
   fsrc=rep(
     fsrc,
     "  const [returnQty,setReturnQty]=useState({});\n  const [returnOptions,setReturnOptions]=useState({reason:'',reintegrateStock:true,refund:false,refundMethod:'EFECTIVO',refundReference:'',notes:''});",
-    "  const [returnQty,setReturnQty]=useState({});\n  const [returnCondition,setReturnCondition]=useState({});\n  // GMX_DEV_001D_CONDICION_DESTINO\n  const [returnOptions,setReturnOptions]=useState({reason:'',refund:false,refundMethod:'EFECTIVO',refundReference:'',notes:''});",
+    "  const [returnQty,setReturnQty]=useState({});\n  const [returnCondition,setReturnCondition]=useState({});\n  // SHINY_DEV_001D_CONDICION_DESTINO\n  const [returnOptions,setReturnOptions]=useState({reason:'',refund:false,refundMethod:'EFECTIVO',refundReference:'',notes:''});",
     'estado devolución'
   );
 
@@ -141,14 +141,14 @@ if(!fsrc.includes('GMX_DEV_001D_CONDICION_DESTINO')){
 }
 
 let bsrc=fs.readFileSync(back,'utf8');
-if(!bsrc.includes('GMX_DEV_001D_CONDICION_DESTINO')){
+if(!bsrc.includes('SHINY_DEV_001D_CONDICION_DESTINO')){
   backup(back,'DEV_001D');
 
   bsrc=rep(
     bsrc,
     "      const itemType=String(det.tipo||'PRODUCTO').toUpperCase()==='TCG'?'TCG':'PRODUCTO';\n",
     `      const itemType=String(det.tipo||'PRODUCTO').toUpperCase()==='TCG'?'TCG':'PRODUCTO';
-      // GMX_DEV_001D_CONDICION_DESTINO
+      // SHINY_DEV_001D_CONDICION_DESTINO
       const condition=String(x.condition||'VENDIBLE').trim().toUpperCase();
       const allowedConditions=new Set(['VENDIBLE','DANADO','DEFECTUOSO','INCOMPLETO','NO_VENDIBLE']);
       if(!allowedConditions.has(condition))throw new Error('RETURN_ITEM_CONDITION_INVALID');
@@ -175,11 +175,11 @@ if(!bsrc.includes('GMX_DEV_001D_CONDICION_DESTINO')){
 
   bsrc=rep(
     bsrc,
-`      await client.query(\`INSERT INTO gmx.devoluciones_detalle(
+`      await client.query(\`INSERT INTO shiny.devoluciones_detalle(
         id_devolucion,linea,id_detalle_pedido,tipo_item,id_producto,id_inventario,id_carta,sku,producto,
         cantidad,precio_unitario,importe,stock_anterior,stock_nuevo,id_sucursal,sucursal)
         VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16)\`,[`,
-`      await client.query(\`INSERT INTO gmx.devoluciones_detalle(
+`      await client.query(\`INSERT INTO shiny.devoluciones_detalle(
         id_devolucion,linea,id_detalle_pedido,tipo_item,id_producto,id_inventario,id_carta,sku,producto,
         cantidad,precio_unitario,importe,stock_anterior,stock_nuevo,id_sucursal,sucursal,
         condicion_articulo,destino_articulo,reintegra_stock)
@@ -223,7 +223,7 @@ if(!bsrc.includes('GMX_DEV_001D_CONDICION_DESTINO')){
       const refundId=uid('REEMB');
       const idem='DEVOLUCION:'+id+':'+String(refundRef);
       const provider=refundMethod==='EFECTIVO'?'CAJA':(refundMethod==='TARJETA'?'MERCADO_PAGO':'LOCAL');
-      await client.query(\`INSERT INTO gmx.devoluciones_reembolsos(
+      await client.query(\`INSERT INTO shiny.devoluciones_reembolsos(
         id_reembolso,id_devolucion,id_pedido,fecha,metodo,proveedor,estado,monto,moneda,
         payment_id,refund_id_proveedor,idempotency_key,referencia,integracion_habilitada,
         id_admin_crea,usuario_crea,id_admin_autoriza,usuario_autoriza,fecha_autorizacion,
@@ -232,13 +232,13 @@ if(!bsrc.includes('GMX_DEV_001D_CONDICION_DESTINO')){
         ON CONFLICT DO NOTHING\`,[
           refundId,id,order.id_pedido,refundMethod,provider,refundTotal,
           txt(input.paymentId)||null,refundRef,idem,refundRef,
-          user?.id_admin||'LOCAL',user?.nombre||user?.email||'GMX Local'
+          user?.id_admin||'LOCAL',user?.nombre||user?.email||'Shiny Local'
         ]);
-      await client.query(\`INSERT INTO gmx.devoluciones_eventos(
+      await client.query(\`INSERT INTO shiny.devoluciones_eventos(
         id_evento,id_devolucion,id_reembolso,fecha,tipo,estado,detalle,id_admin,usuario)
         VALUES($1,$2,$3,NOW(),'REEMBOLSO_REGISTRADO','COMPLETADO',$4,$5,$6)\`,[
           uid('DEVEVT'),id,refundId,\`Reembolso \${refundMethod} por \${refundTotal}. Referencia \${refundRef}\`,
-          user?.id_admin||'LOCAL',user?.nombre||user?.email||'GMX Local'
+          user?.id_admin||'LOCAL',user?.nombre||user?.email||'Shiny Local'
         ]);
     }
 

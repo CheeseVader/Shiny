@@ -1,5 +1,5 @@
 
-/* GMX 10.6.2.3.16 — card modal performance */
+/* Shiny 10.6.2.3.16 — card modal performance */
 /* Do NOT blur thousands of pixels/cards behind the modal; this can stall Chrome's compositor. */
 .master-card-modal-backdrop{
   backdrop-filter:none !important;
@@ -49,9 +49,9 @@
   border:3px solid #d0d5dd;
   border-top-color:#1570ef;
   border-radius:999px;
-  animation:gmx-price-spin .75s linear infinite;
+  animation:shiny-price-spin .75s linear infinite;
 }
 
-@keyframes gmx-price-spin{
+@keyframes shiny-price-spin{
   to{transform:rotate(360deg)}
 }

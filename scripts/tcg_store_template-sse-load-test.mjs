@@ -13,7 +13,7 @@ const started=performance.now();
 
 function openOne(i){
   return new Promise(resolve=>{
-    const req=transport.get(target,{headers:{Accept:'text/event-stream','User-Agent':`GMX-SSE-Load/${i}`},agent:false},res=>{
+    const req=transport.get(target,{headers:{Accept:'text/event-stream','User-Agent':`SHINY-SSE-Load/${i}`},agent:false},res=>{
       if(res.statusCode!==200){failed++;res.resume();resolve();return;}
       opened++;sockets.push(req);
       res.on('data',chunk=>{bytes+=chunk.length;resolve();});
@@ -30,11 +30,11 @@ for(let base=0;base<clients;base+=rampPerSecond){
   const batch=Math.min(rampPerSecond,clients-base);
   await Promise.all(Array.from({length:batch},(_,j)=>openOne(base+j)));
   const elapsed=Math.round((performance.now()-started)/1000);
-  console.log(`[GMX LOAD] requested=${Math.min(base+batch,clients)} opened=${opened} failed=${failed} closed=${closed} elapsed=${elapsed}s`);
+  console.log(`[Shiny LOAD] requested=${Math.min(base+batch,clients)} opened=${opened} failed=${failed} closed=${closed} elapsed=${elapsed}s`);
   if(base+batch<clients)await new Promise(r=>setTimeout(r,1000));
 }
 
-console.log(`[GMX LOAD] holding ${holdSeconds}s · opened=${opened} failed=${failed}`);
+console.log(`[Shiny LOAD] holding ${holdSeconds}s · opened=${opened} failed=${failed}`);
 await new Promise(r=>setTimeout(r,holdSeconds*1000));
 for(const req of sockets)try{req.destroy();}catch{}
 console.log(JSON.stringify({target:String(target),requested:clients,opened,failed,closed,bytes,holdSeconds,rampPerSecond,totalSeconds:Math.round((performance.now()-started)/1000)},null,2));

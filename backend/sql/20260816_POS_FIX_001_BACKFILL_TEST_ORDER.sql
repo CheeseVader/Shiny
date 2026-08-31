@@ -24,7 +24,7 @@ DECLARE
 BEGIN
   SELECT p.id_sucursal,p.sucursal
     INTO v_branch,v_branch_name
-  FROM gmx.pedidos p
+  FROM shiny.pedidos p
   WHERE p.id_pedido=v_order_id
     AND UPPER(COALESCE(p.estado_pedido,''))='CANCELADO'
   FOR UPDATE;
@@ -36,7 +36,7 @@ BEGIN
 
   SELECT COALESCE(SUM(pp.importe_aplicado),0)
     INTO v_cash_total
-  FROM gmx.pedido_pagos pp
+  FROM shiny.pedido_pagos pp
   WHERE pp.id_pedido=v_order_id
     AND UPPER(COALESCE(pp.metodo,''))='EFECTIVO'
     AND UPPER(COALESCE(pp.estado,''))='PAGADO';
@@ -47,7 +47,7 @@ BEGIN
   END IF;
 
   IF EXISTS(
-    SELECT 1 FROM gmx.caja_movimientos
+    SELECT 1 FROM shiny.caja_movimientos
     WHERE origen_modulo='POS_CANCELACION'
       AND id_origen=v_order_id
       AND categoria='CANCELACION_VENTA'
@@ -59,7 +59,7 @@ BEGIN
 
   SELECT row_id,id_movimiento,id_admin,administrador
     INTO v_orig_row,v_orig_mov,v_admin,v_admin_name
-  FROM gmx.caja_movimientos
+  FROM shiny.caja_movimientos
   WHERE origen_modulo='POS_LOCAL'
     AND id_origen=v_order_id
     AND categoria='VENTA'
@@ -75,7 +75,7 @@ BEGIN
 
   SELECT row_id,id_caja
     INTO v_cash_row,v_cash_id
-  FROM gmx.caja_sesiones
+  FROM shiny.caja_sesiones
   WHERE id_sucursal=v_branch
     AND UPPER(COALESCE(estado,''))='ABIERTA'
     AND fecha_cierre IS NULL
@@ -91,7 +91,7 @@ BEGIN
     floor(extract(epoch from clock_timestamp())*1000)::text||'-'||
     substr(md5(random()::text),1,6);
 
-  INSERT INTO gmx.caja_movimientos(
+  INSERT INTO shiny.caja_movimientos(
     id_movimiento,id_caja,fecha,id_sucursal,sucursal,tipo,categoria,
     metodo_pago,importe,impacto_efectivo,referencia,descripcion,
     origen_modulo,id_origen,id_admin,administrador,anulado,id_movimiento_reversion
@@ -102,11 +102,11 @@ BEGIN
     v_admin,v_admin_name,false,v_orig_mov
   );
 
-  UPDATE gmx.caja_movimientos
+  UPDATE shiny.caja_movimientos
   SET id_movimiento_reversion=v_rev_mov
   WHERE row_id=v_orig_row;
 
-  UPDATE gmx.caja_sesiones
+  UPDATE shiny.caja_sesiones
   SET egresos_efectivo=COALESCE(egresos_efectivo,0)+v_cash_total,
       saldo_esperado=COALESCE(fondo_inicial,0)
         +COALESCE(ingresos_efectivo,0)
@@ -114,13 +114,13 @@ BEGIN
       fecha_actualizacion=NOW()
   WHERE row_id=v_cash_row;
 
-  UPDATE gmx.pedido_pagos
+  UPDATE shiny.pedido_pagos
   SET estado='REEMBOLSADO'
   WHERE id_pedido=v_order_id
     AND UPPER(COALESCE(metodo,''))='EFECTIVO'
     AND UPPER(COALESCE(estado,''))='PAGADO';
 
-  UPDATE gmx.pedidos
+  UPDATE shiny.pedidos
   SET estado_pago='REEMBOLSADO',
       fecha_actualizacion=NOW()
   WHERE id_pedido=v_order_id;
@@ -130,26 +130,26 @@ COMMIT;
 
 SELECT
   id_pedido,estado_pedido,venta_confirmada,estado_pago,total,metodo_pago
-FROM gmx.pedidos
+FROM shiny.pedidos
 WHERE id_pedido='PED-LOCAL-1786936950246-b3fdc8';
 
 SELECT
   id_pago,metodo,importe_aplicado,estado
-FROM gmx.pedido_pagos
+FROM shiny.pedido_pagos
 WHERE id_pedido='PED-LOCAL-1786936950246-b3fdc8'
 ORDER BY linea;
 
 SELECT
   row_id,id_movimiento,tipo,categoria,metodo_pago,importe,impacto_efectivo,
   referencia,origen_modulo,id_origen,id_movimiento_reversion
-FROM gmx.caja_movimientos
+FROM shiny.caja_movimientos
 WHERE referencia='PED-LOCAL-1786936950246-b3fdc8'
    OR id_origen='PED-LOCAL-1786936950246-b3fdc8'
 ORDER BY row_id;
 
 SELECT
   id_caja,fondo_inicial,ingresos_efectivo,egresos_efectivo,saldo_esperado,estado
-FROM gmx.caja_sesiones
+FROM shiny.caja_sesiones
 WHERE id_sucursal='SUC-000010'
   AND UPPER(COALESCE(estado,''))='ABIERTA'
 ORDER BY fecha_apertura DESC,row_id DESC

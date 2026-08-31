@@ -1,7 +1,7 @@
 const BASE = window.location.port === '5173'
   ? 'http://127.0.0.1:8787/api/v1/tcg-ops'
   : '/api/v1/tcg-ops';
-function token(){return localStorage.getItem('ADMIN_TOKEN')||localStorage.getItem('gmx_token')||localStorage.getItem('adminToken')||localStorage.getItem('token')||'';}
+function token(){return localStorage.getItem('ADMIN_TOKEN')||localStorage.getItem('shiny_token')||localStorage.getItem('adminToken')||localStorage.getItem('token')||'';}
 export async function api(path, options={}){
   const t=token();
   const headers={ 'Content-Type':'application/json', ...(options.headers||{}) };

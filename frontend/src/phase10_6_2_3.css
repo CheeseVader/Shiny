@@ -1,4 +1,4 @@
-/* GMX · Catálogo TCG · Propuesta A — Minimal Clara
+/* Shiny · Catálogo TCG · Propuesta A — Minimal Clara
    Alcance exclusivo del módulo TCG (.proposal-a-tcg). */
 .proposal-a-tcg{--a-blue:#2563eb;--a-blue-700:#1d4ed8;--a-blue-50:#eff6ff;--a-ink:#162033;--a-muted:#64748b;--a-line:#dbe4ef;--a-line-soft:#e9eef5;--a-bg:#f6f8fb;--a-green:#16a34a;display:block;color:var(--a-ink)}
 .proposal-a-tcg .proposal-a-shell{background:#fff!important;border:1px solid var(--a-line)!important;border-radius:14px!important;overflow:hidden!important;box-shadow:0 8px 24px rgba(15,23,42,.04)!important}
@@ -40,7 +40,7 @@
 @media(max-width:1000px){.proposal-a-toolbar{grid-template-columns:1fr 1fr}.proposal-a-form-grid{grid-template-columns:1fr 1fr}.proposal-a-current-summary{grid-template-columns:1fr 1fr}.proposal-a-options{grid-template-columns:1fr}.proposal-a-admin-inner .tcg-master-admin-grid{grid-template-columns:1fr}}
 @media(max-width:720px){.proposal-a-master-home,.proposal-a-tcg .tcg-body,.proposal-a-tcg .proposal-a-autosync{padding:14px!important}.proposal-a-metrics,.proposal-a-kpi-strip{grid-template-columns:1fr 1fr}.proposal-a-toolbar,.proposal-a-history-filters,.proposal-a-inline-filters{grid-template-columns:1fr}.proposal-a-form-grid,.proposal-a-bulk-steps,.proposal-a-review{grid-template-columns:1fr}.proposal-a-form-grid .wide{grid-column:auto}.proposal-a-wizard{overflow-x:auto;grid-template-columns:repeat(4,minmax(120px,1fr))}.tcg-price-card-grid{grid-template-columns:1fr 1fr}}
 
-/* GMX 2026-08-26 · Ajuste puntual aprobado
+/* Shiny 2026-08-26 · Ajuste puntual aprobado
    1) Catálogo Maestro usa todo el ancho útil.
    2) Recepción permanece blanca/limpia (sin panel gris).
    No altera estructura, navegación ni lógica. */
@@ -97,7 +97,7 @@
   border-color:var(--a-line-soft)!important;
 }
 
-/* GMX · Diseño 4 aprobado · Minimal con tarjetas elevadas · 2026-08-26 */
+/* Shiny · Diseño 4 aprobado · Minimal con tarjetas elevadas · 2026-08-26 */
 .proposal-a-tcg{--d4-navy:#082c63;--d4-blue:#0b63e5;--d4-text:#111827;--d4-muted:#667085;--d4-border:#e3e9f2;--d4-bg:#f8fafc;--d4-green:#079447;background:#fff!important}
 .proposal-a-tcg .proposal-a-shell{border:0!important;border-radius:0!important;box-shadow:none!important;background:#fff!important;overflow:visible!important}
 .proposal-a-tcg .design4-tabs{padding:0 28px!important;gap:18px!important;height:66px!important;border-bottom:1px solid var(--d4-border)!important}

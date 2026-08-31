@@ -85,7 +85,7 @@ router.get('/pos/catalog',async(req,res)=>{
   }
 });
 
-// GMX_POS_FIX_002
+// SHINY_POS_FIX_002
 router.post('/pos', async (req, res) => {
   try {
     const data = await createSale({
@@ -98,10 +98,11 @@ router.post('/pos', async (req, res) => {
       payments: Array.isArray(req.body.payments)?req.body.payments:[],
       notes: String(req.body.notes || '').trim(),
       promoCode: String(req.body.promoCode || '').trim(),
-      pointsToRedeem: Number(req.body.pointsToRedeem || 0),
+      pointsToRedeem: 0,
       manualDiscountType: String(req.body.manualDiscountType || '').trim(),
       manualDiscountValue: Number(req.body.manualDiscountValue || 0),
       manualDiscountReason: String(req.body.manualDiscountReason || '').trim(),
+      manualDiscountPin: String(req.body.manualDiscountPin || '').trim(),
       user: req.user,
       items: Array.isArray(req.body.items) ? req.body.items : []
     });
@@ -134,6 +135,14 @@ router.post('/pos', async (req, res) => {
       message='El importe con tarjeta requiere confirmación de Mercado Pago. La integración queda preparada para su auditoría posterior.';
     }else if(code==='INVALID_PAYMENT_METHOD'){
       message='Selecciona un método de pago válido.';
+    }else if(code==='MANUAL_DISCOUNT_PIN_INVALID_FORMAT'){
+      message='El código de autorización debe contener exactamente 4 dígitos.';
+    }else if(code==='MANUAL_DISCOUNT_PIN_INVALID_OR_EXPIRED'){
+      message='El código de autorización es incorrecto o ya venció.';
+    }else if(code==='MANUAL_DISCOUNT_PIN_ALREADY_USED'){
+      message='Este código de autorización ya fue utilizado. Genera uno nuevo.';
+    }else if(code==='MANUAL_DISCOUNT_AUTHORIZATION_FORBIDDEN'){
+      message='El código no tiene permiso para autorizar descuentos en esta sucursal.';
     }else if(code==='MANUAL_DISCOUNT_FORBIDDEN'){
       message='Tu usuario no tiene autorización para aplicar descuentos manuales.';
     }else if(code==='INVALID_MANUAL_DISCOUNT_TYPE'){

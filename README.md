@@ -21,7 +21,7 @@ Edite únicamente los valores de `brand.config.json`:
 
 La configuración controla la interfaz, portal público, POS, tickets, correos,
 PWA y búsqueda visual. Los identificadores internos históricos, como el esquema
-PostgreSQL `gmx`, no se muestran al cliente y se conservan por compatibilidad.
+PostgreSQL `shiny`, no se muestran al cliente y se conservan por compatibilidad.
 
 ## Crear un cliente
 

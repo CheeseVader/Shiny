@@ -25,14 +25,14 @@ router.post('/notifications/:rowId/read',async(req,res)=>{try{res.json({success:
 
 router.get('/media',async(req,res)=>{try{const r=await listMedia(req.query);res.json({success:true,data:r.rows});}catch(e){bad(res,e,500);}});
 router.post('/media/upload',
-  raw({type:'application/octet-stream',limit:process.env.GMX_MEDIA_UPLOAD_LIMIT||'512mb'}),
+  raw({type:'application/octet-stream',limit:process.env.SHINY_MEDIA_UPLOAD_LIMIT||'512mb'}),
   async(req,res)=>{
     try{
       const data=await saveMediaFile({
         buffer:req.body,
-        name:decodeURIComponent(String(req.headers['x-gmx-file-name']||'archivo.bin')),
-        mime:String(req.headers['x-gmx-file-type']||'application/octet-stream'),
-        category:decodeURIComponent(String(req.headers['x-gmx-category']||'GENERAL')),
+        name:decodeURIComponent(String(req.headers['x-shiny-file-name']||'archivo.bin')),
+        mime:String(req.headers['x-shiny-file-type']||'application/octet-stream'),
+        category:decodeURIComponent(String(req.headers['x-shiny-category']||'GENERAL')),
         user:req.user
       });
       res.status(201).json({success:true,data});

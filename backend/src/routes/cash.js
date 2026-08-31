@@ -18,7 +18,7 @@ router.get('/movements',async(req,res)=>{
   catch(e){res.status(500).json({success:false,error:e.message});}
 });
 router.post('/open',async(req,res)=>{
-  try{/* GMX_CAJA_AUTH_001 */res.status(201).json({success:true,data:await openCash(req.body,req.user)});}
+  try{/* SHINY_CAJA_AUTH_001 */res.status(201).json({success:true,data:await openCash(req.body,req.user)});}
   catch(e){res.status(400).json({success:false,error:e.message,message:e.message});}
 });
 router.post('/movements',async(req,res)=>{

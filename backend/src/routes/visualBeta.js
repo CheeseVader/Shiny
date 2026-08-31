@@ -6,7 +6,7 @@ import { query } from '../db.js';
 const router = express.Router();
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const PRODUCT_UPLOAD_ROOT = path.resolve(HERE, '../../uploads/products');
-const SERVICE_URL = String(process.env.GMX_VISUAL_BETA_URL || 'http://127.0.0.1:8011').replace(/\/$/, '');
+const SERVICE_URL = String(process.env.SHINY_VISUAL_BETA_URL || 'http://127.0.0.1:8011').replace(/\/$/, '');
 
 function localProductPath(image = '') {
   const value = String(image || '').trim();
@@ -45,7 +45,7 @@ router.post('/search', async (req, res) => {
 
     const rows = await query(`
       SELECT row_id,id,sku,nombre,categoria,imagen,precio,stock
-      FROM gmx.productos
+      FROM shiny.productos
       WHERE imagen IS NOT NULL
         AND BTRIM(imagen)<>''
         AND imagen LIKE '/uploads/products/%'
@@ -86,8 +86,8 @@ router.post('/search', async (req, res) => {
       });
     }
 
-    /* GMX_VISUAL_POS_BETA_R13
-     * OpenCLIP identifies the product; GMX remains the source of truth
+    /* SHINY_VISUAL_POS_BETA_R13
+     * OpenCLIP identifies the product; Shiny remains the source of truth
      * for current selling price and stock.
      */
     const productByRow = new Map(
@@ -111,7 +111,7 @@ router.post('/search', async (req, res) => {
       }
     });
   } catch (error) {
-    console.error(brandText("[GMX][VISUAL_BETA_SEARCH]"), error);
+    console.error(brandText("[Shiny][VISUAL_BETA_SEARCH]"), error);
     const offline = /fetch failed|ECONNREFUSED|aborted|timeout/i.test(String(error?.message || error));
     res.status(offline ? 503 : 500).json({
       success: false,

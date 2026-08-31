@@ -1,8 +1,8 @@
-Set-Location "C:\Users\igarcia\Videos\GMX\backend"
+Set-Location "C:\Users\igarcia\Videos\Shiny\backend"
 
 Write-Host ""
 Write-Host "============================================="
-Write-Host " GMX DEV-007C"
+Write-Host " Shiny DEV-007C"
 Write-Host " Ejecutando prueba real controlada"
 Write-Host "============================================="
 Write-Host ""

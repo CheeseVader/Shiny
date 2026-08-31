@@ -1,8 +1,8 @@
 const buckets=new Map();
-const WINDOW_MS=Math.max(1000,Number(process.env.GMX_PUBLIC_RATE_WINDOW_MS||60000));
-const MAX_REQUESTS=Math.max(10,Number(process.env.GMX_PUBLIC_RATE_MAX||240));
-const AUTH_WINDOW_MS=Math.max(1000,Number(process.env.GMX_AUTH_RATE_WINDOW_MS||900000));
-const AUTH_MAX=Math.max(3,Number(process.env.GMX_AUTH_RATE_MAX||20));
+const WINDOW_MS=Math.max(1000,Number(process.env.SHINY_PUBLIC_RATE_WINDOW_MS||60000));
+const MAX_REQUESTS=Math.max(10,Number(process.env.SHINY_PUBLIC_RATE_MAX||240));
+const AUTH_WINDOW_MS=Math.max(1000,Number(process.env.SHINY_AUTH_RATE_WINDOW_MS||900000));
+const AUTH_MAX=Math.max(3,Number(process.env.SHINY_AUTH_RATE_MAX||20));
 const CLEAN_EVERY_MS=Math.max(WINDOW_MS,60000);
 let lastCleanup=Date.now();
 

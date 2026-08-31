@@ -1,5 +1,5 @@
 import { brandText } from "../config/brand.js"; /**
- * GMX — CLIENTES-001 PRECHECK
+ * Shiny — CLIENTES-001 PRECHECK
  *
  * OBJETIVO:
  *   Levantar evidencia READ-ONLY del estado actual del bloque
@@ -404,7 +404,7 @@ async function q(client, text, params = []) {
 
 async function main() {
   console.log("\n");
-  console.log(brandText("GMX — CLIENTES-001 PRECHECK"));
+  console.log(brandText("Shiny — CLIENTES-001 PRECHECK"));
   console.log("MODE=READ_ONLY");
   console.log(`ROOT=${ROOT}`);
   console.log(`TIMESTAMP=${new Date().toISOString()}`);

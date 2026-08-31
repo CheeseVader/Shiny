@@ -1,5 +1,5 @@
 import { brandText } from "../config/brand.js"; /**
- * GMX — CLIENTES-LOYALTY-001 PRECHECK
+ * Shiny — CLIENTES-LOYALTY-001 PRECHECK
  *
  * MODE: READ ONLY
  *
@@ -7,8 +7,8 @@ import { brandText } from "../config/brand.js"; /**
  *   Preparar certificación de Fidelidad antes de cualquier smoke.
  *
  * REVISA:
- *   - gmx.fidelidad_cuentas
- *   - gmx.fidelidad_movimientos
+ *   - shiny.fidelidad_cuentas
+ *   - shiny.fidelidad_movimientos
  *   - columnas reales
  *   - constraints
  *   - índices
@@ -225,10 +225,10 @@ function sourceSignals(text) {
   if (!text) return [];
 
   const patterns = [
-  ["FIDELIDAD CUENTAS", /gmx\.fidelidad_cuentas/gi],
-  ["FIDELIDAD MOVIMIENTOS", /gmx\.fidelidad_movimientos/gi],
-  ["INSERT MOVIMIENTO", /INSERT\s+INTO\s+gmx\.fidelidad_movimientos/gi],
-  ["UPDATE CUENTA", /UPDATE\s+gmx\.fidelidad_cuentas/gi],
+  ["FIDELIDAD CUENTAS", /shiny\.fidelidad_cuentas/gi],
+  ["FIDELIDAD MOVIMIENTOS", /shiny\.fidelidad_movimientos/gi],
+  ["INSERT MOVIMIENTO", /INSERT\s+INTO\s+shiny\.fidelidad_movimientos/gi],
+  ["UPDATE CUENTA", /UPDATE\s+shiny\.fidelidad_cuentas/gi],
   ["FOR UPDATE", /FOR\s+UPDATE/gi],
   ["BEGIN", /\bBEGIN\b/gi],
   ["COMMIT", /\bCOMMIT\b/gi],
@@ -264,7 +264,7 @@ function sourceSignals(text) {
 }
 
 async function main() {
-  section(brandText("GMX — CLIENTES-LOYALTY-001 PRECHECK"));
+  section(brandText("Shiny — CLIENTES-LOYALTY-001 PRECHECK"));
 
   console.log("MODE=READ_ONLY");
   console.log("HTTP_REQUESTS=0");
@@ -357,7 +357,7 @@ async function main() {
       LEFT JOIN pg_stat_user_tables s
         ON s.relid=c.oid
       WHERE
-        n.nspname='gmx'
+        n.nspname='shiny'
         AND (
           lower(c.relname) LIKE '%fidel%'
           OR lower(c.relname) LIKE '%loyal%'
@@ -388,7 +388,7 @@ async function main() {
         numeric_scale
       FROM information_schema.columns
       WHERE
-        table_schema='gmx'
+        table_schema='shiny'
         AND table_name='fidelidad_cuentas'
       ORDER BY ordinal_position
       `
@@ -414,7 +414,7 @@ async function main() {
         numeric_scale
       FROM information_schema.columns
       WHERE
-        table_schema='gmx'
+        table_schema='shiny'
         AND table_name='fidelidad_movimientos'
       ORDER BY ordinal_position
       `
@@ -449,7 +449,7 @@ async function main() {
       JOIN pg_namespace ns
         ON ns.oid=cls.relnamespace
       WHERE
-        ns.nspname='gmx'
+        ns.nspname='shiny'
         AND cls.relname IN (
           'fidelidad_cuentas',
           'fidelidad_movimientos'
@@ -475,7 +475,7 @@ async function main() {
         indexdef AS index_definition
       FROM pg_indexes
       WHERE
-        schemaname='gmx'
+        schemaname='shiny'
         AND tablename IN (
           'fidelidad_cuentas',
           'fidelidad_movimientos'
@@ -512,7 +512,7 @@ async function main() {
         ON pn.oid=p.pronamespace
       WHERE
         NOT t.tgisinternal
-        AND n.nspname='gmx'
+        AND n.nspname='shiny'
         AND c.relname IN (
           'fidelidad_cuentas',
           'fidelidad_movimientos'
@@ -529,7 +529,7 @@ async function main() {
       db,
       `
       SELECT *
-      FROM gmx.fidelidad_cuentas
+      FROM shiny.fidelidad_cuentas
       ORDER BY id_cliente,row_id
       `
     );
@@ -548,7 +548,7 @@ async function main() {
           AS points_sum,
         MIN(fecha) AS first_date,
         MAX(fecha) AS last_date
-      FROM gmx.fidelidad_movimientos
+      FROM shiny.fidelidad_movimientos
       GROUP BY tipo
       ORDER BY tipo
       `
@@ -572,7 +572,7 @@ async function main() {
         id_pedido,
         motivo,
         fecha
-      FROM gmx.fidelidad_movimientos
+      FROM shiny.fidelidad_movimientos
       ORDER BY fecha DESC,row_id DESC
       LIMIT 100
       `
@@ -588,7 +588,7 @@ async function main() {
       SELECT
         id_cliente,
         COUNT(*)::bigint AS account_count
-      FROM gmx.fidelidad_cuentas
+      FROM shiny.fidelidad_cuentas
       GROUP BY id_cliente
       HAVING COUNT(*) > 1
       ORDER BY account_count DESC,id_cliente
@@ -607,7 +607,7 @@ async function main() {
       db,
       `
       SELECT *
-      FROM gmx.fidelidad_cuentas
+      FROM shiny.fidelidad_cuentas
       WHERE
         puntos_disponibles < 0
         OR puntos_generados < 0
@@ -631,7 +631,7 @@ async function main() {
       SELECT
         id_movimiento,
         COUNT(*)::bigint AS occurrences
-      FROM gmx.fidelidad_movimientos
+      FROM shiny.fidelidad_movimientos
       GROUP BY id_movimiento
       HAVING COUNT(*) > 1
       ORDER BY occurrences DESC,id_movimiento
@@ -658,7 +658,7 @@ async function main() {
         saldo_anterior,
         saldo_nuevo,
         fecha
-      FROM gmx.fidelidad_movimientos
+      FROM shiny.fidelidad_movimientos
       WHERE
         saldo_anterior IS NULL
         OR saldo_nuevo IS NULL
@@ -691,7 +691,7 @@ async function main() {
             PARTITION BY id_cliente
             ORDER BY fecha,row_id
           ) AS previous_saldo_nuevo
-        FROM gmx.fidelidad_movimientos
+        FROM shiny.fidelidad_movimientos
       )
       SELECT *
       FROM ordered
@@ -720,7 +720,7 @@ async function main() {
           id_movimiento,
           fecha,
           saldo_nuevo
-        FROM gmx.fidelidad_movimientos
+        FROM shiny.fidelidad_movimientos
         ORDER BY
           id_cliente,
           fecha DESC,
@@ -738,7 +738,7 @@ async function main() {
           f.puntos_disponibles
           - l.saldo_nuevo
         ) AS difference
-      FROM gmx.fidelidad_cuentas f
+      FROM shiny.fidelidad_cuentas f
       JOIN latest l
         ON l.id_cliente=f.id_cliente
       WHERE
@@ -766,8 +766,8 @@ async function main() {
         m.tipo,
         m.puntos,
         m.fecha
-      FROM gmx.fidelidad_movimientos m
-      LEFT JOIN gmx.clientes c
+      FROM shiny.fidelidad_movimientos m
+      LEFT JOIN shiny.clientes c
         ON c.id_cliente=m.id_cliente
       WHERE c.row_id IS NULL
       ORDER BY m.row_id
@@ -793,8 +793,8 @@ async function main() {
         m.id_pedido,
         m.puntos,
         m.fecha
-      FROM gmx.fidelidad_movimientos m
-      LEFT JOIN gmx.pedidos p
+      FROM shiny.fidelidad_movimientos m
+      LEFT JOIN shiny.pedidos p
         ON p.id_pedido=m.id_pedido
       WHERE
         m.id_pedido IS NOT NULL
@@ -821,7 +821,7 @@ async function main() {
         COUNT(*)::bigint AS occurrences,
         COALESCE(SUM(puntos),0)::bigint
           AS points_sum
-      FROM gmx.fidelidad_movimientos
+      FROM shiny.fidelidad_movimientos
       WHERE
         id_pedido IS NOT NULL
         AND btrim(id_pedido)<>''
@@ -849,7 +849,7 @@ async function main() {
         indexdef
       FROM pg_indexes
       WHERE
-        schemaname='gmx'
+        schemaname='shiny'
         AND tablename='fidelidad_movimientos'
         AND (
           lower(indexname) LIKE '%movimiento%'
@@ -920,7 +920,7 @@ async function main() {
       SELECT
         parametro,
         valor
-      FROM gmx.configuracion
+      FROM shiny.configuracion
       WHERE
         lower(parametro) LIKE 'loyalty.%'
         OR lower(parametro) LIKE '%fidel%'

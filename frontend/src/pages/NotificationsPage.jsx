@@ -1,7 +1,7 @@
 import { brandText } from "../config/brand.js";import { useEffect, useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router';
 import { api } from '../services/api.js';
-import '../phase_gmx_exact_views_r23.css';
+import '../phase_shiny_exact_views_r23.css';
 
 import '../notifications_visual_r78_fix4.css';
 const priorities = ['', 'CRITICA', 'ALTA', 'MEDIA', 'BAJA'];
@@ -262,7 +262,7 @@ export default function NotificationsPage() {
                 <div className="alert-meta">{x.sucursal ? <span>{x.sucursal}</span> : null}<span>{x.fecha ? new Date(x.fecha).toLocaleString('es-MX') : '—'}</span></div>
               </div>
             </article>)}
-            {!visible.length ? <div className="alerts-empty"><b>Sin alertas para estos filtros.</b><span>{brandText("TCG_STORE_TEMPLATE continuará revisando las condiciones configuradas.")}</span></div> : null}
+            {!visible.length ? <div className="alerts-empty"><b>Sin alertas para estos filtros.</b><span>{brandText("Shiny continuará revisando las condiciones configuradas.")}</span></div> : null}
           </div>
         </div>
 

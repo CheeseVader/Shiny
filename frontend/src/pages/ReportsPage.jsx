@@ -1,6 +1,6 @@
 import { useEffect,useMemo,useState } from 'react';
 import { api } from '../services/api.js';
-import '../phase_gmx_exact_views_r23.css';
+import '../phase_shiny_exact_views_r23.css';
 import '../phase10_6_2_4_1_12_2_0.css';
 
 const money=v=>Number(v||0).toLocaleString('es-MX',{style:'currency',currency:'MXN'});
@@ -37,7 +37,7 @@ const tabs=[
   ['tcg','TCG'],['alerts','Alertas'],['integrity','Auditoría de integridad']
 ];
 
-function gmxHeadlineKpiFontR54K(value){
+function shinyHeadlineKpiFontR54K(value){
   const s=String(value??'');
   const extra=Math.max(0,s.length-7);
   return `${Math.max(10.5,22-(extra*1.25))}px`;
@@ -85,11 +85,11 @@ export default function ReportsPage(){
 
   function exportCurrentCsv(){
     if(!datasets[tab])return setMessage('Selecciona una pestaña de datos para exportar CSV.');
-    download(`TCG_STORE_TEMPLATE_${tab}_${from}_${to}.csv`,'text/csv;charset=utf-8',`\ufeff${csv(datasets[tab])}`);
+    download(`Shiny_${tab}_${from}_${to}.csv`,'text/csv;charset=utf-8',`\ufeff${csv(datasets[tab])}`);
   }
   function exportExcel(){
     if(!report)return;
-    download(`TCG_STORE_TEMPLATE_REPORTES_${from}_${to}.xls`,'application/vnd.ms-excel',excelXml({
+    download(`Shiny_REPORTES_${from}_${to}.xls`,'application/vnd.ms-excel',excelXml({
       Ventas:report.sales,Compras:report.purchases,Devoluciones:report.returns,CxP:report.payables,
       Egresos:report.expenses,Caja:report.cash,Inventario:report.inventory,TCG:report.tcg,
       Alertas:report.alerts
@@ -128,7 +128,7 @@ export default function ReportsPage(){
         <div><span>{k.label}</span><strong
   title={String(k.value??'')}
   style={{
-    fontSize:gmxHeadlineKpiFontR54K(k.value),
+    fontSize:shinyHeadlineKpiFontR54K(k.value),
     lineHeight:1.05,
     letterSpacing:'-.05em',
     whiteSpace:'nowrap',

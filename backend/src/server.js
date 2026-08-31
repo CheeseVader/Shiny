@@ -51,7 +51,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 
-/* GMX_LOCAL_PRODUCT_MEDIA_R12 */
+/* SHINY_LOCAL_PRODUCT_MEDIA_R12 */
 const productUploadsDir = path.join(__dirname, '..', 'uploads', 'products');
 
 const frontendDist = path.resolve(__dirname, '../../frontend/dist');
@@ -73,14 +73,14 @@ app.post('/api/payments/stripe/webhook', express.raw({ type: 'application/json' 
   }
 });
 app.use(express.json({ limit: '36mb' }));
-/* GMX_VISUAL_BETA_PAYLOAD_R4
+/* SHINY_VISUAL_BETA_PAYLOAD_R4
  * The visual-search endpoint carries a camera frame encoded as a data URL.
  * Global structured-input validation is designed for normal form/text payloads
  * and can reject long Base64 strings before the isolated visual route sees them.
  *
  * Scope this exception to ONE exact authenticated API endpoint only.
  * The visualBeta route performs its own required-field and 10 MB string limit
- * checks, while normal GMX endpoints continue through validateStructuredInput.
+ * checks, while normal Shiny endpoints continue through validateStructuredInput.
  */
 app.use((req, res, next) => {
   if (req.method === 'POST' && ['/api/v1/visual-beta/search', '/api/v1/external-card-beta/visual-search'].includes(req.path)) {
@@ -108,7 +108,7 @@ app.use('/api/public/product-images', express.static(path.resolve(__dirname, '..
 app.get('/api/health', async (_req, res) => {
   try {
     const r = await query(`SELECT current_database() AS database,current_user AS db_user,current_schema() AS schema,NOW() AS server_time`);
-    res.json({ success: true, service: brandText("GMX Local API"), mode: 'LOCAL_SECURE', database: r.rows[0], db_ms: r.ms });
+    res.json({ success: true, service: brandText("Shiny Local API"), mode: 'LOCAL_SECURE', database: r.rows[0], db_ms: r.ms });
   } catch (e) {res.status(503).json({ success: false, error: 'DATABASE_UNAVAILABLE', message: e.message });}
 });
 
@@ -162,16 +162,16 @@ if (process.env.NODE_ENV === 'production') {
 }
 
 const server = app.listen(PORT, '127.0.0.1', () => {
-  console.log(brandText(`[GMX] API local segura: http://localhost:${PORT}`));
-  console.log(brandText("[GMX] API mode: LOCAL_SECURE"));
+  console.log(brandText(`[Shiny] API local segura: http://localhost:${PORT}`));
+  console.log(brandText("[Shiny] API mode: LOCAL_SECURE"));
   startTcgSyncScheduler();
   startProductImageEnrichmentScheduler();
   startAlertScheduler();
-  initStorefrontLiveSync().catch((e) => console.error(brandText("[GMX] Storefront live sync:"), e.message));
+  initStorefrontLiveSync().catch((e) => console.error(brandText("[Shiny] Storefront live sync:"), e.message));
 });
 
 async function shutdown(signal) {
-  console.log(brandText(`[GMX] ${signal}: shutting down...`));
+  console.log(brandText(`[Shiny] ${signal}: shutting down...`));
   server.close(async () => {
     try {await stopStorefrontLiveSync();} catch {}
     await pool.end();process.exit(0);

@@ -3,7 +3,7 @@ import { publicApi } from '../services/publicApi.js';
 
 const StoreContext=createContext(null);
 const LIVE='/api/public/live-sync/events',VERSION='/api/public/live-sync/version';
-const CHANNEL='gmx-storefront-live-v1';
+const CHANNEL='shiny-storefront-live-v1';
 const has=(e,names)=>{const s=(e?.sections||[]).map(x=>String(x).toLowerCase());return s.includes('all')||names.some(x=>s.includes(x));};
 
 export function PublicStoreProvider({children}){
@@ -55,7 +55,7 @@ export function PublicStoreProvider({children}){
       if(has(ev,['appearance','settings','slideshow','media','promotions','storefront'])){
         try{await reload({silent:true});}catch{}
       }
-      window.dispatchEvent(new CustomEvent('gmx-storefront-live-update',{detail:ev}));
+      window.dispatchEvent(new CustomEvent('shiny-storefront-live-update',{detail:ev}));
       if(share&&bc)try{bc.postMessage(ev);}catch{}
     };
 

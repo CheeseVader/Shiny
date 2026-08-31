@@ -1,0 +1,25 @@
+.shiny-inventory-final{display:grid;gap:14px;padding:22px!important;background:#f8fafc;color:#475569}
+.shiny-inventory-final *{box-sizing:border-box}
+.shiny-inv-final-head{display:flex;align-items:flex-end;justify-content:space-between;gap:18px}
+.shiny-inv-final-head .eyebrow{color:#94a3b8;font-size:9px;font-weight:800;letter-spacing:.13em}
+.shiny-inv-final-head h2{margin:4px 0 3px;color:#172033;font-size:25px}
+.shiny-inv-final-head p{margin:0;color:#7b8798;font-size:11px}
+.shiny-inv-final-count{padding:6px 9px;border:1px solid #e2e8f0;border-radius:999px;background:#fff;color:#64748b;font-size:9px}
+.shiny-inv-final-filters{display:grid;grid-template-columns:1fr 1.25fr 2fr 1.2fr .9fr;gap:10px;padding:14px;border:1px solid #e6eaf0;border-radius:12px;background:#fff}
+.shiny-inv-final-filters label{display:grid;gap:5px;color:#64748b;font-size:9px;font-weight:800}
+.shiny-inv-final-filters input,.shiny-inv-final-filters select{min-height:38px!important;padding:0 10px!important;border:1px solid #d8dee7!important;border-radius:8px!important;background:#fff!important;color:#263244!important;box-shadow:none!important;font-size:10px!important}
+.shiny-inv-final-kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.shiny-inv-final-kpis article{min-height:92px;padding:15px;border:1px solid #e6eaf0;border-radius:11px;background:#fff}
+.shiny-inv-final-kpis span{display:block;color:#64748b;font-size:9px}.shiny-inv-final-kpis strong{display:block;margin-top:8px;color:#172033;font-size:20px}.shiny-inv-final-kpis small{display:block;margin-top:5px;color:#94a3b8;font-size:8px}
+.shiny-inv-final-overview{display:grid;grid-template-columns:1.2fr .8fr;gap:12px}
+.shiny-inv-final-card{border:1px solid #e6eaf0;border-radius:12px;background:#fff;overflow:hidden}
+.shiny-inv-final-title{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:13px 15px;border-bottom:1px solid #eef2f6}
+.shiny-inv-final-title h3{margin:0;color:#253044;font-size:12px}.shiny-inv-final-title p{margin:3px 0 0;color:#94a3b8;font-size:8px}.shiny-inv-final-title>span{color:#94a3b8;font-size:8px}
+.shiny-inv-final-bars,.shiny-inv-final-top{padding:7px 15px 12px}
+.shiny-inv-final-bar{display:grid;grid-template-columns:minmax(100px,1fr) 2fr 50px;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid #f1f3f6}
+.shiny-inv-final-bar>div{display:grid;gap:2px}.shiny-inv-final-bar strong{color:#334155;font-size:9px}.shiny-inv-final-bar small{color:#94a3b8;font-size:7px}.shiny-inv-final-bar>span{height:6px;border-radius:999px;background:#eef2f6;overflow:hidden}.shiny-inv-final-bar>span i{display:block;height:100%;border-radius:999px;background:#64748b}.shiny-inv-final-bar>b{text-align:right;color:#475569;font-size:9px}
+.shiny-inv-final-top>div{display:grid;grid-template-columns:26px 1fr auto;align-items:center;gap:9px;padding:9px 0;border-bottom:1px solid #f1f3f6}.shiny-inv-final-top>div>span{color:#94a3b8;font-size:8px;font-weight:800}.shiny-inv-final-top>div>div{display:grid;gap:2px;min-width:0}.shiny-inv-final-top strong{color:#334155;font-size:9px}.shiny-inv-final-top small{color:#94a3b8;font-size:7px}.shiny-inv-final-top b{color:#334155;font-size:9px}
+.shiny-inv-final-list .table-wrap{border:0!important;border-radius:0!important}.shiny-inv-final-list th{padding:9px 11px!important;background:#fbfcfd!important;color:#7b8798!important;font-size:8px!important}.shiny-inv-final-list td{padding:10px 11px!important;border-top:1px solid #f0f2f5!important;color:#475569!important;font-size:9px!important}
+.shiny-inv-final-empty{padding:18px;color:#94a3b8;font-size:9px;text-align:center}
+@media(max-width:1100px){.shiny-inv-final-filters{grid-template-columns:1fr 1fr}.shiny-inv-final-filters .wide{grid-column:span 2}.shiny-inv-final-overview{grid-template-columns:1fr}}
+@media(max-width:720px){.shiny-inventory-final{padding:14px!important}.shiny-inv-final-head{align-items:flex-start;flex-direction:column}.shiny-inv-final-filters,.shiny-inv-final-kpis{grid-template-columns:1fr}.shiny-inv-final-filters .wide{grid-column:auto}}

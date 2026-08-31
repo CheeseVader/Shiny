@@ -38,7 +38,7 @@ router.get('/', async (req, res) => {
       limit, offset, ms: result.ms
     });
   } catch (error) {
-    console.error(brandText("[GMX][INVENTORY_LIST]"), error);
+    console.error(brandText("[Shiny][INVENTORY_LIST]"), error);
     res.status(500).json({
       success: false, error: 'INVENTORY_LIST_FAILED', message: 'No fue posible consultar el inventario.'
     });

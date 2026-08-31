@@ -1,11 +1,11 @@
 import { brandText } from "./config/brand.js";import { pool, query } from './db.js';
 
-const CHANNEL = 'gmx_storefront_live';
+const CHANNEL = 'shiny_storefront_live';
 const clients = new Set();
-const MAX_CONNECTIONS = Math.max(100, Number(process.env.GMX_SSE_MAX_CONNECTIONS || 20000));
-const HEARTBEAT_MS = Math.max(10000, Number(process.env.GMX_SSE_HEARTBEAT_MS || 25000));
-const RETRY_MIN_MS = Math.max(1000, Number(process.env.GMX_SSE_RETRY_MIN_MS || 5000));
-const RETRY_JITTER_MS = Math.max(0, Number(process.env.GMX_SSE_RETRY_JITTER_MS || 10000));
+const MAX_CONNECTIONS = Math.max(100, Number(process.env.SHINY_SSE_MAX_CONNECTIONS || 20000));
+const HEARTBEAT_MS = Math.max(10000, Number(process.env.SHINY_SSE_HEARTBEAT_MS || 25000));
+const RETRY_MIN_MS = Math.max(1000, Number(process.env.SHINY_SSE_RETRY_MIN_MS || 5000));
+const RETRY_JITTER_MS = Math.max(0, Number(process.env.SHINY_SSE_RETRY_JITTER_MS || 10000));
 let currentVersion = 0,lastBroadcastVersion = 0;
 let listenerClient = null,reconnectTimer = null,heartbeatTimer = null,started = false;
 let totalOpened = 0,totalClosed = 0,totalRejected = 0,peakConnections = 0;
@@ -38,7 +38,7 @@ function broadcast(payload) {
 }
 async function ensureVersion() {
   try {
-    const r = await query(`SELECT valor FROM gmx.configuracion WHERE parametro='live.storefront_version' LIMIT 1`);
+    const r = await query(`SELECT valor FROM shiny.configuracion WHERE parametro='live.storefront_version' LIMIT 1`);
     currentVersion = Number(r.rows[0]?.valor || 0);
   } catch {currentVersion = 0;}
 }
@@ -54,7 +54,7 @@ async function connectListener() {
     try {broadcast(JSON.parse(msg.payload));} catch {}
   });
   c.on('error', (e) => {
-    console.error(brandText("[GMX] Storefront LISTEN:"), e.message);
+    console.error(brandText("[Shiny] Storefront LISTEN:"), e.message);
     try {c.release(true);} catch {}
     if (listenerClient === c) listenerClient = null;
     scheduleReconnect();
@@ -65,7 +65,7 @@ async function connectListener() {
 export async function initStorefrontLiveSync() {
   if (started) return;started = true;
   await ensureVersion();
-  connectListener().catch((e) => {console.error(brandText("[GMX] Storefront LISTEN startup:"), e.message);scheduleReconnect();});
+  connectListener().catch((e) => {console.error(brandText("[Shiny] Storefront LISTEN startup:"), e.message);scheduleReconnect();});
   // 1 timer global, no uno por cada uno de los 1,000+ clientes.
   heartbeatTimer = setInterval(() => {
     for (const res of [...clients]) {
@@ -73,14 +73,14 @@ export async function initStorefrontLiveSync() {
       safeWrite(res, `: heartbeat ${Date.now()}\n\n`);
     }
   }, HEARTBEAT_MS);
-  console.log(brandText(`[GMX] Storefront live sync ready · version=${currentVersion}`));
+  console.log(brandText(`[Shiny] Storefront live sync ready · version=${currentVersion}`));
 }
 
 export async function publishStorefrontUpdate({
-  sections = ['storefront'], reason = 'CHANGE', actor = brandText("GMX"), changes = []
+  sections = ['storefront'], reason = 'CHANGE', actor = brandText("Shiny"), changes = []
 } = {}) {
   const r = await query(`
-    INSERT INTO gmx.configuracion(parametro,valor) VALUES('live.storefront_version','1')
+    INSERT INTO shiny.configuracion(parametro,valor) VALUES('live.storefront_version','1')
     ON CONFLICT(parametro) DO UPDATE SET valor=
       CASE WHEN configuracion.valor ~ '^[0-9]+$'
         THEN (configuracion.valor::bigint+1)::text ELSE '1' END
@@ -88,7 +88,7 @@ export async function publishStorefrontUpdate({
   const version = Number(r.rows[0]?.valor || Date.now());
   const payload = {
     version, sections: norm(sections), reason: String(reason).slice(0, 140),
-    actor: String(actor || brandText("GMX")).slice(0, 160), changes: Array.isArray(changes) ? changes.slice(0, 200) : [],
+    actor: String(actor || brandText("Shiny")).slice(0, 160), changes: Array.isArray(changes) ? changes.slice(0, 200) : [],
     at: new Date().toISOString()
   };
   currentVersion = Math.max(currentVersion, version);
@@ -160,7 +160,7 @@ export function storefrontMutationPublisher(req, res, next) {
       publishStorefrontUpdate({
         sections, reason: `${String(req.method).toUpperCase()} ${String(req.originalUrl || req.url).split('?')[0]}`,
         actor: req.user?.email || req.user?.id || 'ADMIN'
-      }).catch((e) => console.error(brandText("[GMX] Storefront publish:"), e.message));
+      }).catch((e) => console.error(brandText("[Shiny] Storefront publish:"), e.message));
     }
   });
   next();

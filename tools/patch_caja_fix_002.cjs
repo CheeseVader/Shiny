@@ -3,7 +3,7 @@ const fs=require('fs');
 const path=require('path');
 const {spawnSync}=require('child_process');
 
-const root=process.argv[2]||'C:\\Users\\SrsGarciaEspinoza\\Videos\\GMX';
+const root=process.argv[2]||'C:\\Users\\SrsGarciaEspinoza\\Videos\\Shiny';
 const file=path.join(root,'backend','src','repositories','cashRepository.js');
 
 if(!fs.existsSync(file)){
@@ -13,7 +13,7 @@ if(!fs.existsSync(file)){
 
 let src=fs.readFileSync(file,'utf8');
 
-if(src.includes('GMX_CAJA_FIX_002')){
+if(src.includes('SHINY_CAJA_FIX_002')){
   console.log('CAJA-FIX-002 ya estaba aplicado.');
   process.exit(0);
 }
@@ -36,7 +36,7 @@ const old = `    const normalizedType=String(type||'').toUpperCase();
 const neu = `    const normalizedType=String(type||'').toUpperCase();
     if(!['INGRESO','EGRESO'].includes(normalizedType)) throw new Error('INVALID_MOVEMENT_TYPE');
 
-    // GMX_CAJA_FIX_002
+    // SHINY_CAJA_FIX_002
     // Reglas semánticas del catálogo de motivos de Caja.
     // Frontend y backend deben aceptar exactamente las mismas combinaciones.
     const normalizedCategory=String(category||'MANUAL').toUpperCase();

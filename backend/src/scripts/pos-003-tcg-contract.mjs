@@ -1,4 +1,4 @@
-﻿import 'dotenv/config';
+import 'dotenv/config';
 import { query, pool } from '../db.js';
 
 function section(title){
@@ -26,7 +26,7 @@ try{
         column_name,
         data_type
       FROM information_schema.columns
-      WHERE table_schema='gmx'
+      WHERE table_schema='shiny'
         AND table_name=$1
       ORDER BY ordinal_position
     `,[table]);
@@ -38,7 +38,7 @@ try{
 
   const global = await query(`
     SELECT *
-    FROM gmx.tcg_inventario
+    FROM shiny.tcg_inventario
     ORDER BY row_id DESC
     LIMIT 5
   `);
@@ -48,7 +48,7 @@ try{
 
   const branch = await query(`
     SELECT *
-    FROM gmx.tcg_inventario_sucursales
+    FROM shiny.tcg_inventario_sucursales
     ORDER BY row_id DESC
     LIMIT 5
   `);

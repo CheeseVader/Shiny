@@ -1,7 +1,7 @@
 import { createContext,useContext,useEffect,useMemo,useState } from 'react';
 
 const CartContext=createContext(null);
-const KEY='GMX_PUBLIC_CART_V1';
+const KEY='SHINY_PUBLIC_CART_V1';
 
 export function CartProvider({children}){
   const [items,setItems]=useState(()=>{

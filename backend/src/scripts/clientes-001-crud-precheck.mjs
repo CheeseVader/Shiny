@@ -57,7 +57,7 @@ const files = {
   auth: "src/middleware/auth.js"
 };
 
-section(brandText("GMX — CLIENTES-001 CRUD PRECHECK"));
+section(brandText("Shiny — CLIENTES-001 CRUD PRECHECK"));
 
 console.log("MODE=READ_ONLY");
 console.log("DATABASE_CONNECTION=NOT_USED");
@@ -147,9 +147,9 @@ section("7. REPOSITORY MUTATION SIGNALS");
 
 console.table(
   linesContaining(repoText, [
-  /INSERT INTO gmx\.clientes/i,
-  /UPDATE gmx\.clientes/i,
-  /DELETE FROM gmx\.clientes/i,
+  /INSERT INTO shiny\.clientes/i,
+  /UPDATE shiny\.clientes/i,
+  /DELETE FROM shiny\.clientes/i,
   /RETURNING/i,
   /email/i,
   /telefono/i,

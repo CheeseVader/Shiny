@@ -1,6 +1,6 @@
 param(
   [Parameter(Mandatory=$true)][string]$BackupFile,
-  [string]$Database = "gmx_db"
+  [string]$Database = "shiny_db"
 )
 $ErrorActionPreference="Stop"
 if(!(Test-Path $BackupFile)){throw "No existe $BackupFile"}

@@ -102,7 +102,7 @@ const files = [
 "src/server.js"];
 
 
-section(brandText("GMX — CLIENTES-001 DUPLICATE PHONE HTTP PRECHECK")
+section(brandText("Shiny — CLIENTES-001 DUPLICATE PHONE HTTP PRECHECK")
 
 );
 

@@ -1,4 +1,4 @@
-/* GMX_TCG_OPERACION_PREMIUM_R32_BUILD_MARKER */
+/* SHINY_TCG_OPERACION_PREMIUM_R32_BUILD_MARKER */
 .tcgops-premium-r32{
   --r32-purple:#7047f6;
   --r32-purple-dark:#5830d4;
@@ -137,7 +137,7 @@
   color:rgba(255,255,255,.82)!important;
 }
 
-/* iconos KPI: los cuadros pequeÃ±os visibles en captura */
+/* iconos KPI: los cuadros pequeños visibles en captura */
 .tcgops-premium-r32 .tcgops-toolbar + * > * :is(
   [class*="icon"],[class*="Icon"],.metric-icon,.kpi-icon
 ){
@@ -195,7 +195,7 @@
   letter-spacing:.10em!important;
 }
 
-/* Barras: mÃ¡s premium y redondeadas */
+/* Barras: más premium y redondeadas */
 .tcgops-premium-r32 :is(
   [class*="bar-track"],
   [class*="progress-track"],
@@ -214,7 +214,7 @@
   box-shadow:0 3px 10px rgba(80,61,190,.14)!important;
 }
 
-/* Tabs existentes, si se muestran mÃ¡s abajo */
+/* Tabs existentes, si se muestran más abajo */
 .tcgops-premium-r32 .tcgops-tabs{
   background:#eff1f6!important;
   border:1px solid #e4e7ee!important;
@@ -250,7 +250,7 @@
 }
 .tcgops-premium-r32 tbody tr:hover td{background:#fbfaff!important}
 
-/* Botones del mÃ³dulo */
+/* Botones del módulo */
 .tcgops-premium-r32 button:not(.secondary):not(.tab){
   border:0!important;
   border-radius:11px!important;

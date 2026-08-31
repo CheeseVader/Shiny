@@ -3,7 +3,7 @@ const fs=require('fs');
 const path=require('path');
 const {spawnSync}=require('child_process');
 
-const root=process.argv[2]||'C:\\Users\\SrsGarciaEspinoza\\Videos\\GMX';
+const root=process.argv[2]||'C:\\Users\\SrsGarciaEspinoza\\Videos\\Shiny';
 const file=path.join(root,'backend','src','repositories','cashRepository.js');
 
 if(!fs.existsSync(file)){
@@ -13,7 +13,7 @@ if(!fs.existsSync(file)){
 
 let src=fs.readFileSync(file,'utf8');
 
-if(src.includes('GMX_CAJA_FIX_003')){
+if(src.includes('SHINY_CAJA_FIX_003')){
   console.log('CAJA-FIX-003 ya estaba aplicado.');
   process.exit(0);
 }
@@ -38,7 +38,7 @@ const neu = `    const value=Number(amount);
     if(!Number.isFinite(value)||value<=0) throw new Error('INVALID_AMOUNT');
     const impact=cashImpact(normalizedType,paymentMethod,value);
 
-    // GMX_CAJA_FIX_003
+    // SHINY_CAJA_FIX_003
     // Un egreso manual en EFECTIVO no puede dejar la caja por debajo de cero.
     // Antes de validar, recalculamos la sesion dentro de la misma transaccion
     // para trabajar contra el saldo mas reciente.

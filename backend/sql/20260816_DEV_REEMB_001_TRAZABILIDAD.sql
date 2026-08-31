@@ -1,12 +1,12 @@
 -- ============================================================
--- GMX DEV-REEMB-001
+-- Shiny DEV-REEMB-001
 -- Trazabilidad automática de devoluciones / reembolsos
 -- Fecha: 2026-08-16
 --
 -- OBJETIVOS
 -- 1) Toda devolución crea eventos de auditoría.
 -- 2) Todo EGRESO de caja categoría DEVOLUCION crea/relaciona
---    un registro formal en gmx.devoluciones_reembolsos.
+--    un registro formal en shiny.devoluciones_reembolsos.
 -- 3) Idempotente: no duplica reembolsos ni eventos.
 -- 4) Backfill de devoluciones/reembolsos ya existentes.
 -- ============================================================
@@ -17,38 +17,38 @@ BEGIN;
 -- Índices de protección / búsqueda
 -- ------------------------------------------------------------
 CREATE UNIQUE INDEX IF NOT EXISTS uq_devoluciones_reembolsos_id_reembolso
-ON gmx.devoluciones_reembolsos(id_reembolso)
+ON shiny.devoluciones_reembolsos(id_reembolso)
 WHERE id_reembolso IS NOT NULL;
 
 CREATE UNIQUE INDEX IF NOT EXISTS uq_devoluciones_reembolsos_idempotency
-ON gmx.devoluciones_reembolsos(idempotency_key)
+ON shiny.devoluciones_reembolsos(idempotency_key)
 WHERE idempotency_key IS NOT NULL AND idempotency_key <> '';
 
 CREATE UNIQUE INDEX IF NOT EXISTS uq_devoluciones_eventos_id_evento
-ON gmx.devoluciones_eventos(id_evento)
+ON shiny.devoluciones_eventos(id_evento)
 WHERE id_evento IS NOT NULL;
 
 CREATE INDEX IF NOT EXISTS ix_devoluciones_reembolsos_devolucion
-ON gmx.devoluciones_reembolsos(id_devolucion, fecha DESC);
+ON shiny.devoluciones_reembolsos(id_devolucion, fecha DESC);
 
 CREATE INDEX IF NOT EXISTS ix_devoluciones_eventos_devolucion
-ON gmx.devoluciones_eventos(id_devolucion, fecha DESC);
+ON shiny.devoluciones_eventos(id_devolucion, fecha DESC);
 
 -- ------------------------------------------------------------
 -- Función: evento al crear devolución
 -- ------------------------------------------------------------
-CREATE OR REPLACE FUNCTION gmx.fn_dev_audit_devolucion_insert()
+CREATE OR REPLACE FUNCTION shiny.fn_dev_audit_devolucion_insert()
 RETURNS trigger
 LANGUAGE plpgsql
 AS $$
 BEGIN
   IF NOT EXISTS (
     SELECT 1
-    FROM gmx.devoluciones_eventos e
+    FROM shiny.devoluciones_eventos e
     WHERE e.id_devolucion = NEW.id
       AND e.tipo = 'DEVOLUCION_CREADA'
   ) THEN
-    INSERT INTO gmx.devoluciones_eventos(
+    INSERT INTO shiny.devoluciones_eventos(
       id_evento,
       id_devolucion,
       id_reembolso,
@@ -78,17 +78,17 @@ END;
 $$;
 
 DROP TRIGGER IF EXISTS trg_dev_audit_devolucion_insert
-ON gmx.devoluciones;
+ON shiny.devoluciones;
 
 CREATE TRIGGER trg_dev_audit_devolucion_insert
-AFTER INSERT ON gmx.devoluciones
+AFTER INSERT ON shiny.devoluciones
 FOR EACH ROW
-EXECUTE FUNCTION gmx.fn_dev_audit_devolucion_insert();
+EXECUTE FUNCTION shiny.fn_dev_audit_devolucion_insert();
 
 -- ------------------------------------------------------------
 -- Función: evento cuando cambia el estado
 -- ------------------------------------------------------------
-CREATE OR REPLACE FUNCTION gmx.fn_dev_audit_devolucion_estado()
+CREATE OR REPLACE FUNCTION shiny.fn_dev_audit_devolucion_estado()
 RETURNS trigger
 LANGUAGE plpgsql
 AS $$
@@ -96,12 +96,12 @@ BEGIN
   IF NEW.estado IS DISTINCT FROM OLD.estado THEN
     IF NOT EXISTS (
       SELECT 1
-      FROM gmx.devoluciones_eventos e
+      FROM shiny.devoluciones_eventos e
       WHERE e.id_devolucion = NEW.id
         AND e.tipo = 'ESTADO_DEVOLUCION'
         AND COALESCE(e.estado,'') = COALESCE(NEW.estado,'')
     ) THEN
-      INSERT INTO gmx.devoluciones_eventos(
+      INSERT INTO shiny.devoluciones_eventos(
         id_evento,
         id_devolucion,
         id_reembolso,
@@ -134,18 +134,18 @@ END;
 $$;
 
 DROP TRIGGER IF EXISTS trg_dev_audit_devolucion_estado
-ON gmx.devoluciones;
+ON shiny.devoluciones;
 
 CREATE TRIGGER trg_dev_audit_devolucion_estado
-AFTER UPDATE OF estado ON gmx.devoluciones
+AFTER UPDATE OF estado ON shiny.devoluciones
 FOR EACH ROW
-EXECUTE FUNCTION gmx.fn_dev_audit_devolucion_estado();
+EXECUTE FUNCTION shiny.fn_dev_audit_devolucion_estado();
 
 -- ------------------------------------------------------------
 -- Función principal:
 -- al insertar EGRESO / DEVOLUCION en caja, formaliza reembolso
 -- ------------------------------------------------------------
-CREATE OR REPLACE FUNCTION gmx.fn_dev_audit_caja_reembolso()
+CREATE OR REPLACE FUNCTION shiny.fn_dev_audit_caja_reembolso()
 RETURNS trigger
 LANGUAGE plpgsql
 AS $$
@@ -164,7 +164,7 @@ BEGIN
   -- En el flujo actual, id_origen contiene DEV-...
   SELECT d.*
     INTO v_dev
-  FROM gmx.devoluciones d
+  FROM shiny.devoluciones d
   WHERE d.id = NEW.id_origen
   ORDER BY d.row_id DESC
   LIMIT 1;
@@ -181,12 +181,12 @@ BEGIN
 
   IF NOT EXISTS (
     SELECT 1
-    FROM gmx.devoluciones_reembolsos r
+    FROM shiny.devoluciones_reembolsos r
     WHERE r.idempotency_key = v_key
        OR (r.id_devolucion = v_dev.id
            AND r.referencia = NEW.id_movimiento)
   ) THEN
-    INSERT INTO gmx.devoluciones_reembolsos(
+    INSERT INTO shiny.devoluciones_reembolsos(
       id_reembolso,
       id_devolucion,
       id_pedido,
@@ -240,7 +240,7 @@ BEGIN
   ELSE
     SELECT r.id_reembolso
       INTO v_id_reembolso
-    FROM gmx.devoluciones_reembolsos r
+    FROM shiny.devoluciones_reembolsos r
     WHERE r.idempotency_key = v_key
        OR (r.id_devolucion = v_dev.id
            AND r.referencia = NEW.id_movimiento)
@@ -250,12 +250,12 @@ BEGIN
 
   IF NOT EXISTS (
     SELECT 1
-    FROM gmx.devoluciones_eventos e
+    FROM shiny.devoluciones_eventos e
     WHERE e.id_devolucion = v_dev.id
       AND e.tipo = 'REEMBOLSO_REGISTRADO'
       AND e.id_reembolso = v_id_reembolso
   ) THEN
-    INSERT INTO gmx.devoluciones_eventos(
+    INSERT INTO shiny.devoluciones_eventos(
       id_evento,
       id_devolucion,
       id_reembolso,
@@ -287,18 +287,18 @@ END;
 $$;
 
 DROP TRIGGER IF EXISTS trg_dev_audit_caja_reembolso
-ON gmx.caja_movimientos;
+ON shiny.caja_movimientos;
 
 CREATE TRIGGER trg_dev_audit_caja_reembolso
-AFTER INSERT ON gmx.caja_movimientos
+AFTER INSERT ON shiny.caja_movimientos
 FOR EACH ROW
-EXECUTE FUNCTION gmx.fn_dev_audit_caja_reembolso();
+EXECUTE FUNCTION shiny.fn_dev_audit_caja_reembolso();
 
 -- ------------------------------------------------------------
 -- BACKFILL
 -- Reembolsos efectivos ya materializados en caja pero sin registro formal
 -- ------------------------------------------------------------
-INSERT INTO gmx.devoluciones_reembolsos(
+INSERT INTO shiny.devoluciones_reembolsos(
   id_reembolso,
   id_devolucion,
   id_pedido,
@@ -348,21 +348,21 @@ SELECT
   NULL,
   NULL,
   c.fecha
-FROM gmx.caja_movimientos c
-JOIN gmx.devoluciones d
+FROM shiny.caja_movimientos c
+JOIN shiny.devoluciones d
   ON d.id = c.id_origen
 WHERE upper(COALESCE(c.tipo,''))='EGRESO'
   AND upper(COALESCE(c.categoria,''))='DEVOLUCION'
   AND COALESCE(c.anulado,false)=false
   AND NOT EXISTS (
     SELECT 1
-    FROM gmx.devoluciones_reembolsos r
+    FROM shiny.devoluciones_reembolsos r
     WHERE r.idempotency_key = 'CAJA-DEVOLUCION:' || c.id_movimiento
        OR (r.id_devolucion=d.id AND r.referencia=c.id_movimiento)
   );
 
 -- Eventos de creación para devoluciones existentes sin evento
-INSERT INTO gmx.devoluciones_eventos(
+INSERT INTO shiny.devoluciones_eventos(
   id_evento,id_devolucion,id_reembolso,fecha,tipo,estado,detalle,id_admin,usuario
 )
 SELECT
@@ -375,14 +375,14 @@ SELECT
   'Evento reconstruido por DEV-REEMB-001. Referencia: ' || COALESCE(d.referencia,''),
   NULL,
   'BACKFILL'
-FROM gmx.devoluciones d
+FROM shiny.devoluciones d
 WHERE NOT EXISTS (
-  SELECT 1 FROM gmx.devoluciones_eventos e
+  SELECT 1 FROM shiny.devoluciones_eventos e
   WHERE e.id_devolucion=d.id AND e.tipo='DEVOLUCION_CREADA'
 );
 
 -- Eventos de reembolso para registros formalizados sin evento
-INSERT INTO gmx.devoluciones_eventos(
+INSERT INTO shiny.devoluciones_eventos(
   id_evento,id_devolucion,id_reembolso,fecha,tipo,estado,detalle,id_admin,usuario
 )
 SELECT
@@ -396,9 +396,9 @@ SELECT
     || COALESCE(r.metodo,'') || ' por $' || COALESCE(r.monto,0)::text,
   r.id_admin_crea,
   COALESCE(r.usuario_crea,'BACKFILL')
-FROM gmx.devoluciones_reembolsos r
+FROM shiny.devoluciones_reembolsos r
 WHERE NOT EXISTS (
-  SELECT 1 FROM gmx.devoluciones_eventos e
+  SELECT 1 FROM shiny.devoluciones_eventos e
   WHERE e.id_devolucion=r.id_devolucion
     AND e.id_reembolso=r.id_reembolso
     AND e.tipo='REEMBOLSO_REGISTRADO'
@@ -407,15 +407,15 @@ WHERE NOT EXISTS (
 -- Permisos de funciones/tablas para la aplicación
 GRANT SELECT,INSERT,UPDATE,DELETE
 ON TABLE
-  gmx.devoluciones,
-  gmx.devoluciones_detalle,
-  gmx.devoluciones_reembolsos,
-  gmx.devoluciones_eventos
-TO gmx_app;
+  shiny.devoluciones,
+  shiny.devoluciones_detalle,
+  shiny.devoluciones_reembolsos,
+  shiny.devoluciones_eventos
+TO shiny_app;
 
 GRANT USAGE,SELECT
-ON ALL SEQUENCES IN SCHEMA gmx
-TO gmx_app;
+ON ALL SEQUENCES IN SCHEMA shiny
+TO shiny_app;
 
 COMMIT;
 
@@ -438,7 +438,7 @@ SELECT
   r.referencia,
   r.id_admin_crea,
   r.usuario_crea
-FROM gmx.devoluciones_reembolsos r
+FROM shiny.devoluciones_reembolsos r
 WHERE r.id_devolucion='DEV-1786900926665-XHO65'
 ORDER BY r.row_id;
 
@@ -453,20 +453,20 @@ SELECT
   e.detalle,
   e.id_admin,
   e.usuario
-FROM gmx.devoluciones_eventos e
+FROM shiny.devoluciones_eventos e
 WHERE e.id_devolucion='DEV-1786900926665-XHO65'
 ORDER BY e.row_id;
 
 -- Debe regresar 0:
 SELECT
   d.id AS devolucion_sin_reembolso_formal
-FROM gmx.devoluciones d
-JOIN gmx.caja_movimientos c
+FROM shiny.devoluciones d
+JOIN shiny.caja_movimientos c
   ON c.id_origen=d.id
  AND upper(COALESCE(c.tipo,''))='EGRESO'
  AND upper(COALESCE(c.categoria,''))='DEVOLUCION'
  AND COALESCE(c.anulado,false)=false
-LEFT JOIN gmx.devoluciones_reembolsos r
+LEFT JOIN shiny.devoluciones_reembolsos r
   ON r.id_devolucion=d.id
  AND r.referencia=c.id_movimiento
 WHERE r.row_id IS NULL;

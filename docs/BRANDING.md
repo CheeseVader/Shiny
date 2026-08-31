@@ -13,7 +13,7 @@ Los siguientes consumidores leen esa configuración:
 - servicio local de búsqueda visual;
 - mensajes generados por el backend.
 
-Los nombres técnicos históricos (`gmx.*`, `GMX_AUTH_TOKEN` y algunas clases
+Los nombres técnicos históricos (`shiny.*`, `SHINY_AUTH_TOKEN` y algunas clases
 CSS) se mantienen únicamente como contratos internos compatibles. No forman
 parte de la identidad visible ni deben cambiarse por cliente.
 

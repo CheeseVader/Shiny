@@ -150,7 +150,7 @@ function scoreCandidate(product, candidate) {
 
 async function fetchText(url, options = {}) {
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), Number(process.env.GMX_IMAGE_HTTP_TIMEOUT_MS || 9000));
+  const timer = setTimeout(() => controller.abort(), Number(process.env.SHINY_IMAGE_HTTP_TIMEOUT_MS || 9000));
   try {
     const r = await fetch(url, {
       ...options,
@@ -283,7 +283,7 @@ async function extractOgImage(pageUrl) {
   } catch {return null;}
 }
 async function providerDuckDuckGoWeb(product) {
-  if (String(process.env.GMX_IMAGE_DDG_WEB ?? '1') === '0') return [];
+  if (String(process.env.SHINY_IMAGE_DDG_WEB ?? '1') === '0') return [];
   const out = [];
   for (const q of buildQueries(product).slice(0, 3)) {
     try {
@@ -354,7 +354,7 @@ function extFromMime(mime) {
 export async function downloadProductImage(product, candidate) {
   fs.mkdirSync(STORAGE_DIR, { recursive: true });
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), Number(process.env.GMX_IMAGE_HTTP_TIMEOUT_MS || 12000));
+  const timer = setTimeout(() => controller.abort(), Number(process.env.SHINY_IMAGE_HTTP_TIMEOUT_MS || 12000));
   try {
     const r = await fetch(candidate.imageUrl, {
       signal: controller.signal, redirect: 'follow',
@@ -364,7 +364,7 @@ export async function downloadProductImage(product, candidate) {
     const mime = String(r.headers.get('content-type') || '').split(';')[0].toLowerCase();
     const ext = extFromMime(mime);
     if (!ext) throw new Error(`IMAGE_MIME_NOT_ALLOWED:${mime || 'unknown'}`);
-    const max = Number(process.env.GMX_IMAGE_MAX_BYTES || 8 * 1024 * 1024);
+    const max = Number(process.env.SHINY_IMAGE_MAX_BYTES || 8 * 1024 * 1024);
     const ab = await r.arrayBuffer(),buf = Buffer.from(ab);
     if (!buf.length || buf.length > max) throw new Error('IMAGE_SIZE_INVALID');
     const filename = `${safeName(product.sku || product.id || product.row_id)}${ext}`;
@@ -391,7 +391,7 @@ export async function enrichProduct(product, { mode = 'preview' } = {}) {
 
   const saved = await downloadProductImage(product, discovery.best);
   await query(`
-    UPDATE gmx.productos
+    UPDATE shiny.productos
     SET imagen=$2,fecha_actualizacion=NOW()
     WHERE row_id=$1 AND COALESCE(BTRIM(imagen),'')=''
   `, [product.row_id, saved.publicPath]);
@@ -402,7 +402,7 @@ export async function enrichMissingProductImages({ mode = 'preview', limit = 100
   const n = Math.min(Math.max(Number(limit) || 100, 1), 500);
   const r = await query(`
     SELECT row_id,id,sku,nombre,descripcion,categoria,imagen,estado
-    FROM gmx.productos
+    FROM shiny.productos
     WHERE COALESCE(BTRIM(imagen),'')=''
       AND COALESCE(estado,'Activo')='Activo'
     ORDER BY row_id
@@ -425,20 +425,20 @@ export async function enrichMissingProductImages({ mode = 'preview', limit = 100
 let scheduler = null,running = false;
 export function startProductImageEnrichmentScheduler() {
   if (scheduler) return scheduler;
-  const enabled = String(process.env.GMX_PRODUCT_IMAGE_AUTO ?? '1') !== '0';
+  const enabled = String(process.env.SHINY_PRODUCT_IMAGE_AUTO ?? '1') !== '0';
   if (!enabled) {
-    console.log(brandText("[GMX][IMG-002] auto enrichment disabled."));
+    console.log(brandText("[Shiny][IMG-002] auto enrichment disabled."));
     return null;
   }
-  const interval = Math.max(Number(process.env.GMX_PRODUCT_IMAGE_INTERVAL_MS || 15 * 60 * 1000), 60 * 1000);
-  const batch = Math.min(Math.max(Number(process.env.GMX_PRODUCT_IMAGE_BATCH || 8), 1), 50);
+  const interval = Math.max(Number(process.env.SHINY_PRODUCT_IMAGE_INTERVAL_MS || 15 * 60 * 1000), 60 * 1000);
+  const batch = Math.min(Math.max(Number(process.env.SHINY_PRODUCT_IMAGE_BATCH || 8), 1), 50);
   const tick = async () => {
     if (running) return;
     running = true;
     try {
       const result = await enrichMissingProductImages({ mode: 'apply', limit: batch });
-      console.log(brandText("[GMX][IMG-002]"), JSON.stringify(result.summary));
-    } catch (e) {console.error(brandText("[GMX][IMG-002]"), String(e?.message || e));} finally
+      console.log(brandText("[Shiny][IMG-002]"), JSON.stringify(result.summary));
+    } catch (e) {console.error(brandText("[Shiny][IMG-002]"), String(e?.message || e));} finally
     {running = false;}
   };
   setTimeout(tick, 8000);

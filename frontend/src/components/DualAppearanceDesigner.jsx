@@ -89,11 +89,15 @@ export default function DualAppearanceDesigner({ settings, setSettings, media = 
       await api('/api/v1/content/settings', { method: 'PUT', body: JSON.stringify(payload) });
       if (scope === 'admin') {
         try {
-          localStorage.setItem('TCG_STORE_TEMPLATE_ADMIN_BRAND', JSON.stringify({
-            name: get('admin', 'brand_name', brandText("TCG_STORE_TEMPLATE")),
-            logoText: get('admin', 'logo_text', 'G'),
+          localStorage.setItem('Shiny_ADMIN_BRAND', JSON.stringify({
+            name: get('admin', 'brand_name', brandText("Shiny")),
+            logoText: get('admin', 'logo_text', 'Shiny'),
             descriptor: get('admin', 'brand_descriptor', 'LOCAL')
           }));
+        localStorage.setItem('SHINY_LOGIN_APPEARANCE_R55', JSON.stringify({
+          design: get('admin', 'login_background_design', 'network4'),
+          glow: get('admin', 'login_background_glow', 'violet')
+        }));
         } catch {}
         window.dispatchEvent(new Event('tcg_store_template-theme-changed'));
       }
@@ -192,7 +196,7 @@ function AuthenticatedMediaPreview({ mediaId, className = '', alt = '' }) {
     setFailed(false);
     if (!mediaId) return undefined;
 
-    const token = localStorage.getItem('GMX_AUTH_TOKEN') || localStorage.getItem('TCG_STORE_TEMPLATE_AUTH_TOKEN') || '';
+    const token = localStorage.getItem('SHINY_AUTH_TOKEN') || localStorage.getItem('Shiny_AUTH_TOKEN') || '';
     fetch(`/api/v1/content/media/${encodeURIComponent(mediaId)}/file`, {
       headers: token ? { Authorization: `Bearer ${token}` } : {}
     })
@@ -220,8 +224,24 @@ function ThemeForm({ title, scope, get, set, media }) {
   return <article className="contentmk-card theme-form">
     <h3>{title}</h3>
     <div className="contentmk-fields cols2">
-      <label>Nombre de marca<input value={get(scope, 'brand_name', brandText("TCG_STORE_TEMPLATE"))} onChange={(e) => set(scope, 'brand_name', e.target.value)} /></label>
-      <label>Texto/logo<input maxLength="4" value={get(scope, 'logo_text', 'G')} onChange={(e) => set(scope, 'logo_text', e.target.value)} /></label>
+      <label>Nombre de marca<input value={get(scope, 'brand_name', brandText("Shiny"))} onChange={(e) => set(scope, 'brand_name', e.target.value)} /></label>
+      <label>Texto/logo<input maxLength="12" value={get(scope, 'logo_text', client ? 'S' : 'Shiny')} onChange={(e) => set(scope, 'logo_text', e.target.value)} /></label>
+      {!client ? <>
+        <label>Fondo del login
+          <select value={get(scope, 'login_background_design', 'network4')} onChange={(e) => set(scope, 'login_background_design', e.target.value)}>
+            <option value="network4">Diseno 4 - Red de conexiones</option>
+            <option value="gradient">Gradiente limpio</option>
+            <option value="solid">Fondo solido</option>
+          </select>
+        </label>
+        <label>Resplandor del login
+          <select value={get(scope, 'login_background_glow', 'violet')} onChange={(e) => set(scope, 'login_background_glow', e.target.value)}>
+            <option value="violet">Violeta / azul</option>
+            <option value="blue">Azul</option>
+            <option value="soft">Suave</option>
+          </select>
+        </label>
+      </> : null}
       {!client ? <label>Descriptor del logo<input maxLength="16" value={get(scope, 'brand_descriptor', 'LOCAL')} onChange={(e) => set(scope, 'brand_descriptor', e.target.value.toUpperCase())} placeholder="LOCAL" /></label> : null}
       <label>Principal<input type="color" value={get(scope, 'primary', '#111827')} onChange={(e) => set(scope, 'primary', e.target.value)} /></label>
       {client ? <label>Secundario<input type="color" value={get(scope, 'secondary', '#f59e0b')} onChange={(e) => set(scope, 'secondary', e.target.value)} /></label> : null}
@@ -264,7 +284,7 @@ function StorePreview({ device, style, get, runtime, heroOnly = false, onOpenFul
       <div className="store-overlay" style={{ opacity: Number(get('client', 'background_overlay', '.38')) }} />
 
       {!heroOnly ? <header className={`store-header ${get('client', 'header_style', 'floating')}`}>
-        <div className="store-brand"><b>{get('client', 'logo_text', 'G')}</b><strong>{get('client', 'brand_name', brandText("TCG_STORE_TEMPLATE"))}</strong></div>
+        <div className="store-brand"><b>{get('client', 'logo_text', 'G')}</b><strong>{get('client', 'brand_name', brandText("Shiny"))}</strong></div>
         <div className="store-search">🔎 Buscar cartas, productos, sets...</div>
         <nav><span>Magic</span><span>Yu-Gi-Oh!</span><span>Pokémon</span><span>One Piece</span><span>Más</span><span>👤</span><span>🛒 3</span></nav>
       </header> : null}
@@ -372,8 +392,8 @@ function AdminPreview({ device, get }) {
     <div className={`admin-preview device-${device}`} style={{ maxWidth: width, background: get('admin', 'background', '#f2f4f7'), borderRadius: Number(get('admin', 'radius', '14')) }}>
       {bgId ? <AuthenticatedMediaPreview mediaId={bgId} className="admin-preview-background" alt="Fondo del administrador" /> : null}
       <div className="admin-preview-overlay" style={{ opacity: Number(get('admin', 'background_overlay', '.30')) }} />
-      <aside style={{ background: get('admin', 'primary', '#101828') }}><div className="preview-dynamic-brand"><strong>{get('admin', 'brand_name', brandText("TCG_STORE_TEMPLATE"))}</strong><small>{get('admin', 'brand_descriptor', 'LOCAL')}</small></div><span>Dashboard</span><span>Productos</span><span>Pedidos</span><span>TCG</span></aside>
-      <main><small>{brandText("TCG_STORE_TEMPLATE ADMIN")}</small><h2>Dashboard</h2><div className="admin-metrics"><div>Productos<br /><b>128</b></div><div>Pedidos<br /><b>37</b></div></div><div className="admin-table-mock">Vista del servidor / backoffice</div></main>
+      <aside style={{ background: get('admin', 'primary', '#101828') }}><div className="preview-dynamic-brand"><strong>{get('admin', 'brand_name', brandText("Shiny"))}</strong><small>{get('admin', 'brand_descriptor', 'LOCAL')}</small></div><span>Dashboard</span><span>Productos</span><span>Pedidos</span><span>TCG</span></aside>
+      <main><small>{brandText("Shiny ADMIN")}</small><h2>Dashboard</h2><div className="admin-metrics"><div>Productos<br /><b>128</b></div><div>Pedidos<br /><b>37</b></div></div><div className="admin-table-mock">Vista del servidor / backoffice</div></main>
     </div>
   </article>;
 }

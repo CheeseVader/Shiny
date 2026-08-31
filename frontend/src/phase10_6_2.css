@@ -1,5 +1,5 @@
 
-/* GMX 10.6.2 */
+/* Shiny 10.6.2 */
 .geo-select-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
 .geo-select-grid label{display:grid;gap:6px;font-size:12px;font-weight:800}
 .geo-select-grid .span2{grid-column:1/-1}
@@ -15,24 +15,24 @@
 @media(max-width:900px){.transfer-layout{grid-template-columns:1fr}.products-filter-bar{grid-template-columns:1fr 1fr}.fulfillment-grid{grid-template-columns:1fr}}
 @media(max-width:650px){.geo-select-grid,.products-admin-kpis,.products-filter-bar{grid-template-columns:1fr}.geo-select-grid .span2{grid-column:auto}}
 
-/* Global GMX feedback / confirmations */
-.gmx-toast-stack{position:fixed;top:20px;right:20px;z-index:2147483000;display:grid;gap:10px;width:min(410px,calc(100vw - 28px));pointer-events:none}
-.gmx-toast{display:grid;grid-template-columns:34px minmax(0,1fr) 28px;gap:10px;align-items:start;padding:13px 12px;border:1px solid #d0d5dd;border-radius:13px;background:#fff;color:#101828;box-shadow:0 16px 45px rgba(16,24,40,.18);pointer-events:auto;animation:gmx-toast-in .18s ease-out}
-.gmx-toast.success{border-color:#abefc6;background:#ecfdf3}.gmx-toast.error{border-color:#fecdca;background:#fef3f2}.gmx-toast.warning{border-color:#fedf89;background:#fffaeb}.gmx-toast.info{border-color:#b2ddff;background:#eff8ff}
-.gmx-toast-icon{display:grid;place-items:center;width:30px;height:30px;border-radius:999px;background:#344054;color:#fff;font-size:14px;font-weight:950}
-.gmx-toast.success .gmx-toast-icon{background:#039855}.gmx-toast.error .gmx-toast-icon{background:#d92d20}.gmx-toast.warning .gmx-toast-icon{background:#dc6803}.gmx-toast.info .gmx-toast-icon{background:#1570ef}
-.gmx-toast-copy{display:grid;gap:3px;line-height:1.35}.gmx-toast-copy b{font-size:13px}.gmx-toast-copy span{font-size:13px;overflow-wrap:anywhere}
-.gmx-toast>button{border:0;background:transparent;color:#667085;font-size:22px;line-height:1;cursor:pointer;padding:0}
-@keyframes gmx-toast-in{from{opacity:0;transform:translateY(-8px) scale(.98)}to{opacity:1;transform:none}}
+/* Global Shiny feedback / confirmations */
+.shiny-toast-stack{position:fixed;top:20px;right:20px;z-index:2147483000;display:grid;gap:10px;width:min(410px,calc(100vw - 28px));pointer-events:none}
+.shiny-toast{display:grid;grid-template-columns:34px minmax(0,1fr) 28px;gap:10px;align-items:start;padding:13px 12px;border:1px solid #d0d5dd;border-radius:13px;background:#fff;color:#101828;box-shadow:0 16px 45px rgba(16,24,40,.18);pointer-events:auto;animation:shiny-toast-in .18s ease-out}
+.shiny-toast.success{border-color:#abefc6;background:#ecfdf3}.shiny-toast.error{border-color:#fecdca;background:#fef3f2}.shiny-toast.warning{border-color:#fedf89;background:#fffaeb}.shiny-toast.info{border-color:#b2ddff;background:#eff8ff}
+.shiny-toast-icon{display:grid;place-items:center;width:30px;height:30px;border-radius:999px;background:#344054;color:#fff;font-size:14px;font-weight:950}
+.shiny-toast.success .shiny-toast-icon{background:#039855}.shiny-toast.error .shiny-toast-icon{background:#d92d20}.shiny-toast.warning .shiny-toast-icon{background:#dc6803}.shiny-toast.info .shiny-toast-icon{background:#1570ef}
+.shiny-toast-copy{display:grid;gap:3px;line-height:1.35}.shiny-toast-copy b{font-size:13px}.shiny-toast-copy span{font-size:13px;overflow-wrap:anywhere}
+.shiny-toast>button{border:0;background:transparent;color:#667085;font-size:22px;line-height:1;cursor:pointer;padding:0}
+@keyframes shiny-toast-in{from{opacity:0;transform:translateY(-8px) scale(.98)}to{opacity:1;transform:none}}
 
-.gmx-confirm-backdrop{position:fixed;inset:0;z-index:2147483500;display:grid;place-items:center;padding:18px;background:rgba(2,6,23,.62);backdrop-filter:blur(4px)}
-.gmx-confirm-dialog{width:min(500px,100%);display:grid;grid-template-columns:48px 1fr;gap:14px;padding:22px;border-radius:16px;background:#fff;color:#101828;box-shadow:0 30px 80px rgba(0,0,0,.35);animation:gmx-dialog-in .16s ease-out}
-.gmx-confirm-symbol{display:grid;place-items:center;width:44px;height:44px;border-radius:999px;background:#fff7ed;color:#c2410c;font-size:20px;font-weight:950;border:1px solid #fed7aa}
-.gmx-confirm-dialog.error .gmx-confirm-symbol{background:#fef3f2;color:#d92d20;border-color:#fecdca}.gmx-confirm-dialog.success .gmx-confirm-symbol{background:#ecfdf3;color:#039855;border-color:#abefc6}
-.gmx-confirm-body h2{margin:0 0 7px;font-size:20px}.gmx-confirm-body p{margin:0;color:#475467;line-height:1.5;white-space:pre-line}
-.gmx-confirm-actions{grid-column:1/-1;display:flex;justify-content:flex-end;gap:8px;margin-top:4px}.gmx-confirm-actions button{min-width:110px;height:42px;border-radius:9px;font-weight:900}.gmx-confirm-actions button:not(.secondary):not(.danger){border:0;background:#101828;color:#fff}.gmx-confirm-actions .danger{border:0;background:#d92d20;color:#fff}
-@keyframes gmx-dialog-in{from{opacity:0;transform:scale(.96)}to{opacity:1;transform:none}}
-@media(max-width:600px){.gmx-toast-stack{top:auto;right:14px;bottom:14px;left:14px;width:auto}.gmx-confirm-dialog{grid-template-columns:40px 1fr;padding:18px}.gmx-confirm-actions{display:grid;grid-template-columns:1fr 1fr}}
+.shiny-confirm-backdrop{position:fixed;inset:0;z-index:2147483500;display:grid;place-items:center;padding:18px;background:rgba(2,6,23,.62);backdrop-filter:blur(4px)}
+.shiny-confirm-dialog{width:min(500px,100%);display:grid;grid-template-columns:48px 1fr;gap:14px;padding:22px;border-radius:16px;background:#fff;color:#101828;box-shadow:0 30px 80px rgba(0,0,0,.35);animation:shiny-dialog-in .16s ease-out}
+.shiny-confirm-symbol{display:grid;place-items:center;width:44px;height:44px;border-radius:999px;background:#fff7ed;color:#c2410c;font-size:20px;font-weight:950;border:1px solid #fed7aa}
+.shiny-confirm-dialog.error .shiny-confirm-symbol{background:#fef3f2;color:#d92d20;border-color:#fecdca}.shiny-confirm-dialog.success .shiny-confirm-symbol{background:#ecfdf3;color:#039855;border-color:#abefc6}
+.shiny-confirm-body h2{margin:0 0 7px;font-size:20px}.shiny-confirm-body p{margin:0;color:#475467;line-height:1.5;white-space:pre-line}
+.shiny-confirm-actions{grid-column:1/-1;display:flex;justify-content:flex-end;gap:8px;margin-top:4px}.shiny-confirm-actions button{min-width:110px;height:42px;border-radius:9px;font-weight:900}.shiny-confirm-actions button:not(.secondary):not(.danger){border:0;background:#101828;color:#fff}.shiny-confirm-actions .danger{border:0;background:#d92d20;color:#fff}
+@keyframes shiny-dialog-in{from{opacity:0;transform:scale(.96)}to{opacity:1;transform:none}}
+@media(max-width:600px){.shiny-toast-stack{top:auto;right:14px;bottom:14px;left:14px;width:auto}.shiny-confirm-dialog{grid-template-columns:40px 1fr;padding:18px}.shiny-confirm-actions{display:grid;grid-template-columns:1fr 1fr}}
 
 /* Client account recovery */
 .recovery-shell{max-width:600px;margin:36px auto;display:grid;justify-items:center;gap:10px;padding:28px;border:1px solid rgba(255,255,255,.1);border-radius:var(--ps-radius);background:rgba(255,255,255,.06);text-align:center}

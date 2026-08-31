@@ -95,33 +95,33 @@ export default function StoreCatalogPage() {
     setSort('relevance');
   }
 
-  return <main className="public-page gmx-catalog-page">
-    <section className="gmx-catalog-hero" data-game-theme="gmx">
-      <div className="gmx-catalog-hero-copy">
-        <span className="gmx-breadcrumb"><Link to="/tienda">Inicio</Link> / Productos</span>
+  return <main className="public-page shiny-catalog-page">
+    <section className="shiny-catalog-hero" data-game-theme="shiny">
+      <div className="shiny-catalog-hero-copy">
+        <span className="shiny-breadcrumb"><Link to="/tienda">Inicio</Link> / Productos</span>
         <h1>Productos</h1>
         <p>Accesorios, protección y artículos para completar tu colección.</p>
-        <div className="gmx-catalog-stats"><span><PublicIcon name="package" size={18}/><b>{generic.length}</b> productos</span><span><PublicIcon name="check" size={18}/>Stock actualizado</span></div>
+        <div className="shiny-catalog-stats"><span><PublicIcon name="package" size={18}/><b>{generic.length}</b> productos</span><span><PublicIcon name="check" size={18}/>Stock actualizado</span></div>
       </div>
-      <div className="gmx-catalog-art" aria-hidden="true"><div className="gmx-art-box"/><div className="gmx-art-sleeves"/><div className="gmx-art-card"/></div>
+      <div className="shiny-catalog-art" aria-hidden="true"><div className="shiny-art-box"/><div className="shiny-art-sleeves"/><div className="shiny-art-card"/></div>
     </section>
 
-    <div className="gmx-subcategory-tabs">
+    <div className="shiny-subcategory-tabs">
       <button className={!category ? 'active' : ''} onClick={() => updateParam('category', '')}>Todos</button>
       {categories.slice(0, 6).map((item) => <button key={item} className={category === item ? 'active' : ''} onClick={() => updateParam('category', item)}>{item}</button>)}
     </div>
 
-    <div className="gmx-mobile-catalog-tools">
+    <div className="shiny-mobile-catalog-tools">
       <button onClick={() => setFiltersOpen((value) => !value)}><PublicIcon name="filter" size={17}/>Filtros</button>
       <span>{visible.length} resultados</span>
     </div>
 
-    <div className="gmx-catalog-layout">
-      <aside className={'gmx-filter-panel ' + (filtersOpen ? 'is-open' : '')}>
-        <div className="gmx-filter-title"><b>Filtros</b><button onClick={() => setFiltersOpen(false)} aria-label="Cerrar filtros"><PublicIcon name="close" size={18}/></button></div>
+    <div className="shiny-catalog-layout">
+      <aside className={'shiny-filter-panel ' + (filtersOpen ? 'is-open' : '')}>
+        <div className="shiny-filter-title"><b>Filtros</b><button onClick={() => setFiltersOpen(false)} aria-label="Cerrar filtros"><PublicIcon name="close" size={18}/></button></div>
         <section>
           <h3>Buscar</h3>
-          <label className="gmx-filter-search"><PublicIcon name="search" size={16}/><input value={q} onChange={(event) => updateParam('q', event.target.value)} placeholder="Producto o SKU"/></label>
+          <label className="shiny-filter-search"><PublicIcon name="search" size={16}/><input value={q} onChange={(event) => updateParam('q', event.target.value)} placeholder="Producto o SKU"/></label>
         </section>
         <section>
           <h3>Disponibilidad</h3>
@@ -136,13 +136,13 @@ export default function StoreCatalogPage() {
         </section>
         <section>
           <h3>Precio</h3>
-          <div className="gmx-price-inputs"><input type="number" min="0" value={minPrice} onChange={(event) => setMinPrice(event.target.value)} placeholder="Mínimo"/><i>–</i><input type="number" min="0" value={maxPrice} onChange={(event) => setMaxPrice(event.target.value)} placeholder="Máximo"/></div>
+          <div className="shiny-price-inputs"><input type="number" min="0" value={minPrice} onChange={(event) => setMinPrice(event.target.value)} placeholder="Mínimo"/><i>–</i><input type="number" min="0" value={maxPrice} onChange={(event) => setMaxPrice(event.target.value)} placeholder="Máximo"/></div>
         </section>
-        <button className="gmx-clear-filters" onClick={clearFilters}><PublicIcon name="refresh" size={17}/>Limpiar filtros</button>
+        <button className="shiny-clear-filters" onClick={clearFilters}><PublicIcon name="refresh" size={17}/>Limpiar filtros</button>
       </aside>
 
-      <section className="gmx-catalog-results">
-        <div className="gmx-results-toolbar">
+      <section className="shiny-catalog-results">
+        <div className="shiny-results-toolbar">
           <div><b>Mostrando {visible.length ? (currentPage - 1) * PAGE_SIZE + 1 : 0}–{Math.min(currentPage * PAGE_SIZE, visible.length)}</b> de {visible.length} productos</div>
           <label>Ordenar por:
             <select value={sort} onChange={(event) => setSort(event.target.value)}>
@@ -156,12 +156,12 @@ export default function StoreCatalogPage() {
         </div>
 
         {loading
-          ? <div className="gmx-catalog-loading"><span/><span/><span/><span/></div>
+          ? <div className="shiny-catalog-loading"><span/><span/><span/><span/></div>
           : pageRows.length
-            ? <div className="public-products-grid gmx-catalog-grid">{pageRows.map((product) => <ProductCard key={product.row_id} product={product} currency={currency}/>)}</div>
-            : <div className="gmx-empty-state"><div className="gmx-empty-icon"><PublicIcon name="search" size={29}/></div><h2>No encontramos productos</h2><p>Prueba con otros filtros o limpia la búsqueda para ver todo el catálogo.</p><button onClick={clearFilters}>Limpiar filtros</button></div>}
+            ? <div className="public-products-grid shiny-catalog-grid">{pageRows.map((product) => <ProductCard key={product.row_id} product={product} currency={currency}/>)}</div>
+            : <div className="shiny-empty-state"><div className="shiny-empty-icon"><PublicIcon name="search" size={29}/></div><h2>No encontramos productos</h2><p>Prueba con otros filtros o limpia la búsqueda para ver todo el catálogo.</p><button onClick={clearFilters}>Limpiar filtros</button></div>}
 
-        {pageCount > 1 ? <nav className="gmx-pagination" aria-label="Paginación">
+        {pageCount > 1 ? <nav className="shiny-pagination" aria-label="Paginación">
           <button disabled={currentPage === 1} onClick={() => setPage(currentPage - 1)}>‹</button>
           {Array.from({ length: pageCount }, (_, index) => index + 1).filter((number) => number === 1 || number === pageCount || Math.abs(number - currentPage) <= 1).map((number, index, array) => <span key={number}>{index > 0 && number - array[index - 1] > 1 ? <i>…</i> : null}<button className={number === currentPage ? 'active' : ''} onClick={() => setPage(number)}>{number}</button></span>)}
           <button disabled={currentPage === pageCount} onClick={() => setPage(currentPage + 1)}>›</button>

@@ -1,5 +1,5 @@
 
-/* GMX 10.6.2.3.17 — render card modal through React Portal */
+/* Shiny 10.6.2.3.17 — render card modal through React Portal */
 body > .master-card-modal-backdrop{
   position:fixed !important;
   inset:0 !important;

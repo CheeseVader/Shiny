@@ -22,7 +22,7 @@ async function getOrder(orderId) {
 
   const result = await query(`
     SELECT id_pedido,id_sucursal,sucursal,estado_pedido
-    FROM gmx.pedidos
+    FROM shiny.pedidos
     WHERE id_pedido=$1
     ORDER BY row_id
     LIMIT 1
@@ -40,7 +40,7 @@ async function getAdminByIdOrEmail({ id = '', email = '' } = {}) {
     SELECT
       row_id,id_admin,nombre,email,rol,activo,
       sucursal_principal,sucursales_permitidas
-    FROM gmx.administradores
+    FROM shiny.administradores
     WHERE COALESCE(activo,true)=true
       AND (
         ($1<>'' AND id_admin=$1)
@@ -103,7 +103,7 @@ async function insertAuthorization({
     `AUTH-DEV-${Date.now()}-${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
 
   const result = await query(`
-    INSERT INTO gmx.autorizaciones_operacion(
+    INSERT INTO shiny.autorizaciones_operacion(
       id_autorizacion,
       token_hash,
       accion,
@@ -201,7 +201,7 @@ async function createUniquePin() {
     const pin = String(randomInt(0, 10000)).padStart(4, '0');
     const exists = await query(`
       SELECT 1
-      FROM gmx.autorizaciones_operacion
+      FROM shiny.autorizaciones_operacion
       WHERE token_hash=$1
       LIMIT 1
     `, [hashToken(pin)]);
@@ -230,7 +230,7 @@ export async function generateReturnPin({
 
   // Un autorizador conserva un solo PIN genérico activo.
   await query(`
-    UPDATE gmx.autorizaciones_operacion
+    UPDATE shiny.autorizaciones_operacion
     SET used_at=COALESCE(used_at,NOW()),
         referencia_uso=COALESCE(referencia_uso,'REEMPLAZADO')
     WHERE accion=$1
@@ -286,7 +286,7 @@ export async function redeemReturnPin({
 
     const result = await client.query(`
       SELECT *
-      FROM gmx.autorizaciones_operacion
+      FROM shiny.autorizaciones_operacion
       WHERE token_hash=$1
         AND accion=$2
         AND id_pedido IS NULL
@@ -323,7 +323,7 @@ export async function redeemReturnPin({
     assertBranchAllowed(access, order.id_sucursal);
 
     const bound = await client.query(`
-      UPDATE gmx.autorizaciones_operacion
+      UPDATE shiny.autorizaciones_operacion
       SET id_pedido=$2,
           id_sucursal=$3,
           id_solicitante=$4,
@@ -368,4 +368,87 @@ export async function redeemReturnPin({
   } finally {
     client.release();
   }
+}
+
+// SHINY_POS_DISCOUNT_PIN_R31
+// Consume the same generic 4-digit POS authorization PIN for a manual discount.
+// The caller provides its existing DB transaction, so PIN consumption and sale
+// creation commit or roll back together.
+export async function consumeManualDiscountPinTx(client,{
+  pin='',
+  branchId='',
+  requester=null,
+  reference=''
+}={}){
+  const code=txt(pin);
+  const idSucursal=txt(branchId);
+
+  if(!/^\d{4}$/.test(code)){
+    throw authorizationError('MANUAL_DISCOUNT_PIN_INVALID_FORMAT',400);
+  }
+  if(!idSucursal){
+    throw authorizationError('BRANCH_REQUIRED',400);
+  }
+
+  const result=await client.query(`
+    SELECT *
+    FROM shiny.autorizaciones_operacion
+    WHERE token_hash=$1
+      AND accion=$2
+      AND used_at IS NULL
+      AND expires_at>NOW()
+    ORDER BY created_at DESC
+    LIMIT 1
+    FOR UPDATE
+  `,[hashToken(code),ACTION]);
+
+  if(!result.rowCount){
+    throw authorizationError('MANUAL_DISCOUNT_PIN_INVALID_OR_EXPIRED',403);
+  }
+
+  const authorization=result.rows[0];
+
+  const {canAuthorize,access}=await getAuthorizationContext({
+    id_admin:authorization.id_autorizador,
+    id:authorization.id_autorizador,
+    email:authorization.email_autorizador
+  });
+
+  if(!canAuthorize){
+    throw authorizationError('MANUAL_DISCOUNT_AUTHORIZATION_FORBIDDEN',403);
+  }
+
+  assertBranchAllowed(access,idSucursal);
+
+  const requesterId=txt(requester?.id_admin||requester?.id);
+  const requesterEmail=txt(requester?.email).toLowerCase();
+
+  const consumed=await client.query(`
+    UPDATE shiny.autorizaciones_operacion
+    SET used_at=NOW(),
+        id_sucursal=$2,
+        id_solicitante=$3,
+        email_solicitante=$4,
+        referencia_uso=$5
+    WHERE row_id=$1
+      AND used_at IS NULL
+    RETURNING *
+  `,[
+    authorization.row_id,
+    idSucursal,
+    requesterId||null,
+    requesterEmail||null,
+    txt(reference)||null
+  ]);
+
+  if(!consumed.rowCount){
+    throw authorizationError('MANUAL_DISCOUNT_PIN_ALREADY_USED',403);
+  }
+
+  return {
+    authorizationId:authorization.id_autorizacion,
+    action:authorization.accion,
+    branchId:idSucursal,
+    authorizerId:authorization.id_autorizador||null
+  };
 }

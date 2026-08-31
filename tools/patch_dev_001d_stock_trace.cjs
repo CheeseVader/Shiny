@@ -3,7 +3,7 @@ const fs=require('fs');
 const path=require('path');
 const {spawnSync}=require('child_process');
 
-const root=process.argv[2]||'C:\\Users\\SrsGarciaEspinoza\\Videos\\GMX';
+const root=process.argv[2]||'C:\\Users\\SrsGarciaEspinoza\\Videos\\Shiny';
 const file=path.join(root,'backend','src','repositories','commercialRepository.js');
 
 if(!fs.existsSync(file)){
@@ -13,7 +13,7 @@ if(!fs.existsSync(file)){
 
 let src=fs.readFileSync(file,'utf8');
 
-if(src.includes('GMX_DEV_001D_STOCK_TRACE_FIX')){
+if(src.includes('SHINY_DEV_001D_STOCK_TRACE_FIX')){
   console.log('DEV-001D-STOCK-TRACE ya estaba aplicado.');
   process.exit(0);
 }
@@ -40,7 +40,7 @@ if(i<0)fail('No se encontró el ancla let before=null,after=null;');
 
 const replacement=`      let before=null,after=null;
 
-      // GMX_DEV_001D_STOCK_TRACE_FIX
+      // SHINY_DEV_001D_STOCK_TRACE_FIX
       // En devoluciones NO vendibles no movemos inventario, pero sí dejamos
       // evidencia explícita del stock disponible antes/después (mismo valor).
       if(!reintegrateItem){
@@ -48,7 +48,7 @@ const replacement=`      let before=null,after=null;
           if(!det.id_inventario)throw new Error(\`TCG_DETAIL_WITHOUT_INVENTORY:\${det.id_detalle}\`);
           const stockSnapshot=await client.query(\`
             SELECT stock
-            FROM gmx.tcg_inventario_sucursales
+            FROM shiny.tcg_inventario_sucursales
             WHERE id_sucursal=$1 AND id_inventario=$2
             ORDER BY row_id
             LIMIT 1
@@ -59,7 +59,7 @@ const replacement=`      let before=null,after=null;
         }else{
           const stockSnapshot=await client.query(\`
             SELECT stock
-            FROM gmx.inventario_sucursales
+            FROM shiny.inventario_sucursales
             WHERE id_sucursal=$1 AND id_producto=$2
             ORDER BY row_id
             LIMIT 1

@@ -1,6 +1,6 @@
 /*
- * GMX TCG - Recepción Single / Catálogos R12
- * Cobertura explícita para TODOS los TCG del catálogo GMX actual:
+ * Shiny TCG - Recepción Single / Catálogos R12
+ * Cobertura explícita para TODOS los TCG del catálogo Shiny actual:
  * POKEMON, MAGIC, YUGIOH, ONEPIECE, RIFTBOUND, LORCANA, FFTCG,
  * DIGIMON, PALWORLD, DBSFW, SWU, FAB, UNIONARENA, WEISS, VANGUARD.
  *
@@ -189,7 +189,7 @@ export function mergeReceptionOptions(...groups){
  return [...map.values()].sort((a,b)=>a.localeCompare(b,'es',{sensitivity:'base'}));
 }
 
-export const GMX_TCG_R12_COVERED_CODES=Object.freeze([
+export const SHINY_TCG_R12_COVERED_CODES=Object.freeze([
  'POKEMON','MAGIC','YUGIOH','ONEPIECE','RIFTBOUND','LORCANA','FFTCG',
  'DIGIMON','PALWORLD','DBSFW','SWU','FAB','UNIONARENA','WEISS','VANGUARD'
 ]);

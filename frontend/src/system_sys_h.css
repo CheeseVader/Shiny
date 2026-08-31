@@ -1,4 +1,4 @@
-/* GMX SYS-H Premium — visual-only layer. No backend/API logic changes. */
+/* Shiny SYS-H Premium — visual-only layer. No backend/API logic changes. */
 .sys-h-premium{--sysh-ink:#13243b;--sysh-muted:#64748b;--sysh-line:#e7edf5;--sysh-soft:#f7f9fc;--sysh-blue:#2563eb;--sysh-green:#16a34a;--sysh-warn:#f59e0b;display:grid;gap:18px}
 .sys-h-premium .message{border-radius:12px;padding:12px 16px;box-shadow:0 8px 24px rgba(15,23,42,.06)}
 .sys-h-premium>.content-card,.sys-h-premium .content-card{border:1px solid var(--sysh-line);border-radius:18px;background:#fff;box-shadow:0 10px 30px rgba(15,23,42,.055);padding:22px}

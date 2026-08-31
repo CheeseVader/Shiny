@@ -1,0 +1,48 @@
+/* Shiny R20 — consistencia visual de módulos administrativos */
+.categories-page,.clients-page{display:grid;gap:14px;min-width:0}
+.categories-hero{display:flex;align-items:center;justify-content:space-between;gap:18px;padding:20px 22px}
+.categories-hero h2{margin:3px 0 4px;font-size:25px}.categories-hero p{margin:0;color:var(--muted,#667085);font-size:12px}.categories-hero button{white-space:nowrap}
+.categories-kpis,.clients-kpis,.tcgops-kpis,.buylist-operation-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.categories-kpis>article,.clients-kpis>article,.tcgops-kpis>article,.buylist-operation-kpis>article{min-height:96px;display:grid;align-content:center;gap:4px;padding:14px 16px;border:1px solid var(--border,#e4e7ec);border-radius:14px;background:var(--surface,#fff);box-shadow:0 5px 16px rgba(15,23,42,.03)}
+.categories-kpis span,.clients-kpis span,.tcgops-kpis span,.buylist-operation-kpis span{color:var(--muted,#667085);font-size:11px}.categories-kpis strong,.clients-kpis strong,.tcgops-kpis strong,.buylist-operation-kpis strong{font-size:22px;line-height:1.1}.categories-kpis small,.clients-kpis small,.tcgops-kpis small{color:var(--muted,#98a2b3);font-size:9px}
+.clients-kpis>article.warning{border-color:#fedf89;background:#fffaeb}.clients-kpis>article.warning strong{color:#b54708}
+.categories-panel{padding:0;overflow:hidden}.categories-panel>.section-head{padding:18px 20px 14px;margin:0;border-bottom:1px solid var(--border,#e4e7ec)}
+.categories-filters{display:grid;grid-template-columns:minmax(260px,1fr) 220px;gap:12px;padding:14px 20px;background:rgba(248,250,252,.75);border-bottom:1px solid var(--border,#e4e7ec)}
+.categories-filters label{display:grid;gap:5px;color:#344054;font-size:10px;font-weight:800}.categories-filters input,.categories-filters select{min-height:42px}
+.categories-panel>.message{margin:12px 20px}.categories-panel>.table-wrap{margin:0;border:0;border-radius:0}
+.category-count-visual{display:grid;gap:7px;min-width:160px}.category-count-visual>span{font-size:10px;color:var(--muted,#667085)}.category-count-visual>span strong{font-size:13px;color:var(--text,#101828)}.category-count-visual>i{display:block;width:100%;height:7px;overflow:hidden;border-radius:999px;background:rgba(100,116,139,.12)}.category-count-visual>i b{display:block;height:100%;border-radius:inherit;background:linear-gradient(90deg,#3568c0,#84adff)}
+.clients-card{padding:0;overflow:hidden}.clients-card>.section-head{margin:0;padding:18px 20px;border-bottom:1px solid var(--border,#e4e7ec)}.clients-card>.message{margin:12px 20px}.clients-card>.table-wrap{margin:0;border:0;border-radius:0}
+
+/* Tablas: lectura más rápida y encabezado persistente */
+.products-card>.table-wrap,.categories-panel>.table-wrap,.clients-card>.table-wrap,.pos-stack .table-wrap,.commercial-page .commercial-table-wrap,.tcgops-stack .table-wrap,.buylist-stack .table-wrap,.benefits-table{scrollbar-gutter:stable}
+.products-card table thead th,.categories-panel table thead th,.clients-card table thead th,.pos-stack table thead th,.commercial-page table thead th,.tcgops-stack table thead th,.buylist-stack table thead th,.benefits-table table thead th{position:sticky;top:0;z-index:2;background:#f8fafc}
+.products-card tbody tr,.categories-panel tbody tr,.clients-card tbody tr,.pos-stack tbody tr,.commercial-page tbody tr,.tcgops-stack tbody tr,.buylist-stack tbody tr,.benefits-table tbody tr{transition:background .12s ease}
+.products-card tbody tr:hover,.categories-panel tbody tr:hover,.clients-card tbody tr:hover,.pos-stack tbody tr:hover,.commercial-page tbody tr:hover,.tcgops-stack tbody tr:hover,.buylist-stack tbody tr:hover,.benefits-table tbody tr:hover{background:rgba(53,104,192,.045)}
+
+/* Productos */
+.products-admin-page{gap:14px}.products-admin-kpis>div{box-shadow:0 5px 16px rgba(15,23,42,.03);transition:transform .15s ease,box-shadow .15s ease}.products-admin-kpis>div:hover{transform:translateY(-2px);box-shadow:0 10px 24px rgba(15,23,42,.07)}
+.products-card{overflow:hidden}.products-filter-bar{background:linear-gradient(180deg,#fbfcfe,#f8fafc)}
+.tcgops-stack .tabs,.buylist-stack .tabs{padding:6px;border:1px solid var(--border,#e4e7ec);border-radius:13px;background:#f8fafc;gap:5px}.tcgops-stack .tabs .tab,.buylist-stack .tabs .tab{border-radius:9px;border:0}.tcgops-stack .tabs .tab.active,.buylist-stack .tabs .tab.active{box-shadow:0 4px 12px rgba(16,24,40,.14)}
+
+/* Pedidos / POS */
+.pos-stack{gap:14px}.pos-stack>.content-card{overflow:hidden}.pos-stack .order-toolbar{padding:14px 18px;background:#f8fafc;border-top:1px solid var(--border,#e4e7ec);border-bottom:1px solid var(--border,#e4e7ec)}
+.pos-history-actions{display:flex;justify-content:flex-end;gap:5px;flex-wrap:wrap;min-width:220px}.pos-history-actions .compact{min-height:31px;padding:5px 9px;font-size:10px}
+
+/* Caja */
+.phase6-body{display:grid;gap:16px}.phase6-body .cash-branch{padding:14px 16px;border:1px solid var(--border,#e4e7ec);border-radius:13px;background:#f8fafc}.phase6-body .cash-summary{gap:12px}.phase6-body .cash-summary article{min-height:96px;display:grid;align-content:center;border-radius:14px;box-shadow:0 5px 16px rgba(15,23,42,.03)}.phase6-body .cash-summary article:nth-child(2){border-color:#abefc6;background:#ecfdf3}.phase6-body .cash-summary article:nth-child(3){border-color:#fecdca;background:#fef3f2}.phase6-body .cash-summary article:nth-child(4){border-color:#b2ddff;background:#eff8ff}.phase6-body .cash-actions>div{border-radius:15px;box-shadow:0 5px 16px rgba(15,23,42,.03)}
+
+/* Gestión comercial */
+.commercial-hero,.commercial-panel{box-shadow:0 5px 16px rgba(15,23,42,.03)}.commercial-nav{position:sticky;top:8px;z-index:15;box-shadow:0 8px 20px rgba(15,23,42,.06)}.commercial-nav button{transition:background .15s ease,transform .15s ease}.commercial-nav button:hover{transform:translateY(-1px)}.commercial-section-head{padding:2px 2px 8px}.quote-customer-box,.quote-products-box,.quote-conditions-box{background:linear-gradient(180deg,#fff,#fbfcfe)}
+
+/* Operación TCG */
+.tcgops-kpis{margin-top:14px}.tcgops-two{gap:14px}.tcgops-two .ops-card{border-radius:15px;box-shadow:0 5px 16px rgba(15,23,42,.04)}.tcgops-two .ops-card>button{min-height:44px}.tcgops-movement-history{padding-top:4px}.tcgops-purpose-note{display:flex;align-items:center;gap:5px;flex-wrap:wrap}
+
+/* Buylist */
+.buylist-operation-kpis{margin-top:14px}.buylist-operation-kpis>article{min-height:82px}.buylist-operation-kpis strong{font-size:17px}.buylist-empty-state{display:grid;justify-items:center;gap:5px;min-height:150px;padding:26px;border:1px dashed #b8c1d1;border-radius:13px;background:#fbfcfe;color:var(--muted,#667085);text-align:center}.buylist-empty-state>span{display:grid;place-items:center;width:40px;height:40px;border-radius:12px;background:#eef4ff;color:#175cd3;font-size:21px}.buylist-empty-state strong{color:var(--text,#101828);font-size:12px}.buylist-empty-state small{font-size:10px}.buylist-actions{position:sticky;bottom:8px;z-index:8;border:1px solid var(--border,#e4e7ec);border-radius:13px;box-shadow:0 10px 30px rgba(15,23,42,.12)}
+
+/* Promociones y fidelidad */
+.benefits-grid.list-only{grid-template-columns:1fr}.benefits-grid.editor-open .promo-editor{position:sticky;top:8px}.benefits-card,.benefits-hero{box-shadow:0 5px 16px rgba(15,23,42,.03)}.benefits-card-head>button{white-space:nowrap}.benefits-tabs{padding:6px;border:1px solid var(--border,#e4e7ec);border-radius:13px;background:#f8fafc;width:max-content;max-width:100%}.benefits-tabs button{border:0}.benefit-kpis span{min-height:58px;align-content:center}
+
+@media(max-width:1100px){.categories-kpis,.clients-kpis,.tcgops-kpis,.buylist-operation-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.benefits-grid.editor-open{grid-template-columns:1fr}.benefits-grid.editor-open .promo-editor{position:relative;top:auto}.commercial-nav{position:relative;top:auto}}
+@media(max-width:720px){.categories-hero{align-items:stretch;flex-direction:column}.categories-hero button{width:100%}.categories-filters{grid-template-columns:1fr}.categories-kpis,.clients-kpis,.tcgops-kpis,.buylist-operation-kpis{grid-template-columns:1fr 1fr}.categories-kpis>article,.clients-kpis>article,.tcgops-kpis>article,.buylist-operation-kpis>article{min-height:84px;padding:12px}.categories-kpis strong,.clients-kpis strong,.tcgops-kpis strong{font-size:19px}.pos-history-actions{min-width:160px}.buylist-actions{position:relative;bottom:auto}.benefits-tabs{width:100%;overflow:auto;flex-wrap:nowrap}.benefits-tabs button{white-space:nowrap}}
+@media(max-width:480px){.categories-kpis,.clients-kpis,.tcgops-kpis,.buylist-operation-kpis{grid-template-columns:1fr}.category-count-visual{min-width:120px}}

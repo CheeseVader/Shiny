@@ -13,12 +13,12 @@ WITH snapshot AS (
   SELECT
     dd.row_id,
     m.stock_nuevo AS stock_snapshot
-  FROM gmx.devoluciones_detalle dd
-  JOIN gmx.devoluciones d
+  FROM shiny.devoluciones_detalle dd
+  JOIN shiny.devoluciones d
     ON d.id=dd.id_devolucion
   JOIN LATERAL (
     SELECT mi.stock_nuevo
-    FROM gmx.movimientos_inventario_sucursales mi
+    FROM shiny.movimientos_inventario_sucursales mi
     WHERE mi.id_sucursal=dd.id_sucursal
       AND (
         (dd.id_producto IS NOT NULL AND mi.id_producto=dd.id_producto)
@@ -34,7 +34,7 @@ WITH snapshot AS (
     AND dd.tipo_item<>'TCG'
     AND (dd.stock_anterior IS NULL OR dd.stock_nuevo IS NULL)
 )
-UPDATE gmx.devoluciones_detalle dd
+UPDATE shiny.devoluciones_detalle dd
 SET
   stock_anterior=s.stock_snapshot,
   stock_nuevo=s.stock_snapshot
@@ -53,7 +53,7 @@ SELECT
   reintegra_stock,
   stock_anterior,
   stock_nuevo
-FROM gmx.devoluciones_detalle
+FROM shiny.devoluciones_detalle
 WHERE id_devolucion='DEV-1786902935731-LNV7F';
 
 -- Debe devolver 0 para productos generales históricos corregibles:
@@ -64,7 +64,7 @@ SELECT
   dd.destino_articulo,
   dd.stock_anterior,
   dd.stock_nuevo
-FROM gmx.devoluciones_detalle dd
+FROM shiny.devoluciones_detalle dd
 WHERE dd.reintegra_stock=false
   AND dd.tipo_item<>'TCG'
   AND (dd.stock_anterior IS NULL OR dd.stock_nuevo IS NULL);

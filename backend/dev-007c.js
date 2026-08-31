@@ -3,7 +3,7 @@ import { query, pool } from './src/db.js';
 import { hashPassword } from './src/security.js';
 
 /* ============================================================
-   GMX DEV-007C
+   Shiny DEV-007C
    DEVOLUCION POS + REEMBOLSO EFECTIVO
    EJECUCION REAL CONTROLADA
 
@@ -18,7 +18,7 @@ import { hashPassword } from './src/security.js';
    TCG Alpha, the Master of Beasts
    ============================================================ */
 
-const API = process.env.GMX_API_URL || 'http://127.0.0.1:8787';
+const API = process.env.SHINY_API_URL || 'http://127.0.0.1:8787';
 
 const REQUESTER_EMAIL = 'prueba@gmail.com';
 const REQUESTER_PASSWORD = 'prueba12345';
@@ -112,7 +112,7 @@ async function cleanup() {
   try {
     if (authorizationId) {
       await query(`
-        DELETE FROM gmx.autorizaciones_operacion
+        DELETE FROM shiny.autorizaciones_operacion
         WHERE id_autorizacion=$1
       `, [authorizationId]);
 
@@ -125,14 +125,14 @@ async function cleanup() {
   try {
     if (tempAdmin) {
       await query(`
-        DELETE FROM gmx.permisos_admin
+        DELETE FROM shiny.permisos_admin
         WHERE LOWER(email)=LOWER($1)
           AND modulo='COMERCIAL'
       `, [AUTHORIZER_EMAIL]);
 
       if (originalPermission) {
         await query(`
-          INSERT INTO gmx.permisos_admin(
+          INSERT INTO shiny.permisos_admin(
             email,
             modulo,
             leer,
@@ -165,7 +165,7 @@ async function cleanup() {
   try {
     if (tempAdmin && originalPasswordHash !== null) {
       await query(`
-        UPDATE gmx.administradores
+        UPDATE shiny.administradores
         SET
           password_hash=$2,
           sucursal_principal=$3,
@@ -189,7 +189,7 @@ async function cleanup() {
   try {
     if (requesterAdmin) {
       await query(`
-        UPDATE gmx.administradores
+        UPDATE shiny.administradores
         SET
           sucursal_principal=$2,
           sucursales_permitidas=$3::jsonb,
@@ -207,7 +207,7 @@ async function cleanup() {
         SELECT
           sucursal_principal,
           sucursales_permitidas
-        FROM gmx.administradores
+        FROM shiny.administradores
         WHERE id_admin=$1
       `, [requesterAdmin.id_admin]);
 
@@ -230,7 +230,7 @@ async function cleanup() {
 try {
   console.log('');
   console.log('============================================================');
-  console.log(' GMX DEV-007C');
+  console.log(' Shiny DEV-007C');
   console.log(' DEVOLUCION POS + REEMBOLSO EFECTIVO');
   console.log(' EJECUCION REAL CONTROLADA — TCG + BRANCH FIX');
   console.log('============================================================');
@@ -269,7 +269,7 @@ try {
       efectivo_recibido,
       cambio_entregado,
       fecha
-    FROM gmx.pedidos
+    FROM shiny.pedidos
     WHERE id_pedido=$1
     LIMIT 1
   `, [TARGET_ORDER]);
@@ -308,7 +308,7 @@ try {
 
   const details = await query(`
     SELECT *
-    FROM gmx.detalle_pedidos
+    FROM shiny.detalle_pedidos
     WHERE id_pedido=$1
     ORDER BY row_id
   `, [TARGET_ORDER]);
@@ -335,13 +335,13 @@ try {
 
   const previousReturns = await query(`
     SELECT *
-    FROM gmx.devoluciones
+    FROM shiny.devoluciones
     WHERE referencia=$1
   `, [TARGET_ORDER]);
 
   const previousRefunds = await query(`
     SELECT *
-    FROM gmx.devoluciones_reembolsos
+    FROM shiny.devoluciones_reembolsos
     WHERE id_pedido=$1
   `, [TARGET_ORDER]);
 
@@ -382,7 +382,7 @@ try {
       sucursal,
       estado_venta,
       ultima_actualizacion
-    FROM gmx.tcg_inventario
+    FROM shiny.tcg_inventario
     WHERE id_inventario=$1
     LIMIT 1
   `, [EXPECTED_INVENTORY]);
@@ -412,7 +412,7 @@ try {
 
   const originalCash = await query(`
     SELECT *
-    FROM gmx.caja_movimientos
+    FROM shiny.caja_movimientos
     WHERE referencia=$1
       AND id_caja=$2
       AND UPPER(COALESCE(tipo,''))='INGRESO'
@@ -448,7 +448,7 @@ try {
 
   const cashBaseline = await query(`
     SELECT COALESCE(MAX(row_id),0)::bigint AS max_row
-    FROM gmx.caja_movimientos
+    FROM shiny.caja_movimientos
     WHERE id_caja=$1
   `, [TARGET_CASHBOX]);
 
@@ -471,7 +471,7 @@ try {
       activo,
       sucursal_principal,
       sucursales_permitidas
-    FROM gmx.administradores
+    FROM shiny.administradores
     WHERE LOWER(email)=LOWER($1)
     LIMIT 1
   `, [REQUESTER_EMAIL]);
@@ -520,7 +520,7 @@ try {
       password_hash,
       sucursal_principal,
       sucursales_permitidas
-    FROM gmx.administradores
+    FROM shiny.administradores
     WHERE LOWER(email)=LOWER($1)
     LIMIT 1
   `, [AUTHORIZER_EMAIL]);
@@ -556,7 +556,7 @@ try {
       editar,
       eliminar,
       autorizar
-    FROM gmx.permisos_admin
+    FROM shiny.permisos_admin
     WHERE LOWER(email)=LOWER($1)
       AND modulo='COMERCIAL'
     LIMIT 1
@@ -580,7 +580,7 @@ try {
      ========================================================== */
 
   await query(`
-    UPDATE gmx.administradores
+    UPDATE shiny.administradores
     SET
       sucursal_principal=$2,
       sucursales_permitidas=$3::jsonb,
@@ -598,7 +598,7 @@ try {
       email,
       sucursal_principal,
       sucursales_permitidas
-    FROM gmx.administradores
+    FROM shiny.administradores
     WHERE id_admin=$1
   `, [requesterAdmin.id_admin]);
 
@@ -631,7 +631,7 @@ try {
      ========================================================== */
 
   await query(`
-    UPDATE gmx.administradores
+    UPDATE shiny.administradores
     SET
       password_hash=$2,
       sucursal_principal=$3,
@@ -646,13 +646,13 @@ try {
   ]);
 
   await query(`
-    DELETE FROM gmx.permisos_admin
+    DELETE FROM shiny.permisos_admin
     WHERE LOWER(email)=LOWER($1)
       AND modulo='COMERCIAL'
   `, [AUTHORIZER_EMAIL]);
 
   await query(`
-    INSERT INTO gmx.permisos_admin(
+    INSERT INTO shiny.permisos_admin(
       email,
       modulo,
       leer,
@@ -780,7 +780,7 @@ try {
 
   const authBeforeUse = await query(`
     SELECT *
-    FROM gmx.autorizaciones_operacion
+    FROM shiny.autorizaciones_operacion
     WHERE id_autorizacion=$1
   `, [authorizationId]);
 
@@ -870,7 +870,7 @@ try {
 
   const returnCheck = await query(`
     SELECT *
-    FROM gmx.devoluciones
+    FROM shiny.devoluciones
     WHERE id=$1
   `, [returnId]);
 
@@ -913,7 +913,7 @@ try {
 
   const returnDetail = await query(`
     SELECT *
-    FROM gmx.devoluciones_detalle
+    FROM shiny.devoluciones_detalle
     WHERE id_devolucion=$1
     ORDER BY linea
   `, [returnId]);
@@ -950,7 +950,7 @@ try {
 
   const refundCheck = await query(`
     SELECT *
-    FROM gmx.devoluciones_reembolsos
+    FROM shiny.devoluciones_reembolsos
     WHERE id_devolucion=$1
     ORDER BY row_id DESC
   `, [returnId]);
@@ -1031,7 +1031,7 @@ try {
 
   const eventCheck = await query(`
     SELECT *
-    FROM gmx.devoluciones_eventos
+    FROM shiny.devoluciones_eventos
     WHERE id_devolucion=$1
       AND id_reembolso=$2
       AND tipo='REEMBOLSO_REGISTRADO'
@@ -1069,7 +1069,7 @@ try {
       sucursal,
       estado_venta,
       ultima_actualizacion
-    FROM gmx.tcg_inventario
+    FROM shiny.tcg_inventario
     WHERE id_inventario=$1
     LIMIT 1
   `, [EXPECTED_INVENTORY]);
@@ -1104,7 +1104,7 @@ try {
 
   const cashAfter = await query(`
     SELECT *
-    FROM gmx.caja_movimientos
+    FROM shiny.caja_movimientos
     WHERE id_caja=$1
       AND row_id>$2
     ORDER BY row_id
@@ -1163,7 +1163,7 @@ try {
 
   const auditCheck = await query(`
     SELECT *
-    FROM gmx.auditoria
+    FROM shiny.auditoria
     WHERE referencia=$1
        OR referencia=$2
        OR detalle ILIKE $3
@@ -1190,7 +1190,7 @@ try {
 
   const authAfter = await query(`
     SELECT *
-    FROM gmx.autorizaciones_operacion
+    FROM shiny.autorizaciones_operacion
     WHERE id_autorizacion=$1
   `, [authorizationId]);
 
@@ -1217,19 +1217,19 @@ try {
   const countsBeforeReplay = await Promise.all([
     query(`
       SELECT COUNT(*)::int total
-      FROM gmx.devoluciones
+      FROM shiny.devoluciones
       WHERE referencia=$1
     `, [TARGET_ORDER]),
 
     query(`
       SELECT COUNT(*)::int total
-      FROM gmx.devoluciones_reembolsos
+      FROM shiny.devoluciones_reembolsos
       WHERE id_pedido=$1
     `, [TARGET_ORDER]),
 
     query(`
       SELECT COUNT(*)::int total
-      FROM gmx.caja_movimientos
+      FROM shiny.caja_movimientos
       WHERE id_caja=$1
         AND row_id>$2
     `, [
@@ -1285,19 +1285,19 @@ try {
   const countsAfterReplay = await Promise.all([
     query(`
       SELECT COUNT(*)::int total
-      FROM gmx.devoluciones
+      FROM shiny.devoluciones
       WHERE referencia=$1
     `, [TARGET_ORDER]),
 
     query(`
       SELECT COUNT(*)::int total
-      FROM gmx.devoluciones_reembolsos
+      FROM shiny.devoluciones_reembolsos
       WHERE id_pedido=$1
     `, [TARGET_ORDER]),
 
     query(`
       SELECT COUNT(*)::int total
-      FROM gmx.caja_movimientos
+      FROM shiny.caja_movimientos
       WHERE id_caja=$1
         AND row_id>$2
     `, [
@@ -1307,7 +1307,7 @@ try {
 
     query(`
       SELECT stock
-      FROM gmx.tcg_inventario
+      FROM shiny.tcg_inventario
       WHERE id_inventario=$1
     `, [EXPECTED_INVENTORY])
   ]);

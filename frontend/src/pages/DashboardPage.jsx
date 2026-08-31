@@ -157,7 +157,7 @@ function DetailModal({kind,data,loading,error,search,onSearch,onClose}){
 }
 
 export default function DashboardPage(){
-  const access=useMemo(()=>{try{return JSON.parse(localStorage.getItem('GMX_AUTH_ACCESS')||'{}');}catch{return {}; }},[]);
+  const access=useMemo(()=>{try{return JSON.parse(localStorage.getItem('SHINY_AUTH_ACCESS')||'{}');}catch{return {}; }},[]);
   const [period,setPeriod]=useState('MONTH'),[branchId,setBranchId]=useState(''),[custom,setCustom]=useState(dates('MONTH'));
   const [data,setData]=useState(null),[loading,setLoading]=useState(true),[error,setError]=useState('');
   const [detailKind,setDetailKind]=useState(''),[detailData,setDetailData]=useState(null),[detailLoading,setDetailLoading]=useState(false),[detailError,setDetailError]=useState(''),[detailSearch,setDetailSearch]=useState('');
@@ -209,9 +209,9 @@ export default function DashboardPage(){
           const id=e.target.value;
           const branchName=e.target.options[e.target.selectedIndex]?.text || 'Todas las sucursales';
           setBranchId(id);
-          localStorage.setItem('GMX_DASHBOARD_BRANCH_ID',id);
-          localStorage.setItem('GMX_DASHBOARD_BRANCH_NAME',branchName);
-          window.dispatchEvent(new CustomEvent('gmx:dashboard-branch-changed',{detail:{branchId:id,branchName}}));
+          localStorage.setItem('SHINY_DASHBOARD_BRANCH_ID',id);
+          localStorage.setItem('SHINY_DASHBOARD_BRANCH_NAME',branchName);
+          window.dispatchEvent(new CustomEvent('shiny:dashboard-branch-changed',{detail:{branchId:id,branchName}}));
         }}>
             <option value="">{access?.branchScope?.all?'Todas las sucursales':'Sucursales permitidas'}</option>
             {(data?.branches||[]).map(b=><option key={b.id_sucursal} value={b.id_sucursal}>{b.nombre_sucursal}</option>)}

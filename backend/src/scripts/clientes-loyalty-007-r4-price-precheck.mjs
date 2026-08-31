@@ -91,7 +91,7 @@ function dbConfig() {
 }
 
 async function main() {
-  section(brandText("GMX — LOYALTY-007 R4 CLEANUP + PRICE PRECHECK")
+  section(brandText("Shiny — LOYALTY-007 R4 CLEANUP + PRICE PRECHECK")
 
   );
 
@@ -122,7 +122,7 @@ async function main() {
         nombre,
         telefono,
         email
-      FROM gmx.clientes
+      FROM shiny.clientes
       WHERE id_cliente='CLI-000017'
       `
     );
@@ -173,19 +173,19 @@ async function main() {
         SELECT
           (
             SELECT COUNT(*)
-            FROM gmx.pedidos
+            FROM shiny.pedidos
             WHERE id_cliente='CLI-000017'
           )::bigint AS pedidos,
 
           (
             SELECT COUNT(*)
-            FROM gmx.fidelidad_cuentas
+            FROM shiny.fidelidad_cuentas
             WHERE id_cliente='CLI-000017'
           )::bigint AS cuentas,
 
           (
             SELECT COUNT(*)
-            FROM gmx.fidelidad_movimientos
+            FROM shiny.fidelidad_movimientos
             WHERE id_cliente='CLI-000017'
           )::bigint AS movimientos
         `
@@ -209,7 +209,7 @@ async function main() {
         const deleted =
         await db.query(
           `
-            DELETE FROM gmx.clientes
+            DELETE FROM shiny.clientes
             WHERE
               id_cliente='CLI-000017'
               AND nombre LIKE
@@ -260,13 +260,13 @@ async function main() {
       SELECT
         (
           SELECT COUNT(*)
-          FROM gmx.clientes
+          FROM shiny.clientes
           WHERE id_cliente='CLI-000017'
         )::bigint AS clientes,
 
         (
           SELECT COUNT(*)
-          FROM gmx.cliente_identidad_unica
+          FROM shiny.cliente_identidad_unica
           WHERE id_cliente='CLI-000017'
         )::bigint AS identidades
       `
@@ -306,7 +306,7 @@ async function main() {
           data_type
         FROM information_schema.columns
         WHERE
-          table_schema='gmx'
+          table_schema='shiny'
           AND table_name='tcg_inventario'
         ORDER BY ordinal_position
         `
@@ -327,7 +327,7 @@ async function main() {
           data_type
         FROM information_schema.columns
         WHERE
-          table_schema='gmx'
+          table_schema='shiny'
           AND table_name='tcg_inventario_sucursales'
         ORDER BY ordinal_position
         `
@@ -368,8 +368,8 @@ async function main() {
       SELECT
         s.*,
         to_jsonb(i) AS global_inventory
-      FROM gmx.tcg_inventario_sucursales s
-      JOIN gmx.tcg_inventario i
+      FROM shiny.tcg_inventario_sucursales s
+      JOIN shiny.tcg_inventario i
         ON i.id_inventario=s.id_inventario
       WHERE
         s.id_sucursal='SUC-000010'
@@ -412,9 +412,9 @@ async function main() {
 
         to_jsonb(i) AS global_inventory
 
-      FROM gmx.tcg_inventario_sucursales s
+      FROM shiny.tcg_inventario_sucursales s
 
-      JOIN gmx.tcg_inventario i
+      JOIN shiny.tcg_inventario i
         ON i.id_inventario=s.id_inventario
 
       WHERE

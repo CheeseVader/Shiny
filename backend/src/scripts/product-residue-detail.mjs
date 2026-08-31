@@ -4,7 +4,7 @@ import { query, pool } from '../db.js';
 try {
 
   console.log('============================================================');
-  console.log(brandText("GMX PRODUCT TEST RESIDUE DETAIL"));
+  console.log(brandText("Shiny PRODUCT TEST RESIDUE DETAIL"));
   console.log('NO MUTATION');
   console.log('============================================================');
 
@@ -24,7 +24,7 @@ try {
       codigo_barras,
       fecha_creacion,
       fecha_actualizacion
-    FROM gmx.productos
+    FROM shiny.productos
     WHERE
          UPPER(COALESCE(nombre,'')) LIKE '%POS-003 TEST%'
       OR UPPER(COALESCE(nombre,'')) LIKE '%PRODUCT TEST%'

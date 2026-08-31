@@ -45,7 +45,7 @@ export default function GlobalTheme(){
       // No consultar jamás /api/v1/* desde /, /tienda/* o /login.
       if(!isAdminPath(pathname))return;
 
-      const token=localStorage.getItem('GMX_AUTH_TOKEN')||'';
+      const token=localStorage.getItem('SHINY_AUTH_TOKEN')||'';
       if(!token)return;
 
       try{
@@ -69,9 +69,12 @@ export default function GlobalTheme(){
         root.style.setProperty('--tcg_store_template-bg-attachment',String(a('background_fixed','true'))==='true'?'fixed':'scroll');
         document.body.dataset.tcg_store_templateDensity=a('density','comfortable');
         try {
-          localStorage.setItem('TCG_STORE_TEMPLATE_ADMIN_BRAND', JSON.stringify({
-            name: a('brand_name', 'GMX'),
-            logoText: a('logo_text', String(a('brand_name', 'GMX')).slice(0, 1)),
+          localStorage.setItem('Shiny_ADMIN_BRAND', JSON.stringify({
+            name: String(a('brand_name', 'Shiny') || 'Shiny').replace(/^Shiny$/i, 'Shiny'),
+            logoText: (() => {
+              const raw = String(a('logo_text', a('brand_name', 'Shiny')) || 'Shiny');
+              return /^Shiny$/i.test(raw) ? 'Shiny' : raw;
+            })(),
             descriptor: a('brand_descriptor', 'LOCAL')
           }));
         } catch {}

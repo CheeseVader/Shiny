@@ -34,7 +34,7 @@ function inferDetail(url = '') {
   if (u.includes('order') || u.includes('pedido')) return 'Procesando pedido…';
   if (u.includes('inventory') || u.includes('inventario')) return 'Procesando inventario…';
   if (u.includes('content') || u.includes('media')) return 'Procesando contenido…';
-  return brandText("GMX está procesando la operación…");
+  return brandText("Shiny está procesando la operación…");
 }
 
 function friendlyOperationError(error) {
@@ -181,15 +181,15 @@ export default function GlobalOperationProgress() {
     }
 
     /*
-     * GMX GLOBAL UX
+     * Shiny GLOBAL UX
      * Si ya existe un modal central de error/advertencia, no mostrar
      * un toast de error/warning encima con el mismo propósito.
      *
      * Se usa un accessor para cubrir también componentes que asignen
-     * window.gmxNotify DESPUÉS de montar GlobalOperationProgress.
+     * window.shinyNotify DESPUÉS de montar GlobalOperationProgress.
      */
-    let notifyImpl = typeof window.gmxNotify === 'function' ? window.gmxNotify : null;
-    const notifyDescriptor = Object.getOwnPropertyDescriptor(window, 'gmxNotify');
+    let notifyImpl = typeof window.shinyNotify === 'function' ? window.shinyNotify : null;
+    const notifyDescriptor = Object.getOwnPropertyDescriptor(window, 'shinyNotify');
     let notifyAccessorInstalled = false;
 
     function hasBlockingErrorModal() {
@@ -221,7 +221,7 @@ export default function GlobalOperationProgress() {
     }
 
     try {
-      Object.defineProperty(window, 'gmxNotify', {
+      Object.defineProperty(window, 'shinyNotify', {
         configurable: true,
         enumerable: true,
         get() {
@@ -234,9 +234,9 @@ export default function GlobalOperationProgress() {
       notifyAccessorInstalled = true;
     } catch {
       // Fallback seguro si otro código creó una propiedad no configurable.
-      if (typeof window.gmxNotify === 'function') {
-        notifyImpl = window.gmxNotify;
-        window.gmxNotify = notifyProxy;
+      if (typeof window.shinyNotify === 'function') {
+        notifyImpl = window.shinyNotify;
+        window.shinyNotify = notifyProxy;
       }
     }
 
@@ -275,7 +275,7 @@ export default function GlobalOperationProgress() {
       const state = {
         id,
         title: options.title || 'Procesando',
-        detail: options.detail || brandText("GMX está trabajando…"),
+        detail: options.detail || brandText("Shiny está trabajando…"),
         progress: Number(options.progress ?? 0),
         mode: 'manual',
         startedAt: Date.now(),
@@ -327,20 +327,20 @@ export default function GlobalOperationProgress() {
       if (!current) return;
 
       /*
-       * GMX GLOBAL UX V4
+       * Shiny GLOBAL UX V4
        * El código de la página recibe el error después de este punto y puede:
-       * - llamar window.gmxNotify(...)
+       * - llamar window.shinyNotify(...)
        * - pintar .message/.alert.error, que GlobalFeedback observa
        *
        * Mantener una ventana de supresión evita ambos duplicados incluso
        * si React/MutationObserver procesan el mensaje en otro microtask.
        */
-      window.__GMX_SUPPRESS_ERROR_TOAST_UNTIL = Date.now() + 2500;
+      window.__SHINY_SUPPRESS_ERROR_TOAST_UNTIL = Date.now() + 2500;
 
       // Si un toast alcanzó a crearse en el mismo ciclo/microtask,
       // GlobalFeedback lo elimina inmediatamente.
       try {
-        window.dispatchEvent(new CustomEvent('gmx:operation-error-modal'));
+        window.dispatchEvent(new CustomEvent('shiny:operation-error-modal'));
       } catch {}
 
       const friendly = friendlyOperationError(error);
@@ -356,7 +356,7 @@ export default function GlobalOperationProgress() {
       emit(next);
     }
 
-    window.gmxOperation = {
+    window.shinyOperation = {
       start: manualStart,
       update: manualUpdate,
       complete: finish,
@@ -364,7 +364,7 @@ export default function GlobalOperationProgress() {
       hasBlockingError: hasBlockingErrorModal,
       shouldSuppressErrorToast() {
         return hasBlockingErrorModal() ||
-        Number(window.__GMX_SUPPRESS_ERROR_TOAST_UNTIL || 0) > Date.now();
+        Number(window.__SHINY_SUPPRESS_ERROR_TOAST_UNTIL || 0) > Date.now();
       },
       close(id) {
         const target = id || job?.id;
@@ -422,20 +422,20 @@ export default function GlobalOperationProgress() {
       timersRef.current.forEach(clearInterval);
       timersRef.current.clear();
       if (originalFetchRef.current) window.fetch = originalFetchRef.current;
-      delete window.gmxOperation;
-      delete window.__GMX_SUPPRESS_ERROR_TOAST_UNTIL;
+      delete window.shinyOperation;
+      delete window.__SHINY_SUPPRESS_ERROR_TOAST_UNTIL;
 
       // Restaurar el notificador global original al desmontar.
       try {
         if (notifyAccessorInstalled) {
           if (notifyDescriptor) {
-            Object.defineProperty(window, 'gmxNotify', notifyDescriptor);
+            Object.defineProperty(window, 'shinyNotify', notifyDescriptor);
           } else {
-            delete window.gmxNotify;
-            if (typeof notifyImpl === 'function') window.gmxNotify = notifyImpl;
+            delete window.shinyNotify;
+            if (typeof notifyImpl === 'function') window.shinyNotify = notifyImpl;
           }
-        } else if (window.gmxNotify === notifyProxy && typeof notifyImpl === 'function') {
-          window.gmxNotify = notifyImpl;
+        } else if (window.shinyNotify === notifyProxy && typeof notifyImpl === 'function') {
+          window.shinyNotify = notifyImpl;
         }
       } catch {}
     };
@@ -444,7 +444,7 @@ export default function GlobalOperationProgress() {
   useEffect(() => {
     if (job?.status !== 'error') return undefined;
     const closeOnEscape = (event) => {
-      if (event.key === 'Escape') window.gmxOperation?.close(job.id);
+      if (event.key === 'Escape') window.shinyOperation?.close(job.id);
     };
     window.addEventListener('keydown', closeOnEscape);
     return () => window.removeEventListener('keydown', closeOnEscape);
@@ -457,44 +457,44 @@ export default function GlobalOperationProgress() {
   const isError = job.status === 'error';
   const remaining = isWorking ? estimateRemaining(job, elapsed) : 0;
 
-  return <div className="gmx-operation-backdrop" role="dialog" aria-modal="true" aria-live="polite" onMouseDown={(event) => {if (isError && event.target === event.currentTarget) window.gmxOperation?.close(job.id);}}>
-    <section className={`gmx-operation-modal ${job.status || 'working'}`}>
-      <div className="gmx-operation-head">
+  return <div className="shiny-operation-backdrop" role="dialog" aria-modal="true" aria-live="polite" onMouseDown={(event) => {if (isError && event.target === event.currentTarget) window.shinyOperation?.close(job.id);}}>
+    <section className={`shiny-operation-modal ${job.status || 'working'}`}>
+      <div className="shiny-operation-head">
         <div>
-          <span className="gmx-operation-kicker">
-            {job.status === 'success' ? 'COMPLETADO' : isError ? 'ATENCIÓN' : brandText("GMX PROCESANDO")}
+          <span className="shiny-operation-kicker">
+            {job.status === 'success' ? 'COMPLETADO' : isError ? 'ATENCIÓN' : brandText("Shiny PROCESANDO")}
           </span>
           <h3>{job.title}</h3>
         </div>
-        {job.closable ? <button type="button" className="gmx-operation-close" aria-label="Cerrar" onClick={() => window.gmxOperation?.close(job.id)}>×</button> : null}
+        {job.closable ? <button type="button" className="shiny-operation-close" aria-label="Cerrar" onClick={() => window.shinyOperation?.close(job.id)}>×</button> : null}
       </div>
 
-      <p className="gmx-operation-detail">{job.detail}</p>
+      <p className="shiny-operation-detail">{job.detail}</p>
 
       {!isError ? <>
-        <div className="gmx-operation-progress-meta">
+        <div className="shiny-operation-progress-meta">
           <span>{job.mode === 'estimated' ? 'Progreso estimado' : 'Progreso'}</span>
           <strong>{progress}%</strong>
         </div>
 
-        <div className="gmx-operation-progress-track" aria-valuemin="0" aria-valuemax="100" aria-valuenow={progress}>
-          <div className="gmx-operation-progress-bar" style={{ width: `${progress}%` }} />
+        <div className="shiny-operation-progress-track" aria-valuemin="0" aria-valuemax="100" aria-valuenow={progress}>
+          <div className="shiny-operation-progress-bar" style={{ width: `${progress}%` }} />
         </div>
 
-        {job.meta ? <div className="gmx-operation-meta">
+        {job.meta ? <div className="shiny-operation-meta">
           {job.meta.setsTotal != null ? <span>Expansiones: <strong>{job.meta.setsDone || 0}/{job.meta.setsTotal}</strong></span> : null}
           {job.meta.cardsTotal != null ? <span>Cartas: <strong>{job.meta.cardsDone || 0}/{job.meta.cardsTotal}</strong></span> : null}
           {job.meta.currentSet ? <span>Actual: <strong>{job.meta.currentSet}</strong></span> : null}
         </div> : null}
 
-        <div className="gmx-operation-foot">
+        <div className="shiny-operation-foot">
           <span>Tiempo restante estimado: <strong>{isWorking ? remaining == null ? 'Calculando…' : formatElapsed(remaining) : '0s'}</strong></span>
           {isWorking ? <span>No cierres esta ventana.</span> : null}
         </div>
       </> : null}
 
-      {isError ? <div className="gmx-operation-actions">
-        <button type="button" className="secondary" onClick={() => window.gmxOperation?.close(job.id)}>Cerrar</button>
+      {isError ? <div className="shiny-operation-actions">
+        <button type="button" className="secondary" onClick={() => window.shinyOperation?.close(job.id)}>Cerrar</button>
       </div> : null}
     </section>
   </div>;

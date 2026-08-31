@@ -93,7 +93,7 @@ function dbConfig() {
 const TARGET = "CLI-000015";
 
 async function main() {
-  section(brandText("GMX — LOYALTY-007 R2 FAILED RUN CLEANUP")
+  section(brandText("Shiny — LOYALTY-007 R2 FAILED RUN CLEANUP")
 
   );
 
@@ -112,7 +112,7 @@ async function main() {
         nombre,
         telefono,
         email
-      FROM gmx.clientes
+      FROM shiny.clientes
       WHERE id_cliente=$1
       `,
       [TARGET]
@@ -175,21 +175,21 @@ async function main() {
 
             (
               SELECT COUNT(*)
-              FROM gmx.pedidos
+              FROM shiny.pedidos
               WHERE id_cliente=$1
             )::bigint
               AS pedidos,
 
             (
               SELECT COUNT(*)
-              FROM gmx.fidelidad_cuentas
+              FROM shiny.fidelidad_cuentas
               WHERE id_cliente=$1
             )::bigint
               AS cuentas,
 
             (
               SELECT COUNT(*)
-              FROM gmx.fidelidad_movimientos
+              FROM shiny.fidelidad_movimientos
               WHERE id_cliente=$1
             )::bigint
               AS movimientos
@@ -220,7 +220,7 @@ async function main() {
       const deleted =
       await db.query(
         `
-          DELETE FROM gmx.clientes
+          DELETE FROM shiny.clientes
           WHERE
             id_cliente=$1
             AND nombre LIKE
@@ -248,7 +248,7 @@ async function main() {
       await db.query(
         `
           SELECT COUNT(*)::bigint AS total
-          FROM gmx.cliente_identidad_unica
+          FROM shiny.cliente_identidad_unica
           WHERE id_cliente=$1
           `,
         [TARGET]
@@ -286,13 +286,13 @@ async function main() {
 
         (
           SELECT COUNT(*)
-          FROM gmx.clientes
+          FROM shiny.clientes
           WHERE id_cliente=$1
         )::bigint AS clientes,
 
         (
           SELECT COUNT(*)
-          FROM gmx.cliente_identidad_unica
+          FROM shiny.cliente_identidad_unica
           WHERE id_cliente=$1
         )::bigint AS identidades
       `,

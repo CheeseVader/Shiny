@@ -48,29 +48,39 @@ router.post('/reset-password',rateLimit({keyPrefix:'ADMIN_RESET',max:8}),async(r
 
 router.post('/login',rateLimit({keyPrefix:'ADMIN_LOGIN',max:10}),async(req,res)=>{
   try{
-    const email=String(req.body?.email||'').trim().toLowerCase();
+    const username=String(req.body?.username||'').trim().toLowerCase();
     const password=String(req.body?.password||'');
-    if(!email||!password)return res.status(400).json({success:false,error:'CREDENTIALS_REQUIRED'});
+    if(!username||!password)return res.status(400).json({success:false,error:'CREDENTIALS_REQUIRED'});
 
-    const r=await query(`SELECT * FROM gmx.administradores
-      WHERE LOWER(email)=$1 AND COALESCE(activo,true)=true
-      ORDER BY row_id LIMIT 1`,[email]);
+    const r=await query(`SELECT * FROM shiny.administradores
+      WHERE (
+        LOWER(SPLIT_PART(email,'@',1))=LOWER($1)
+        OR LOWER(email)=LOWER($1)
+        OR (LOWER($1)='admin' AND UPPER(rol)='SUPERADMIN')
+      ) AND COALESCE(activo,true)=true
+      ORDER BY CASE
+        WHEN LOWER(SPLIT_PART(email,'@',1))=LOWER($1) THEN 0
+        WHEN LOWER(email)=LOWER($1) THEN 1
+        WHEN LOWER($1)='admin' AND UPPER(rol)='SUPERADMIN' THEN 2
+        ELSE 9
+      END, row_id
+      LIMIT 1`,[username]);
     if(!r.rowCount||!verifyPassword(password,r.rows[0].password_hash))
       return res.status(401).json({success:false,error:'INVALID_CREDENTIALS'});
 
     const admin=r.rows[0];
     const token=newToken();
-    const hours=Math.min(Math.max(Number(process.env.GMX_SESSION_HOURS||12),1),72);
-    await query(`INSERT INTO gmx.admin_sessions(token_hash,id_admin,email,expires_at,ip_address,user_agent)
+    const hours=Math.min(Math.max(Number(process.env.SHINY_SESSION_HOURS||12),1),72);
+    await query(`INSERT INTO shiny.admin_sessions(token_hash,id_admin,email,expires_at,ip_address,user_agent)
       VALUES($1,$2,$3,NOW()+($4||' hours')::interval,$5,$6)`,
       [hashToken(token),admin.id_admin,admin.email,String(hours),req.ip,String(req.headers['user-agent']||'').slice(0,500)]);
 
-    req.user={email:admin.email};
+    req.user={email:admin.email,username:String(admin.email||'').split('@')[0]};
     await audit(req,'AUTH','LOGIN',admin.id_admin,'Inicio de sesión local');
 
     res.json({success:true,data:{
       token,expiresInHours:hours,user:{
-        id_admin:admin.id_admin,nombre:admin.nombre,email:admin.email,rol:admin.rol,
+        id_admin:admin.id_admin,nombre:admin.nombre,email:admin.email,username:String(admin.email||'').split('@')[0],rol:admin.rol,
         sucursal_principal:admin.sucursal_principal,sucursales_permitidas:admin.sucursales_permitidas
       }
     }});
@@ -85,7 +95,7 @@ router.post('/verify-password',requireAuth,rateLimit({keyPrefix:'POS_PROTECTED_E
   try{
     const password=String(req.body?.password||'');
     if(!password)return res.status(400).json({success:false,error:'PASSWORD_REQUIRED'});
-    const r=await query(`SELECT password_hash FROM gmx.administradores
+    const r=await query(`SELECT password_hash FROM shiny.administradores
       WHERE id_admin=$1 AND COALESCE(activo,true)=true
       ORDER BY row_id LIMIT 1`,[req.user.id_admin]);
     if(!r.rowCount||!verifyPassword(password,r.rows[0].password_hash)){
@@ -101,7 +111,7 @@ router.post('/verify-password',requireAuth,rateLimit({keyPrefix:'POS_PROTECTED_E
 
 router.post('/logout',requireAuth,async(req,res)=>{
   try{
-    await query(`UPDATE gmx.admin_sessions SET revoked_at=NOW() WHERE id=$1`,[req.user.session_id]);
+    await query(`UPDATE shiny.admin_sessions SET revoked_at=NOW() WHERE id=$1`,[req.user.session_id]);
     await audit(req,'AUTH','LOGOUT',req.user.id_admin,'Cierre de sesión');
     res.json({success:true});
   }catch(e){res.status(500).json({success:false,error:'LOGOUT_FAILED',message:e.message});}

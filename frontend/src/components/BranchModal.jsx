@@ -70,7 +70,7 @@ export default function BranchModal({ open, branch, onClose, onSave }) {
     const error = validateForm();
     if (error) {
       setFormError(error);
-      window.gmxNotify?.(error, { type: 'error', duration: 5000 });
+      window.shinyNotify?.(error, { type: 'error', duration: 5000 });
       return;
     }
     setFormError('');
@@ -80,18 +80,18 @@ export default function BranchModal({ open, branch, onClose, onSave }) {
     } catch (error) {
       const msg = String(error?.message || 'No fue posible guardar la sucursal.');
       setFormError(msg);
-      window.gmxNotify?.(msg, { type: 'error', duration: 6000 });
+      window.shinyNotify?.(msg, { type: 'error', duration: 6000 });
     } finally {
       setSaving(false);
     }
   }
 
   return createPortal(
-    <div className="modal-backdrop gmx-portal-backdrop" onMouseDown={onClose}>
-      <div className="modal gmx-branch-modal" onMouseDown={(event) => event.stopPropagation()}>
+    <div className="modal-backdrop shiny-portal-backdrop" onMouseDown={onClose}>
+      <div className="modal shiny-branch-modal" onMouseDown={(event) => event.stopPropagation()}>
         <div className="modal-head">
           <div>
-            <div className="eyebrow">{brandText("GMX SUCURSALES")}</div>
+            <div className="eyebrow">{brandText("Shiny SUCURSALES")}</div>
             <h2>{branch ? `Editar ${branch.nombre_sucursal}` : 'Nueva sucursal'}</h2>
           </div>
           <button className="icon-btn" type="button" onClick={onClose}>×</button>

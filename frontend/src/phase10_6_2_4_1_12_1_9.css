@@ -1,4 +1,4 @@
-/* GMX 10.6.2.4.1.12.1.9 — Notificaciones / Alertas */
+/* Shiny 10.6.2.4.1.12.1.9 — Notificaciones / Alertas */
 .alerts-page{display:grid;gap:15px}.alerts-hero{display:flex;justify-content:space-between;align-items:center;gap:16px;padding:18px;border:1px solid #e4e7ec;border-radius:15px;background:#fff}.alerts-hero h1{margin:4px 0}.alerts-hero p{margin:0;color:#667085}.alerts-actions{display:flex;gap:8px}
 .alert-kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:9px}.alert-kpis article{display:grid;gap:4px;padding:11px 13px;border:1px solid #e4e7ec;border-radius:11px;background:#fff}.alert-kpis span{font-size:9px;font-weight:900;color:#667085;text-transform:uppercase}.alert-kpis strong{font-size:20px}.alert-kpis .critical{border-color:#fda29b}.alert-kpis .high{border-color:#fec84b}
 .alerts-tabs{display:flex;gap:7px}.alerts-tabs button{padding:8px 12px;border:1px solid #d0d5dd;border-radius:9px;background:#fff;font-weight:800}.alerts-tabs button.active{background:#101828;color:#fff}

@@ -1,7 +1,7 @@
 import { brandText } from "../config/brand.js";import fs from 'fs';
 import path from 'path';
 
-const ROOT = brandText("C:\\Users\\igarcia\\Videos\\GMX\\backend");
+const ROOT = brandText("C:\\Users\\igarcia\\Videos\\Shiny\\backend");
 
 
 const ORDER_FILE =
@@ -59,7 +59,7 @@ function findAll(lines, regex) {
 
 try {
 
-  section(brandText("GMX POS-003-PRE-FIX3"));
+  section(brandText("Shiny POS-003-PRE-FIX3"));
 
   console.log(
     'TRAZABILIDAD EXACTA MP APPROVED -> PEDIDO'
@@ -179,7 +179,7 @@ try {
      2. ALL PEDIDOS UPDATES IN PAYMENT SERVICE
      ======================================================== */
 
-  section('2. PAYMENT SERVICE -> gmx.pedidos UPDATES');
+  section('2. PAYMENT SERVICE -> shiny.pedidos UPDATES');
 
   const paymentUpdateHits = [];
 
@@ -190,7 +190,7 @@ try {
   {
 
     if (
-    /UPDATE\s+gmx\.pedidos/i.
+    /UPDATE\s+shiny\.pedidos/i.
     test(
       payments[i]
     ))

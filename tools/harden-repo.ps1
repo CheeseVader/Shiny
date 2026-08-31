@@ -1,4 +1,4 @@
-param([string]$ProjectRoot="C:\GMX")
+param([string]$ProjectRoot="C:\Shiny")
 $ErrorActionPreference="Stop"
 $gitignore=Join-Path $ProjectRoot ".gitignore"
 $required=@(

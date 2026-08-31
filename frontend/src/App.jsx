@@ -14,6 +14,7 @@ import BranchesPage from './pages/BranchesPage.jsx';
 import OrdersPage from './pages/OrdersPage.jsx';
 import PurchasesCashPage from './pages/PurchasesCashPage.jsx';
 import CommercialPage from './pages/CommercialPage.jsx';
+import ReturnAuthorizationPage from './pages/ReturnAuthorizationPage.jsx';
 import ContentMarketingPage from './pages/ContentMarketingPage.jsx';
 import PromotionsLoyaltyPage from './pages/PromotionsLoyaltyPage.jsx';
 import NotificationsPage from './pages/NotificationsPage.jsx';
@@ -53,7 +54,7 @@ import StoreRecoverAccountPage from './pages/public/StoreRecoverAccountPage.jsx'
 export default function App(){
   const location=useLocation();
   let currentUser={};
-  try{currentUser=JSON.parse(localStorage.getItem('GMX_AUTH_USER')||'{}');}catch{}
+  try{currentUser=JSON.parse(localStorage.getItem('SHINY_AUTH_USER')||'{}');}catch{}
   const operatorAdmin=String(currentUser?.rol||'').toUpperCase()==='OPERADOR'&&location.pathname.startsWith('/admin');
   return <><GlobalTheme/>{operatorAdmin?null:<GlobalFeedback/>}<GlobalInputGuard/>{operatorAdmin?null:<GlobalOperationProgress/>}<Routes>
     {/* Public storefront */}
@@ -88,8 +89,6 @@ export default function App(){
         <Route index element={<Navigate to="dashboard" replace/>}/>
         <Route path="dashboard" element={<DashboardPage/>}/>
         <Route path="productos" element={<ProductsPage/>}/>
-        <Route path="alta-externa-beta" element={<ExternalCardLookupBetaPage/>}/>
-        <Route path="busqueda-visual-beta" element={<VisualSearchBetaPage/>}/>
         <Route path="categorias" element={<CategoriesPage/>}/>
         <Route path="clientes" element={<ClientsPage/>}/>
         <Route path="inventario" element={<InventoryPage/>}/>
@@ -99,6 +98,7 @@ export default function App(){
         <Route path="compras" element={<PurchasesCashPage/>}/>
         <Route path="caja" element={<PurchasesCashPage/>}/>
         <Route path="devoluciones" element={<CommercialPage/>}/>
+        <Route path="generar-codigo" element={<ReturnAuthorizationPage/>}/>
         <Route path="comercial" element={<CommercialPage/>}/>
         <Route path="contenido" element={<ContentMarketingPage/>}/>
         <Route path="promociones" element={<PromotionsLoyaltyPage/>}/>

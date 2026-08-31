@@ -4,23 +4,23 @@ import BrandLogo from './BrandLogo.jsx';
 
 const groups = [
 { label: 'GENERAL', items: [
-  ['/admin/dashboard', 'Dashboard', 'dashboard', 'DASHBOARD'], ['/admin/productos', 'Productos', 'products', 'PRODUCTOS'], ['/admin/categorias', 'Categorías', 'products', 'PRODUCTOS'], ['/admin/busqueda-visual-beta', 'Búsqueda Visual Beta', 'products', 'PRODUCTOS'], ['/admin/alta-externa-beta', 'Alta Externa Beta', 'products', 'PRODUCTOS'],
+  ['/admin/dashboard', 'Dashboard', 'dashboard', 'DASHBOARD'], ['/admin/productos', 'Productos', 'products', 'PRODUCTOS'], ['/admin/categorias', 'Categorías', 'products', 'PRODUCTOS'],
   ['/admin/clientes', 'Clientes', 'clients', 'CLIENTES'], ['/admin/inventario', 'Inventario', 'inventory', 'INVENTARIO'],
   ['/admin/sucursales', 'Sucursales', 'branches', 'SUCURSALES']]
 },
 { label: 'OPERACIÓN', items: [
-  ['/admin/pos', 'POS', 'orders', 'PEDIDOS'], ['/admin/pedidos', 'Pedidos', 'orders', 'PEDIDOS'], ['/admin/devoluciones', 'Devoluciones', 'buylist', 'COMERCIAL'], ['/admin/compras', 'Compras / Recepción', 'purchases', 'COMPRAS'],
+  ['/admin/pos', 'POS', 'orders', 'PEDIDOS'], ['/admin/pedidos', 'Pedidos', 'orders', 'PEDIDOS'], ['/admin/devoluciones', 'Devoluciones', 'buylist', 'COMERCIAL'], ['/admin/generar-codigo', 'Generar código', 'system', 'COMERCIAL'], ['/admin/compras', 'Compras / Recepción', 'purchases', 'COMPRAS'],
   ['/admin/caja', 'Caja / Arqueo', 'inventory', 'CAJA'], ['/admin/comercial', 'Gestión Comercial', 'clients', 'COMERCIAL']]
 },
 { label: 'TCG', items: [
   ['/admin/tcg', 'Catálogo TCG', 'tcg', 'TCG'], ['/admin/tcg-operacion', 'Operación TCG', 'inventory', 'TCG'], ['/admin/buylist', 'Buylist', 'buylist', 'BUYLIST']]
 },
 { label: 'GESTIÓN', items: [
-  ['/admin/promociones', 'Promociones / Fidelidad', 'reports', 'CONTENIDO'], ['/admin/contenido', 'Contenido / Marketing', 'reports', 'CONTENIDO'],
+  ['/admin/promociones', 'Promociones', 'reports', 'CONTENIDO'], ['/admin/contenido', 'Contenido / Marketing', 'reports', 'CONTENIDO'],
   ['/admin/notificaciones', 'Notificaciones / Alertas', 'reports', 'NOTIFICACIONES'], ['/admin/reportes', 'Reportes', 'reports', 'REPORTES'], ['/admin/administracion', 'Usuarios / Permisos', 'system', 'ADMIN'], ['/admin/sistema', 'Sistema', 'system', 'SISTEMA']]
 }];
 
-function access() {try {return JSON.parse(localStorage.getItem('GMX_AUTH_ACCESS') || localStorage.getItem('TCG_STORE_TEMPLATE_AUTH_ACCESS') || '{}');} catch {return {};}}
+function access() {try {return JSON.parse(localStorage.getItem('SHINY_AUTH_ACCESS') || localStorage.getItem('Shiny_AUTH_ACCESS') || '{}');} catch {return {};}}
 
 export default function Sidebar({ open, onNavigate }) {
   const a = access(),role = String(a?.role || '').toUpperCase(),canRead = (m) => a?.permissions?.[m]?.read === true;

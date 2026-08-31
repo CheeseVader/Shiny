@@ -1,5 +1,5 @@
 /*
- * GMX TCG Recepción Single - R16
+ * Shiny TCG Recepción Single - R16
  * Clasificación estricta por TCG.
  *
  * Estructura:

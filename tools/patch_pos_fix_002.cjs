@@ -2,7 +2,7 @@
 const fs=require('fs');
 const path=require('path');
 
-const root=process.argv[2]||'C:\\Users\\SrsGarciaEspinoza\\Videos\\GMX';
+const root=process.argv[2]||'C:\\Users\\SrsGarciaEspinoza\\Videos\\Shiny';
 const files={
   repo:path.join(root,'backend','src','repositories','ordersRepository.js'),
   route:path.join(root,'backend','src','routes','orders.js'),
@@ -31,7 +31,7 @@ let repo=fs.readFileSync(files.repo,'utf8');
 let route=fs.readFileSync(files.route,'utf8');
 let front=fs.readFileSync(files.front,'utf8');
 
-if(repo.includes('GMX_POS_FIX_002') && route.includes('GMX_POS_FIX_002') && front.includes('GMX_POS_FIX_002')){
+if(repo.includes('SHINY_POS_FIX_002') && route.includes('SHINY_POS_FIX_002') && front.includes('SHINY_POS_FIX_002')){
   console.log('POS-FIX-002 ya estaba aplicado.');
   process.exit(0);
 }
@@ -62,7 +62,7 @@ repo=repo.replace(
 `  try {
     await client.query('BEGIN');
 
-    // GMX_POS_FIX_002
+    // SHINY_POS_FIX_002
     // Idempotencia fuerte de la venta POS.
     const idemKey=String(saleRequestId||'').trim();
     if(!idemKey)throw new Error('SALE_REQUEST_ID_REQUIRED');
@@ -75,7 +75,7 @@ repo=repo.replace(
 
     const existingSale=await client.query(\`
       SELECT row_id,id_pedido
-      FROM gmx.pedidos
+      FROM shiny.pedidos
       WHERE pos_idempotency_key=$1
       ORDER BY row_id
       LIMIT 1
@@ -130,7 +130,7 @@ if(!repo.includes("pos_idempotency_key") || !repo.includes("idempotent_reuse:fal
 // =========================
 route=route.replace(
 `router.post('/pos', async (req, res) => {`,
-`// GMX_POS_FIX_002
+`// SHINY_POS_FIX_002
 router.post('/pos', async (req, res) => {`
 );
 route=route.replace(
@@ -159,7 +159,7 @@ front=front.replace(
 `  const [productCategory,setProductCategory]=useState('');`,
 `  const [productCategory,setProductCategory]=useState('');
 
-  // GMX_POS_FIX_002
+  // SHINY_POS_FIX_002
   // Si una respuesta se pierde, el mismo payload reutiliza la misma clave.
   // Si carrito/pagos cambian, se genera una clave nueva.
   const [saleAttempt,setSaleAttempt]=useState({key:'',fingerprint:''});`

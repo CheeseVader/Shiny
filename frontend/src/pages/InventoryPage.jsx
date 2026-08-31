@@ -6,9 +6,9 @@ import { visionQueries, scoreVisionCandidate } from '../utils/vision.js';
 import InventoryAdjustModal from '../components/InventoryAdjustModal.jsx';
 import TransferModal from '../components/TransferModal.jsx';
 import { R23BarList } from '../components/VisualKitR23.jsx';
-import '../phase_gmx_exact_views_r23.css';
+import '../phase_shiny_exact_views_r23.css';
 import '../phase_inventory_inv_b_r31.css';
-import '../gmx_inventory_option_b_color_final.css';
+import '../shiny_inventory_option_b_color_final.css';
 const PAGE_SIZE = 50;
 
 export default function InventoryPage() {
@@ -36,9 +36,9 @@ export default function InventoryPage() {
   const [visionOpen, setVisionOpen] = useState(false);
   const [visionCandidates, setVisionCandidates] = useState([]);
   const [visionPickerOpen, setVisionPickerOpen] = useState(false);
-  const [gmxGameFilter,setGmxGameFilter] = useState('');
-  const [gmxSetFilter,setGmxSetFilter] = useState('');
-  const [gmxTypeFilter,setGmxTypeFilter] = useState('');
+  const [shinyGameFilter,setGmxGameFilter] = useState('');
+  const [shinySetFilter,setGmxSetFilter] = useState('');
+  const [shinyTypeFilter,setGmxTypeFilter] = useState('');
 
 
   // INVENTARIO-AUD-006A · filtros propios del historial.
@@ -303,15 +303,15 @@ export default function InventoryPage() {
     return result;
   }, {}));
   const availableUnits = Math.max(0, Number(summary.records || total || 0) - Number(summary.low_stock || 0) - Number(summary.out_of_stock || 0));
-  const gmxFinalDashboard = useMemo(() => {
+  const shinyFinalDashboard = useMemo(() => {
     const baseRows = (inventory || []).filter((item) => {
       const game = String(item.juego || item.nombre_juego || item.tcg || '').trim();
       const setName = String(item.expansion || item.set_nombre || item.edicion || '').trim();
       const type = String(item.tipo || item.categoria || '').trim();
 
-      if(gmxGameFilter && game !== gmxGameFilter) return false;
-      if(gmxSetFilter && setName !== gmxSetFilter) return false;
-      if(gmxTypeFilter && type !== gmxTypeFilter) return false;
+      if(shinyGameFilter && game !== shinyGameFilter) return false;
+      if(shinySetFilter && setName !== shinySetFilter) return false;
+      if(shinyTypeFilter && type !== shinyTypeFilter) return false;
       return true;
     });
 
@@ -322,8 +322,8 @@ export default function InventoryPage() {
 
     const sets=[...new Set((inventory||[])
       .filter(item=>{
-        if(!gmxGameFilter) return true;
-        return String(item.juego||item.nombre_juego||item.tcg||'').trim()===gmxGameFilter;
+        if(!shinyGameFilter) return true;
+        return String(item.juego||item.nombre_juego||item.tcg||'').trim()===shinyGameFilter;
       })
       .map(item=>String(item.expansion||item.set_nombre||item.edicion||'').trim())
       .filter(Boolean))]
@@ -373,9 +373,9 @@ export default function InventoryPage() {
       .slice(0,5);
 
     return {rows:baseRows,games,sets,types,totalValue,skuCount,byGame,top,low};
-  }, [inventory,gmxGameFilter,gmxSetFilter,gmxTypeFilter]);
+  }, [inventory,shinyGameFilter,shinySetFilter,shinyTypeFilter]);
 
-  function gmxFinalMoney(value){
+  function shinyFinalMoney(value){
     return Number(value||0).toLocaleString('es-MX',{
       style:'currency',
       currency:'MXN',
@@ -383,8 +383,8 @@ export default function InventoryPage() {
     });
   }
 
-  function gmxFinalExport(){
-    const rows=gmxFinalDashboard.rows||[];
+  function shinyFinalExport(){
+    const rows=shinyFinalDashboard.rows||[];
     const headers=['Producto','Expansion','Rareza','Condicion','Idioma','SKU','Unidades','Valor Unitario','Valor Total','Estado'];
     const csv=[
       headers.join(','),
@@ -418,7 +418,7 @@ export default function InventoryPage() {
     URL.revokeObjectURL(url);
   }
 
-  const gmxLowStockItems = useMemo(() => {
+  const shinyLowStockItems = useMemo(() => {
     return inventory
       .filter((item) => {
         const stock = Number(item.stock || 0);
@@ -428,7 +428,7 @@ export default function InventoryPage() {
       .sort((a,b) => Number(a.stock || 0) - Number(b.stock || 0))
       .slice(0,6);
   }, [inventory]);
-  const gmxOptionBStats = useMemo(() => {
+  const shinyOptionBStats = useMemo(() => {
     const rows = inventory || [];
     const value = rows.reduce((sum,item) => sum + (Number(item.stock || 0) * Number(item.precio || 0)), 0);
     const skuCount = new Set(rows.map(item => String(item.sku || '').trim()).filter(Boolean)).size;
@@ -473,7 +473,7 @@ export default function InventoryPage() {
     };
   }, [inventory]);
 
-  function gmxMoney(value){
+  function shinyMoney(value){
     return Number(value || 0).toLocaleString('es-MX',{
       style:'currency',
       currency:'MXN',
@@ -481,7 +481,7 @@ export default function InventoryPage() {
     });
   }
 
-  function gmxExportInventory(){
+  function shinyExportInventory(){
     const rows = inventory || [];
     const headers = ['Producto','SKU','Categoria','Sucursal','Stock','Precio','Estado'];
     const csv = [
@@ -511,16 +511,16 @@ export default function InventoryPage() {
 
 
 
-  return <div className="inventory-stack gmx-inv-final-color">
-    <section className="gmx-inv-final-shell">
+  return <div className="inventory-stack shiny-inv-final-color">
+    <section className="shiny-inv-final-shell">
 
-      <header className="gmx-inv-final-head">
+      <header className="shiny-inv-final-head">
         <div>
           <h2>Inventario TCG</h2>
           <p>Consulta y control de inventario</p>
         </div>
-        <div className="gmx-inv-final-head-actions">
-          <button type="button" onClick={gmxFinalExport}>
+        <div className="shiny-inv-final-head-actions">
+          <button type="button" onClick={shinyFinalExport}>
             <svg viewBox="0 0 24 24"><path d="M12 3v12m0 0 4-4m-4 4-4-4M5 17v3h14v-3"/></svg>
             Exportar
           </button>
@@ -531,7 +531,7 @@ export default function InventoryPage() {
         </div>
       </header>
 
-      <section className="gmx-inv-final-filters">
+      <section className="shiny-inv-final-filters">
         <label>
           <span>Sucursal</span>
           <div className="select-wrap purple">
@@ -551,9 +551,9 @@ export default function InventoryPage() {
             <span className="field-icon">
               <svg viewBox="0 0 24 24"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M8 7h8M9 11h6"/></svg>
             </span>
-            <select value={gmxGameFilter} onChange={(e)=>{setGmxGameFilter(e.target.value);setGmxSetFilter('');}}>
+            <select value={shinyGameFilter} onChange={(e)=>{setGmxGameFilter(e.target.value);setGmxSetFilter('');}}>
               <option value="">Todos los TCG</option>
-              {gmxFinalDashboard.games.map(x=><option key={x} value={x}>{x}</option>)}
+              {shinyFinalDashboard.games.map(x=><option key={x} value={x}>{x}</option>)}
             </select>
           </div>
         </label>
@@ -564,9 +564,9 @@ export default function InventoryPage() {
             <span className="field-icon">
               <svg viewBox="0 0 24 24"><path d="m12 3 2.7 5.5 6.1.9-4.4 4.3 1 6.1-5.4-2.9-5.4 2.9 1-6.1-4.4-4.3 6.1-.9L12 3Z"/></svg>
             </span>
-            <select value={gmxSetFilter} onChange={(e)=>setGmxSetFilter(e.target.value)}>
+            <select value={shinySetFilter} onChange={(e)=>setGmxSetFilter(e.target.value)}>
               <option value="">Todas las expansiones</option>
-              {gmxFinalDashboard.sets.map(x=><option key={x} value={x}>{x}</option>)}
+              {shinyFinalDashboard.sets.map(x=><option key={x} value={x}>{x}</option>)}
             </select>
           </div>
         </label>
@@ -577,9 +577,9 @@ export default function InventoryPage() {
             <span className="field-icon">
               <svg viewBox="0 0 24 24"><path d="m4 8 8-4 8 4-8 4-8-4Zm0 4 8 4 8-4M4 16l8 4 8-4"/></svg>
             </span>
-            <select value={gmxTypeFilter} onChange={(e)=>setGmxTypeFilter(e.target.value)}>
+            <select value={shinyTypeFilter} onChange={(e)=>setGmxTypeFilter(e.target.value)}>
               <option value="">Todos los tipos</option>
-              {gmxFinalDashboard.types.map(x=><option key={x} value={x}>{x}</option>)}
+              {shinyFinalDashboard.types.map(x=><option key={x} value={x}>{x}</option>)}
             </select>
           </div>
         </label>
@@ -607,12 +607,12 @@ export default function InventoryPage() {
         </button>
       </section>
 
-      <section className="gmx-inv-final-kpis">
+      <section className="shiny-inv-final-kpis">
         <article>
           <span className="kpi-icon purple">
             <svg viewBox="0 0 24 24"><path d="M15 7.5c0-1.4-1.3-2.5-3-2.5S9 6.1 9 7.5s1 2 3 2.5 3 1.2 3 2.5-1.3 2.5-3 2.5-3-1.1-3-2.5M12 3v14"/></svg>
           </span>
-          <div><small>Valor de inventario</small><strong className="purple-text">{gmxFinalMoney(gmxFinalDashboard.totalValue)}</strong><span>MXN</span><em>↑ Inventario visible</em></div>
+          <div><small>Valor de inventario</small><strong className="purple-text">{shinyFinalMoney(shinyFinalDashboard.totalValue)}</strong><span>MXN</span><em>↑ Inventario visible</em></div>
         </article>
 
         <article>
@@ -626,7 +626,7 @@ export default function InventoryPage() {
           <span className="kpi-icon green">
             <svg viewBox="0 0 24 24"><path d="M20 13 13 20 4 11V4h7l9 9Z"/><circle cx="8.5" cy="8.5" r="1"/></svg>
           </span>
-          <div><small>SKUs únicos</small><strong className="green-text">{gmxFinalDashboard.skuCount.toLocaleString('es-MX')}</strong><span>SKUs</span><em>↑ Página actual</em></div>
+          <div><small>SKUs únicos</small><strong className="green-text">{shinyFinalDashboard.skuCount.toLocaleString('es-MX')}</strong><span>SKUs</span><em>↑ Página actual</em></div>
         </article>
 
         <article>
@@ -637,9 +637,9 @@ export default function InventoryPage() {
         </article>
       </section>
 
-      {message ? <div className="message gmx-inv-final-message">{message}</div> : null}
+      {message ? <div className="message shiny-inv-final-message">{message}</div> : null}
 
-      <nav className="gmx-inv-final-tabs">
+      <nav className="shiny-inv-final-tabs">
         <button className={tab==='inventory'?'active':''} onClick={()=>setTab('inventory')}>
           <svg viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M8 3v4m8-4v4M8 11h3m2 0h3"/></svg>
           Inventario
@@ -655,45 +655,45 @@ export default function InventoryPage() {
       </nav>
 
       {tab === 'inventory' ? <>
-        <section className="gmx-inv-final-panels">
+        <section className="shiny-inv-final-panels">
 
-          <article className="gmx-inv-final-panel">
+          <article className="shiny-inv-final-panel">
             <div className="panel-head"><h3>Por TCG</h3></div>
             <div className="tcg-bars">
-              {gmxFinalDashboard.byGame.length ? gmxFinalDashboard.byGame.map((item,index)=>{
+              {shinyFinalDashboard.byGame.length ? shinyFinalDashboard.byGame.map((item,index)=>{
                 const classes=['purple','blue','green','orange','pink'];
                 return <div className="tcg-row" key={item.label}>
                   <span className={`tcg-logo ${classes[index%classes.length]}`}>{String(item.label).slice(0,1).toUpperCase()}</span>
                   <strong>{item.label}</strong>
                   <span className="bar-track"><i className={classes[index%classes.length]} style={{width:`${Math.max(4,item.percent)}%`}} /></span>
                   <b>{item.percent}%</b>
-                  <em>{gmxFinalMoney(item.value)}</em>
+                  <em>{shinyFinalMoney(item.value)}</em>
                 </div>;
               }) : <div className="empty">Sin información para mostrar.</div>}
             </div>
             <button type="button" className="panel-link" onClick={()=>setGmxGameFilter('')}>Ver todos los TCG <span>›</span></button>
           </article>
 
-          <article className="gmx-inv-final-panel">
+          <article className="shiny-inv-final-panel">
             <div className="panel-head"><h3>Top 5 por valor</h3></div>
             <div className="top-list">
-              {gmxFinalDashboard.top.length ? gmxFinalDashboard.top.map((item,index)=>
+              {shinyFinalDashboard.top.length ? shinyFinalDashboard.top.map((item,index)=>
                 <button type="button" key={item.row_id||`${item.sku}-${index}`} onClick={()=>setAdjustItem(item)}>
                   {item.imagen_url||item.imagen?<img src={item.imagen_url||item.imagen} alt="" />:<span className="mini-thumb">◇</span>}
                   <div className="top-name"><strong>{item.producto||item.id_producto}</strong><small>{item.expansion||item.set_nombre||item.edicion||item.categoria||'—'}</small></div>
                   <span className={`rarity ${String(item.rareza||'').toLowerCase().includes('secret')?'secret':'ultra'}`}>{item.rareza||'Ultra'}</span>
                   <small>{Number(item.stock||0)} unid.</small>
-                  <b>{gmxFinalMoney(item._value)}</b>
+                  <b>{shinyFinalMoney(item._value)}</b>
                 </button>
               ) : <div className="empty">Sin información para mostrar.</div>}
             </div>
             <button type="button" className="panel-link">Ver todas las cartas <span>›</span></button>
           </article>
 
-          <article className="gmx-inv-final-panel low-stock-panel">
+          <article className="shiny-inv-final-panel low-stock-panel">
             <div className="panel-head"><h3>Stock bajo <span>(Atención requerida)</span></h3></div>
             <div className="low-list">
-              {gmxFinalDashboard.low.length ? gmxFinalDashboard.low.map((item,index)=>
+              {shinyFinalDashboard.low.length ? shinyFinalDashboard.low.map((item,index)=>
                 <button type="button" key={item.row_id||`${item.sku}-${index}`} onClick={()=>setAdjustItem(item)}>
                   {item.imagen_url||item.imagen?<img src={item.imagen_url||item.imagen} alt="" />:<span className="mini-thumb">◇</span>}
                   <strong>{item.producto||item.id_producto}</strong>
@@ -706,7 +706,7 @@ export default function InventoryPage() {
 
         </section>
 
-        <section className="gmx-inv-final-table-card">
+        <section className="shiny-inv-final-table-card">
           <div className="table-head">
             <h3>Inventario</h3>
             <div><span>Mostrar</span><select disabled><option>50</option></select><span>registros</span></div>
@@ -716,7 +716,7 @@ export default function InventoryPage() {
             <table>
               <thead><tr><th>Carta</th><th>Expansión</th><th>Rareza</th><th>Condición</th><th>Idioma</th><th>SKU</th><th>Unidades</th><th>Valor Unit.</th><th>Valor Total</th><th>Estado</th><th>Acciones</th></tr></thead>
               <tbody>
-                {gmxFinalDashboard.rows.map((item)=>{
+                {shinyFinalDashboard.rows.map((item)=>{
                   const stock=Number(item.stock||0);
                   const min=Number(item.stock_minimo||0);
                   const state=stock===0?'out':stock<=min?'low':'ok';
@@ -729,8 +729,8 @@ export default function InventoryPage() {
                     <td>{item.idioma||'—'}</td>
                     <td>{item.sku||'—'}</td>
                     <td>{stock}</td>
-                    <td>{gmxFinalMoney(item.precio)}</td>
-                    <td>{gmxFinalMoney(stock*Number(item.precio||0))}</td>
+                    <td>{shinyFinalMoney(item.precio)}</td>
+                    <td>{shinyFinalMoney(stock*Number(item.precio||0))}</td>
                     <td><span className={`status-dot ${state}`} /></td>
                     <td><div className="row-actions">
                       <button type="button" className="edit" onClick={()=>setAdjustItem(item)}>
@@ -742,13 +742,13 @@ export default function InventoryPage() {
                     </div></td>
                   </tr>;
                 })}
-                {!loading&&!gmxFinalDashboard.rows.length?<tr><td colSpan="11" className="empty">No hay inventario que coincida con los filtros.</td></tr>:null}
+                {!loading&&!shinyFinalDashboard.rows.length?<tr><td colSpan="11" className="empty">No hay inventario que coincida con los filtros.</td></tr>:null}
               </tbody>
             </table>
           </div>
 
-          <footer className="gmx-inv-final-pagination">
-            <span>{gmxFinalDashboard.rows.length ? `${((page-1)*PAGE_SIZE)+1} a ${Math.min(page*PAGE_SIZE,total)} de ${total.toLocaleString('es-MX')} resultados` : `0 de ${total.toLocaleString('es-MX')} resultados`}</span>
+          <footer className="shiny-inv-final-pagination">
+            <span>{shinyFinalDashboard.rows.length ? `${((page-1)*PAGE_SIZE)+1} a ${Math.min(page*PAGE_SIZE,total)} de ${total.toLocaleString('es-MX')} resultados` : `0 de ${total.toLocaleString('es-MX')} resultados`}</span>
             <div>
               <button disabled={page<=1||loading} onClick={()=>setPage(p=>Math.max(1,p-1))}>‹</button>
               <button className="active">{page}</button>
@@ -763,14 +763,14 @@ export default function InventoryPage() {
       </> : null}
 
       {tab === 'movements' ? <>
-        <section className="gmx-inv-final-subfilters">
+        <section className="shiny-inv-final-subfilters">
           <label className="wide"><span>Buscar movimientos</span><input type="search" value={movementSearch} onChange={(e)=>setMovementSearch(e.target.value)} placeholder="Producto, SKU, referencia, motivo, usuario…" /></label>
           <label><span>Sucursal</span><select value={movementBranchId} onChange={(e)=>setMovementBranchId(e.target.value)}><option value="">Todas</option>{branches.map(b=><option key={b.row_id} value={b.id_sucursal}>{b.nombre_sucursal}</option>)}</select></label>
           <label><span>Tipo</span><select value={movementType} onChange={(e)=>setMovementType(e.target.value)}><option value="">Todos</option>{movementTypes.map(type=><option key={type} value={type}>{type}</option>)}</select></label>
           <label><span>Desde</span><input type="date" value={movementDateFrom} onChange={(e)=>setMovementDateFrom(e.target.value)} /></label>
           <label><span>Hasta</span><input type="date" value={movementDateTo} onChange={(e)=>setMovementDateTo(e.target.value)} /></label>
         </section>
-        <section className="gmx-inv-final-table-card subtable">
+        <section className="shiny-inv-final-table-card subtable">
           <div className="table-head"><h3>Movimientos</h3><span>{filteredMovements.length.toLocaleString('es-MX')} registros</span></div>
           <div className="table-wrap-final"><table><thead><tr><th>Fecha</th><th>Sucursal</th><th>Producto / SKU</th><th>Tipo</th><th>Cantidad</th><th>Anterior</th><th>Nuevo</th><th>Motivo</th><th>Usuario</th><th>Referencia</th></tr></thead><tbody>
             {filteredMovements.map(m=><tr key={m.row_id}><td>{m.fecha?new Date(m.fecha).toLocaleString('es-MX'):'—'}</td><td>{m.sucursal||m.id_sucursal||'—'}</td><td><strong>{m.producto||m.id_producto||'—'}</strong></td><td>{m.tipo||'—'}</td><td>{m.cantidad??'—'}</td><td>{m.stock_anterior??'—'}</td><td>{m.stock_nuevo??'—'}</td><td>{m.motivo||'—'}</td><td>{m.nombre_usuario||m.usuario||'—'}</td><td>{m.referencia||'—'}</td></tr>)}
@@ -779,13 +779,13 @@ export default function InventoryPage() {
       </> : null}
 
       {tab === 'transfers' ? <>
-        <section className="gmx-inv-final-subfilters">
+        <section className="shiny-inv-final-subfilters">
           <label className="wide"><span>Buscar transferencias</span><input type="search" value={transferSearch} onChange={(e)=>setTransferSearch(e.target.value)} placeholder="ID, origen, destino, motivo, usuario…" /></label>
           <label><span>Origen</span><select value={transferOriginId} onChange={(e)=>setTransferOriginId(e.target.value)}><option value="">Todos</option>{branches.map(b=><option key={b.row_id} value={b.id_sucursal}>{b.nombre_sucursal}</option>)}</select></label>
           <label><span>Destino</span><select value={transferDestinationId} onChange={(e)=>setTransferDestinationId(e.target.value)}><option value="">Todos</option>{branches.map(b=><option key={b.row_id} value={b.id_sucursal}>{b.nombre_sucursal}</option>)}</select></label>
           <label><span>Estado</span><select value={transferStatus} onChange={(e)=>setTransferStatus(e.target.value)}><option value="">Todos</option>{transferStatuses.map(status=><option key={status} value={status}>{status}</option>)}</select></label>
         </section>
-        <section className="gmx-inv-final-table-card subtable">
+        <section className="shiny-inv-final-table-card subtable">
           <div className="table-head"><h3>Transferencias</h3><span>{filteredTransfers.length.toLocaleString('es-MX')} registros</span></div>
           <div className="table-wrap-final"><table><thead><tr><th>Fecha</th><th>ID</th><th>Origen</th><th>Destino</th><th>Unidades</th><th>Estado</th><th>Motivo</th><th>Administrador</th><th>Referencia</th></tr></thead><tbody>
             {filteredTransfers.map(t=><tr key={t.row_id}><td>{t.fecha?new Date(t.fecha).toLocaleString('es-MX'):'—'}</td><td><strong>{t.id_transferencia||'—'}</strong></td><td>{t.origen||t.id_origen||'—'}</td><td>{t.destino||t.id_destino||'—'}</td><td>{t.total_unidades??'—'}</td><td>{t.estado||'—'}</td><td>{t.motivo||'—'}</td><td>{t.nombre_admin||t.email_admin||'—'}</td><td>{t.referencia_externa||'—'}</td></tr>)}

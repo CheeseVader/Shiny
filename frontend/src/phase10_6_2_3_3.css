@@ -1,5 +1,5 @@
 
-/* GMX 10.6.2.3.3 — per-expansion sync result */
+/* Shiny 10.6.2.3.3 — per-expansion sync result */
 .tcg-sync-result-card{padding:18px;border:1px solid #eaecf0;border-radius:14px;background:#fff}
 .tcg-sync-result-list{display:grid;gap:8px}
 .tcg-sync-result-list article{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:5px 12px;padding:11px;border-radius:10px;border:1px solid #eaecf0}

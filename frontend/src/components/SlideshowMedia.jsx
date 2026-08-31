@@ -27,7 +27,7 @@ export default function SlideshowMedia({ banner, device = 'desktop' }) {
       const mediaId = mobile ? banner.id_media_mobile : banner.id_media_desktop;
       if (!mediaId) {setStatus('missing');setDetail('El slide no tiene imagen asignada en Multimedia.');return;}
 
-      const token = localStorage.getItem('GMX_AUTH_TOKEN') || '';
+      const token = localStorage.getItem('SHINY_AUTH_TOKEN') || '';
       const headers = token ? { Authorization: `Bearer ${token}` } : {};
       try {
         setStatus('loading');
@@ -36,7 +36,7 @@ export default function SlideshowMedia({ banner, device = 'desktop' }) {
         if (!st.ok || sj.success === false) throw new Error(sj.message || sj.error || `HTTP ${st.status}`);
         if (!sj.data?.file_exists) {
           setStatus('missing');
-          setDetail(brandText(`La imagen ${sj.data?.nombre || mediaId} existe en PostgreSQL, pero GMX no encontró el archivo físico. Vuelve a subirla una vez; las nuevas cargas quedarán en backend/storage/media.`));
+          setDetail(brandText(`La imagen ${sj.data?.nombre || mediaId} existe en PostgreSQL, pero Shiny no encontró el archivo físico. Vuelve a subirla una vez; las nuevas cargas quedarán en backend/storage/media.`));
           return;
         }
         const r = await fetch(`/api/v1/cms/media-preview/${encodeURIComponent(mediaId)}/file`, { headers });

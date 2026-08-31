@@ -1,4 +1,4 @@
-const token=localStorage.getItem('GMX_AUTH_TOKEN');
+const token=localStorage.getItem('SHINY_AUTH_TOKEN');
 const id='PROD-000014';
 
 const original={

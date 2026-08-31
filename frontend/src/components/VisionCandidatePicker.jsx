@@ -8,14 +8,14 @@ export default function VisionCandidatePicker({
   emptyText='No encontramos una coincidencia suficientemente clara.'
 }){
   if(!open)return null;
-  return <div className="modal-backdrop gmx-vision-backdrop">
-    <div className="modal gmx-vision-modal" onMouseDown={e=>e.stopPropagation()}>
+  return <div className="modal-backdrop shiny-vision-backdrop">
+    <div className="modal shiny-vision-modal" onMouseDown={e=>e.stopPropagation()}>
       <div className="modal-head">
-        <div><div className="eyebrow">GMX VISION</div><h2>{title}</h2><p className="section-copy">{subtitle}</p></div>
+        <div><div className="eyebrow">Shiny VISION</div><h2>{title}</h2><p className="section-copy">{subtitle}</p></div>
         <button type="button" className="icon-btn" onClick={onClose}>×</button>
       </div>
-      {items.length?<div className="gmx-vision-results">
-        {items.map((x,i)=><article className="gmx-vision-result" key={x.key||`${x.kind||'ITEM'}-${x.id||i}`}>
+      {items.length?<div className="shiny-vision-results">
+        {items.map((x,i)=><article className="shiny-vision-result" key={x.key||`${x.kind||'ITEM'}-${x.id||i}`}>
           <div>
             <strong>{x.name||x.nombre||x.carta||x.sku||'Artículo'}</strong>
             <small>{[

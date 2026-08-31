@@ -1,5 +1,5 @@
 import { brandText } from "../config/brand.js"; /**
- * GMX — CLIENTES-001 CRUD SMOKE
+ * Shiny — CLIENTES-001 CRUD SMOKE
  *
  * CONTROLLED TEST ONLY
  *
@@ -122,7 +122,7 @@ function dbConfig() {
 }
 
 const API =
-process.env.GMX_API_BASE_URL ||
+process.env.SHINY_API_BASE_URL ||
 process.env.API_BASE_URL ||
 "http://127.0.0.1:8787";
 
@@ -245,13 +245,13 @@ function resolveCredentials() {
    * Revisamos aliases conocidos únicamente.
    */
   const email =
-  process.env.GMX_ADMIN_EMAIL ||
+  process.env.SHINY_ADMIN_EMAIL ||
   process.env.ADMIN_EMAIL ||
   process.env.TEST_ADMIN_EMAIL ||
   "";
 
   const password =
-  process.env.GMX_ADMIN_PASSWORD ||
+  process.env.SHINY_ADMIN_PASSWORD ||
   process.env.ADMIN_PASSWORD ||
   process.env.TEST_ADMIN_PASSWORD ||
   "";
@@ -275,8 +275,8 @@ async function login() {
       "ADMIN_TEST_CREDENTIALS_NOT_FOUND.",
       "",
       "Define temporalmente en PowerShell:",
-      '$env:GMX_ADMIN_EMAIL="..."',
-      '$env:GMX_ADMIN_PASSWORD="..."',
+      '$env:SHINY_ADMIN_EMAIL="..."',
+      '$env:SHINY_ADMIN_PASSWORD="..."',
       "",
       "y vuelve a ejecutar."].
       join("\n")
@@ -327,7 +327,7 @@ async function dbCount(client, marker) {
     `
     SELECT
       COUNT(*)::bigint AS total
-    FROM gmx.clientes
+    FROM shiny.clientes
     WHERE
       COALESCE(nombre,'') LIKE $1
       OR COALESCE(email,'') LIKE $2
@@ -357,7 +357,7 @@ rowId)
       telefono_normalizado,
       fecha_registro,
       fecha_actualizacion
-    FROM gmx.clientes
+    FROM shiny.clientes
     WHERE row_id=$1
     `,
     [rowId]
@@ -379,7 +379,7 @@ idCliente)
       tipo,
       valor_normalizado,
       id_cliente
-    FROM gmx.cliente_identidad_unica
+    FROM shiny.cliente_identidad_unica
     WHERE id_cliente=$1
     ORDER BY row_id
     `,
@@ -390,7 +390,7 @@ idCliente)
 }
 
 async function main() {
-  section(brandText("GMX — CLIENTES-001 CONTROLLED CRUD SMOKE")
+  section(brandText("Shiny — CLIENTES-001 CONTROLLED CRUD SMOKE")
 
   );
 
@@ -1000,7 +1000,7 @@ async function main() {
           nombre,
           telefono,
           email
-        FROM gmx.clientes
+        FROM shiny.clientes
         WHERE
           COALESCE(nombre,'')
             LIKE 'CLIENTES001 TEST%'
@@ -1024,7 +1024,7 @@ async function main() {
           tipo,
           valor_normalizado,
           id_cliente
-        FROM gmx.cliente_identidad_unica
+        FROM shiny.cliente_identidad_unica
         WHERE id_cliente=$1
         ORDER BY row_id
         `,

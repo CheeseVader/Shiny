@@ -6,7 +6,7 @@ import { useCart } from '../contexts/CartContext.jsx';
 import { useClientAuth } from '../contexts/ClientAuthContext.jsx';
 import { publicApi } from '../services/publicApi.js';
 import PublicIcon from '../components/public/PublicIcon.jsx';
-import '../gmx_storefront_client_r1.css';
+import '../shiny_storefront_client_r1.css';
 
 export default function PublicStoreLayout() {
   const { store, loading, error } = usePublicStore();
@@ -18,7 +18,7 @@ export default function PublicStoreLayout() {
   const [tcgGames, setTcgGames] = useState([]);
   const [menuOpen, setMenuOpen] = useState(false);
   const s = store?.settings || {};
-  const brand = s['public.appearance.brand_name'] || brandText("GMX");
+  const brand = s['public.appearance.brand_name'] || brandText("Shiny");
   const logo = s['public.appearance.logo_text'] || 'G';
 
   async function loadVisibleTcgGames() {
@@ -35,7 +35,7 @@ export default function PublicStoreLayout() {
 
     const refresh = () => loadVisibleTcgGames();
     const storage = (e) => {
-      if (e.key === 'GMX_TCG_VISIBILITY_VERSION') refresh();
+      if (e.key === 'SHINY_TCG_VISIBILITY_VERSION') refresh();
     };
     const visibility = () => {
       if (document.visibilityState === 'visible') refresh();
@@ -43,13 +43,13 @@ export default function PublicStoreLayout() {
 
     window.addEventListener('focus', refresh);
     window.addEventListener('storage', storage);
-    window.addEventListener('gmx:tcg-visibility-changed', refresh);
+    window.addEventListener('shiny:tcg-visibility-changed', refresh);
     document.addEventListener('visibilitychange', visibility);
 
     return () => {
       window.removeEventListener('focus', refresh);
       window.removeEventListener('storage', storage);
-      window.removeEventListener('gmx:tcg-visibility-changed', refresh);
+      window.removeEventListener('shiny:tcg-visibility-changed', refresh);
       document.removeEventListener('visibilitychange', visibility);
     };
   }, []);
@@ -75,9 +75,9 @@ export default function PublicStoreLayout() {
     '--ps-muted': s['public.appearance.muted'] || '#94a3b8',
     '--ps-radius': `${Number(s['public.appearance.radius'] || 18)}px`
   }}>
-    <header className="public-header gmx-client-header">
+    <header className="public-header shiny-client-header">
       <div className="public-header-main">
-        <button className="gmx-mobile-menu" type="button" aria-label={menuOpen ? 'Cerrar menú' : 'Abrir menú'} onClick={() => setMenuOpen((value) => !value)}>
+        <button className="shiny-mobile-menu" type="button" aria-label={menuOpen ? 'Cerrar menú' : 'Abrir menú'} onClick={() => setMenuOpen((value) => !value)}>
           <PublicIcon name={menuOpen ? 'close' : 'menu'} />
         </button>
         <NavLink to="/tienda" className="public-brand" aria-label={`${brand}, inicio`} onClick={() => setMenuOpen(false)}><b>{logo}</b><strong>{brand}</strong></NavLink>
@@ -89,7 +89,7 @@ export default function PublicStoreLayout() {
           <button aria-label="Buscar"><PublicIcon name="search" size={18} /></button>
         </form>
         <nav className="public-account-nav">
-          <NavLink to="/tienda/cuenta" className="gmx-account-link"><PublicIcon name="user" /><span>{firstName ? `Hola, ${firstName}` : 'Ingresar / Cuenta'}</span></NavLink>
+          <NavLink to="/tienda/cuenta" className="shiny-account-link"><PublicIcon name="user" /><span>{firstName ? `Hola, ${firstName}` : 'Ingresar / Cuenta'}</span></NavLink>
           <NavLink to="/tienda/carrito" className="cart-link" aria-label={`Carrito, ${cart.count} productos`}><PublicIcon name="cart" /><span>{cart.count}</span></NavLink>
         </nav>
       </div>
@@ -114,13 +114,13 @@ export default function PublicStoreLayout() {
 
     <Outlet />
 
-    <footer className="public-footer gmx-client-footer">
-      <div className="gmx-footer-brand"><NavLink to="/tienda" className="public-brand"><b>{logo}</b><strong>{brand}</strong></NavLink><p>Tu tienda de TCG y coleccionables en México.</p><small>Compra segura · Stock actualizado</small></div>
+    <footer className="public-footer shiny-client-footer">
+      <div className="shiny-footer-brand"><NavLink to="/tienda" className="public-brand"><b>{logo}</b><strong>{brand}</strong></NavLink><p>Tu tienda de TCG y coleccionables en México.</p><small>Compra segura · Stock actualizado</small></div>
       <div><b>Comprar</b><NavLink to="/tienda/catalogo">Todos los productos</NavLink><NavLink to="/tienda/tcg">Cartas y TCG</NavLink><NavLink to="/tienda/promociones">Ofertas</NavLink></div>
       <div><b>TCG</b>{tcgGames.slice(0, 4).map((game) => <NavLink key={`footer-${game.id_juego}`} to={`/tienda/tcg?gameId=${encodeURIComponent(game.id_juego)}`}>{game.nombre}</NavLink>)}</div>
       <div><b>Mi cuenta</b><NavLink to="/tienda/cuenta">Ingresar / Crear cuenta</NavLink><NavLink to="/tienda/cuenta">Mis pedidos</NavLink><NavLink to="/tienda/cuenta">Lista de deseos</NavLink></div>
       <div><b>Ayuda</b><NavLink to="/tienda/carrito">Carrito</NavLink><span>Envíos y entregas</span><span>Cambios y devoluciones</span></div>
     </footer>
-    <div className="gmx-footer-legal">© {new Date().getFullYear()} {brand} TCG & Collectibles. Todos los derechos reservados.</div>
+    <div className="shiny-footer-legal">© {new Date().getFullYear()} {brand} TCG & Collectibles. Todos los derechos reservados.</div>
   </div>;
 }

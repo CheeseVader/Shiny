@@ -1,4 +1,4 @@
-/* GMX Sistema · SYS-H R2
+/* Shiny Sistema · SYS-H R2
    Visual-only layer. All selectors are scoped to .sysh-r2. */
 .sysh-r2{--sysh-navy:#0b2447;--sysh-blue:#2563eb;--sysh-green:#17a967;--sysh-orange:#f59e0b;--sysh-red:#ef4444;--sysh-text:#17233a;--sysh-muted:#63718a;--sysh-border:#dbe4ef;--sysh-soft:#f6f9fd;--sysh-shadow:0 10px 28px rgba(13,37,67,.06);display:flex;flex-direction:column;gap:18px}
 .sysh-r2 .message{margin:0;border-radius:12px}

@@ -2,16 +2,16 @@
 const fs=require('fs');
 const path=require('path');
 
-const root=process.argv[2]||'C:\\Users\\SrsGarciaEspinoza\\Videos\\GMX';
+const root=process.argv[2]||'C:\\Users\\SrsGarciaEspinoza\\Videos\\Shiny';
 const file=path.join(root,'backend','src','repositories','ordersRepository.js');
 if(!fs.existsSync(file)){console.error(`No se encontro: ${file}`);process.exit(2);}
 
 let src=fs.readFileSync(file,'utf8');
-if(!src.includes('GMX_POS_FIX_001')){
+if(!src.includes('SHINY_POS_FIX_001')){
   console.error('POS-FIX-001 no esta instalado. V2 requiere V1.');
   process.exit(3);
 }
-if(src.includes('GMX_POS_FIX_001_V2')){
+if(src.includes('SHINY_POS_FIX_001_V2')){
   console.log('POS-FIX-001 V2 ya estaba aplicado.');
   process.exit(0);
 }
@@ -52,9 +52,9 @@ if(!src.includes(oldUpdate))fail('No se encontro el UPDATE de caja esperado.');
 src=src.replace(oldUpdate,newUpdate);
 
 // Marca de versión para auditoría.
-src=src.replace('// GMX_POS_FIX_001\nasync function reverseCashSaleOnCancellation',
-`// GMX_POS_FIX_001
-// GMX_POS_FIX_001_V2 - casts NUMERIC explicitos para evitar "operator is not unique - unknown"
+src=src.replace('// SHINY_POS_FIX_001\nasync function reverseCashSaleOnCancellation',
+`// SHINY_POS_FIX_001
+// SHINY_POS_FIX_001_V2 - casts NUMERIC explicitos para evitar "operator is not unique - unknown"
 async function reverseCashSaleOnCancellation`);
 
 fs.writeFileSync(file,src,'utf8');

@@ -1,7 +1,6 @@
 import { brandText } from "../../config/brand.js";import { useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { api } from '../../services/api.js';
-import TCGSourceSelector from './TCGSourceSelector.jsx';
 
 function pct(a, b) {
   const x = Number(a || 0),y = Number(b || 0);
@@ -14,55 +13,40 @@ function when(v) {
 }
 
 export default function TCGMasterCatalogBrowser({ onNavigate }) {
-  /* GMX_TCGPLAYER_CATALOG_UI_R5 */
+  /* SHINY_TCGPLAYER_CATALOG_UI_R5 */
   const [catalogFxR5,setCatalogFxR5]=useState({
     rate:null,
     source:'',
     rate_date:null
   });
 
-  useEffect(()=>{
-    let active=true;
-
-    const applyFx=(payload)=>{
-      const direct=payload?.data||payload||{};
-      const effective=direct?.effective||direct||{};
-      const rate=Number(effective?.rate||0);
-
-      if(!Number.isFinite(rate)||rate<=0){
-        throw new Error('FX_RATE_NOT_AVAILABLE');
-      }
-
-      if(active){
-        setCatalogFxR5({
-          rate,
-          source:String(effective?.source||''),
-          rate_date:effective?.rate_date||null
-        });
-      }
-    };
-
-    api('/api/v1/buylist/fx/status',{cache:'no-store'})
-      .then(applyFx)
-      .catch(()=>{
-        return api('/api/v1/content/finance/fx',{cache:'no-store'})
-          .then(applyFx);
-      })
-      .catch(()=>{
-        if(active){
-          setCatalogFxR5({
-            rate:null,
-            source:'',
-            rate_date:null
-          });
-        }
-      });
-
-    return()=>{active=false;};
-  },[]);
+  
 
   const [summary, setSummary] = useState([]);
   const [gameCode, setGameCode] = useState('');
+
+  useEffect(()=>{
+    let active=true;
+    if(!gameCode){
+      setCatalogFxR5({rate:null,source:'',rate_date:null});
+      return()=>{active=false;};
+    }
+    api(`/api/v1/tcg-sync/games/${encodeURIComponent(gameCode)}/fx`,{cache:'no-store'})
+      .then((payload)=>{
+        if(!active)return;
+        const data=payload?.data||payload||{};
+        const rate=Number(data?.rate||0);
+        setCatalogFxR5({
+          rate:Number.isFinite(rate)&&rate>0?rate:null,
+          source:String(data?.source||'SHINY_TCG'),
+          rate_date:data?.rate_date||null
+        });
+      })
+      .catch(()=>{
+        if(active)setCatalogFxR5({rate:null,source:'',rate_date:null});
+      });
+    return()=>{active=false;};
+  },[gameCode]);
   const [sets, setSets] = useState([]);
   const [setCode, setSetCode] = useState('');
   const [search, setSearch] = useState('');
@@ -78,7 +62,7 @@ export default function TCGMasterCatalogBrowser({ onNavigate }) {
   const [prices, setPrices] = useState(null);
   const [pricesLoading, setPricesLoading] = useState(false);
   const [pricesError, setPricesError] = useState('');
-  const [selectedPriceSources, setSelectedPriceSources] = useState([]);
+  const selectedPriceSources = ['TCGPLAYER'];
   const [addingToTemplate, setAddingToTemplate] = useState(false);
 
   const currentGame = summary.find((x) => x.game_code === gameCode) || null;
@@ -156,8 +140,7 @@ export default function TCGMasterCatalogBrowser({ onNavigate }) {
     if (!gameCode) return;
     setSetCode('');setPage(1);setSelectedCard(null);setPrices(null);setPricesError('');setPricesLoading(false);
     Promise.all([
-    loadSets(gameCode),
-    loadSourcePreferences(gameCode)]
+    loadSets(gameCode)]
     ).catch((e) => setMessage(e.message));
     loadCards({ targetPage: 1, code: gameCode, set: '', q: '' });
   }, [gameCode]);
@@ -214,10 +197,8 @@ export default function TCGMasterCatalogBrowser({ onNavigate }) {
 
   const visiblePrices = useMemo(() => {
     const rows = prices?.prices || [];
-    if (!selectedPriceSources.length) return [];
-    const allowed = new Set(selectedPriceSources.map(normalizePriceProvider));
-    return rows.filter((p) => allowed.has(normalizePriceProvider(p.price_provider)));
-  }, [prices, selectedPriceSources]);
+    return rows.filter((p) => normalizePriceProvider(p.price_provider) === 'TCGPLAYER');
+  }, [prices]);
 
   const priceProviders = useMemo(
     () => [...new Set(visiblePrices.map((x) => x.price_provider))],
@@ -287,7 +268,7 @@ export default function TCGMasterCatalogBrowser({ onNavigate }) {
       const game = operationalGames.find((g) =>
       String(g.catalogo_codigo || g.codigo || '').toUpperCase() === String(selectedCard.game_code || '').toUpperCase()
       );
-      if (!game) throw new Error(brandText("Primero agrega este TCG a GMX desde Publicación y mantenimiento."));
+      if (!game) throw new Error(brandText("Primero agrega este TCG a Shiny desde Publicación y mantenimiento."));
 
       const sets = await api('/api/v1/tcg/sets');
       const operationalSets = sets.data || [];
@@ -295,7 +276,7 @@ export default function TCGMasterCatalogBrowser({ onNavigate }) {
       s.id_juego === game.id_juego &&
       [s.catalogo_codigo, s.codigo, s.id_set].some((v) => String(v || '').toUpperCase() === String(selectedCard.set_code || '').toUpperCase())
       );
-      if (!set) throw new Error(brandText("La expansión todavía no está habilitada en GMX. Sincroniza el TCG desde Publicación y mantenimiento."));
+      if (!set) throw new Error(brandText("La expansión todavía no está habilitada en Shiny. Sincroniza el TCG desde Publicación y mantenimiento."));
 
       const existing = await api(`/api/v1/tcg/cards?limit=1000`);
       const already = (existing.data || []).find((c) =>
@@ -304,8 +285,8 @@ export default function TCGMasterCatalogBrowser({ onNavigate }) {
       String(c.numero_completo || c.numero_carta || '').toUpperCase() === String(selectedCard.collector_number || selectedCard.number || '').toUpperCase()
       );
       if (already) {
-        setMessage(brandText(`"${selectedCard.name}" ya está habilitada en GMX.`));
-        window.gmxNotify?.(brandText("La carta ya estaba habilitada en GMX."), { type: 'info' });
+        setMessage(brandText(`"${selectedCard.name}" ya está habilitada en Shiny.`));
+        window.shinyNotify?.(brandText("La carta ya estaba habilitada en Shiny."), { type: 'info' });
         return;
       }
 
@@ -323,11 +304,11 @@ export default function TCGMasterCatalogBrowser({ onNavigate }) {
           estado_catalogo: 'ACTIVA'
         })
       });
-      setMessage(brandText(`"${selectedCard.name}" agregada a GMX. Ya puede recibirse en inventario.`));
-      window.gmxNotify?.(brandText("Carta habilitada en GMX."), { type: 'success' });
+      setMessage(brandText(`"${selectedCard.name}" agregada a Shiny. Ya puede recibirse en inventario.`));
+      window.shinyNotify?.(brandText("Carta habilitada en Shiny."), { type: 'success' });
     } catch (e) {
       setMessage(e.message);
-      window.gmxNotify?.(e.message, { type: 'error' });
+      window.shinyNotify?.(e.message, { type: 'error' });
     } finally {
       setAddingToTemplate(false);
     }
@@ -361,9 +342,9 @@ export default function TCGMasterCatalogBrowser({ onNavigate }) {
       {message ? <div className="message proposal-a-message">{message}</div> : null}
 
       <section className="proposal-a-results design4-table-card">
-        <div className="proposal-a-results-head"><div><strong>Cartas del catálogo</strong><span>{total.toLocaleString('es-MX')} cartas{currentGame?.game_name ? ` · ${currentGame.game_name}` : ''}{setCode ? ` · ${sets.find((x) => x.codigo === setCode)?.nombre || setCode}` : ''}</span></div><span className="gmx-catalog-fx-r5" style={{fontSize:11,opacity:.75}}>
+        <div className="proposal-a-results-head"><div><strong>Cartas del catálogo</strong><span>{total.toLocaleString('es-MX')} cartas{currentGame?.game_name ? ` · ${currentGame.game_name}` : ''}{setCode ? ` · ${sets.find((x) => x.codigo === setCode)?.nombre || setCode}` : ''}</span></div><span className="shiny-catalog-fx-r5" style={{fontSize:11,opacity:.75}}>
           {Number(catalogFxR5.rate||0)>0
-            ?`TC ${Number(catalogFxR5.rate).toFixed(4)} MXN/USD${catalogFxR5.source?` - ${catalogFxR5.source}`:''}`
+            ?`TDC ${Number(catalogFxR5.rate).toFixed(2)} MXN/USD · ${currentGame?.game_name||gameCode}`
             :'TC no disponible'}
         </span></div>
         <div className="table-wrap proposal-a-table"><table><thead><tr><th>Carta</th><th>Expansión</th><th>Nº</th><th>Rareza</th><th>Mercado USD</th><th>Mercado MXN</th><th>Precio tienda MXN</th><th>Proveedor precio</th><th>Actualizado</th><th></th></tr></thead><tbody>{cards.map((card) => <tr key={card.row_id}>
@@ -384,7 +365,7 @@ export default function TCGMasterCatalogBrowser({ onNavigate }) {
         <div className="proposal-a-pagination"><button disabled={page <= 1 || busy} onClick={() => loadCards({ targetPage: page - 1 })}>‹</button><span>{page} / {pages}</span><button disabled={page >= pages || busy} onClick={() => loadCards({ targetPage: page + 1 })}>›</button></div>
       </section>
 
-      {currentGame ? <details className="proposal-a-advanced"><summary>Configuración avanzada de fuentes</summary><TCGSourceSelector gameCode={gameCode} onSaved={(prefs) => setSelectedPriceSources(Array.isArray(prefs?.priceSources) ? prefs.priceSources.map((x) => String(x || '').toUpperCase()) : [])} /></details> : null}
+
     </section>
     {selectedCard && typeof document !== 'undefined' ? createPortal(<div className="master-card-modal-backdrop" onClick={() => {setSelectedCard(null);setPrices(null);setPricesError('');setPricesLoading(false);}}>
       <section className="master-card-modal" role="dialog" aria-modal="true" aria-label={`Detalle de ${selectedCard.name}`} onClick={(e) => e.stopPropagation()}>
@@ -395,14 +376,14 @@ export default function TCGMasterCatalogBrowser({ onNavigate }) {
             <span className="eyebrow">{selectedCard.game_code} · {selectedCard.set_name || selectedCard.set_code}</span>
             <h2>{selectedCard.name}</h2>
             <p>#{selectedCard.collector_number || selectedCard.number || '—'} · {selectedCard.rarity || 'Sin rareza'} · {selectedCard.card_type || '—'}</p>
-            <div className="master-card-gmx-actions">
+            <div className="master-card-shiny-actions">
               <button type="button" onClick={addSelectedCardToTemplate} disabled={addingToTemplate}>
-                {addingToTemplate ? 'Agregando…' : brandText("Agregar a GMX")}
+                {addingToTemplate ? 'Agregando…' : brandText("Agregar a Shiny")}
               </button>
               <small>Habilita esta carta para recepción, inventario y operación local. No crea existencias.</small>
             </div>
             <dl className="master-card-details">
-              <div><dt>Proveedor catálogo</dt><dd>{selectedCard.provider_code}</dd></div>
+              <div><dt>Fuente de precio</dt><dd>TCGplayer</dd></div>
               <div><dt>Idioma</dt><dd>{selectedCard.language || '—'}</dd></div>
               <div><dt>Artista</dt><dd>{selectedCard.artist || '—'}</dd></div>
               <div><dt>Última sync</dt><dd>{when(selectedCard.last_synced_at)}</dd></div>
@@ -411,14 +392,12 @@ export default function TCGMasterCatalogBrowser({ onNavigate }) {
         </div>
 
         <div className="master-price-admin-only">
-          <div className="section-head compact"><div><span className="eyebrow">SOLO ADMIN</span><h3>Referencias de mercado</h3><p>{brandText("Se muestran únicamente las fuentes de precio seleccionadas para este TCG. Estos precios nunca se publican al cliente y sirven solo para comparar y definir el precio GMX.")}</p></div></div>
+          <div className="section-head compact"><div><span className="eyebrow">SOLO ADMIN</span><h3>Referencias de mercado · TCGplayer</h3><p>{brandText("Catálogo Maestro usa exclusivamente TCGplayer como fuente de precio. No se usan otras fuentes ni fallback para Low, Mid, High o Market.")}</p></div></div>
           {pricesLoading ? <div className="master-price-loading"><span className="master-price-spinner" />Cargando referencias de mercado…</div> : null}
           {!pricesLoading && pricesError ? <div className="master-price-error">{pricesError}</div> : null}
           {!pricesLoading && !pricesError && visiblePrices.length ? <div className="table-wrap"><table><thead><tr><th>Fuente</th><th>Variante</th><th>Moneda</th><th>Low</th><th>Mid</th><th>High</th><th>Market</th></tr></thead><tbody>{visiblePrices.map((p) => <tr key={p.row_id}><td><b>{p.price_provider}</b></td><td>{p.variant}</td><td>{p.currency}</td><td>{p.low ?? '—'}</td><td>{p.mid ?? '—'}</td><td>{p.high ?? '—'}</td><td><strong>{p.market ?? '—'}</strong></td></tr>)}</tbody></table></div> : null}
           {!pricesLoading && !pricesError && prices && !visiblePrices.length ? <div className="public-empty small">
-            {selectedPriceSources.length ?
-            `Sin precios disponibles para la(s) fuente(s) seleccionada(s): ${selectedPriceSources.join(', ')}.` :
-            'No hay fuentes de precio seleccionadas para este TCG.'}
+            'Sin precio TCGplayer disponible para esta carta.'
           </div> : null}
         </div>
       </section>

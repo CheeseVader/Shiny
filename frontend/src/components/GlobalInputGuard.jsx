@@ -23,7 +23,7 @@ function classify(el){
 
   const key=`${el.name||''} ${labelText(el)} ${el.placeholder||''}`.toLowerCase();
 
-  // GMX-GLOBAL-INPUT-001 / DEV-001-UI-01:
+  // SHINY-GLOBAL-INPUT-001 / DEV-001-UI-01:
   // Los campos de búsqueda/filtro son texto libre. No deben heredar validaciones
   // de email, teléfono, SKU, referencia, etc. sólo porque el placeholder enumere
   // los campos sobre los que busca (ej. "Pedido, cliente, teléfono, email...").
@@ -95,12 +95,12 @@ export default function GlobalInputGuard(){
       // Si antes era email/teléfono/código y ahora es búsqueda/texto libre,
       // eliminamos por completo la validación anterior.
       if(!type){
-        delete el.dataset.gmxValidation;
+        delete el.dataset.shinyValidation;
         el.setCustomValidity('');
         return;
       }
 
-      el.dataset.gmxValidation=type;
+      el.dataset.shinyValidation=type;
       if(type==='phone'){el.inputMode='numeric';el.maxLength=15;}
       if(type==='postal'){el.inputMode='numeric';el.maxLength=5;}
       if(type==='email'){el.autocapitalize='none';el.spellcheck=false;}
@@ -111,7 +111,7 @@ export default function GlobalInputGuard(){
       const el=e.target;
       if(!(el instanceof HTMLInputElement||el instanceof HTMLTextAreaElement))return;
       prepare(el);
-      const type=el.dataset.gmxValidation||'';
+      const type=el.dataset.shinyValidation||'';
       if(!type)return;
       const cleaned=sanitize(el.value,type);
       if(cleaned!==el.value){
@@ -127,7 +127,7 @@ export default function GlobalInputGuard(){
       const el=e.target;
       if(!(el instanceof HTMLInputElement||el instanceof HTMLTextAreaElement))return;
       prepare(el);
-      const type=el.dataset.gmxValidation||'';
+      const type=el.dataset.shinyValidation||'';
       el.setCustomValidity(validate(el,type));
     }
 
@@ -138,14 +138,14 @@ export default function GlobalInputGuard(){
       for(const el of fields){
         prepare(el);
         if(el instanceof HTMLInputElement||el instanceof HTMLTextAreaElement){
-          const type=el.dataset.gmxValidation||'';
+          const type=el.dataset.shinyValidation||'';
           if(type)el.setCustomValidity(validate(el,type));
         }
         if(!el.checkValidity()){
           e.preventDefault();
           e.stopPropagation();
           el.reportValidity();
-          window.gmxNotify?.(`${labelText(el)||'Campo'}: ${el.validationMessage||'valor no válido'}`,{type:'error',duration:6000});
+          window.shinyNotify?.(`${labelText(el)||'Campo'}: ${el.validationMessage||'valor no válido'}`,{type:'error',duration:6000});
           el.focus();
           return;
         }

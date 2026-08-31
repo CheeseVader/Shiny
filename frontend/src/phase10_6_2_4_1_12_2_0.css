@@ -1,4 +1,4 @@
-/* GMX — Reportes / Auditoría — diseño claro aprobado. Scope exclusivo del módulo. */
+/* Shiny — Reportes / Auditoría — diseño claro aprobado. Scope exclusivo del módulo. */
 .reports-v3-page{display:grid;gap:14px;width:100%;max-width:none;margin:0;padding:0 2px 24px;background:transparent;color:#101828;box-sizing:border-box}
 .reports-v3-page *{box-sizing:border-box}
 .reports-v3-heading{display:flex;justify-content:space-between;align-items:flex-start;gap:24px;padding:2px 2px 12px;border-bottom:1px solid #e8edf3;background:transparent}

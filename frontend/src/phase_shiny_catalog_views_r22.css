@@ -1,0 +1,5 @@
+/* Shiny R22 - estilos exclusivos de las vistas seleccionadas.
+   No contiene reglas para sidebar, login, autenticacion, AppShell ni rutas. */
+@import './phase_shiny_catalog_core_r22.css';
+@import './phase_shiny_catalog_detail_r22.css';
+@import './phase_shiny_catalog_purchase_r22.css';

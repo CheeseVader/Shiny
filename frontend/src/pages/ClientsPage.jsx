@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { api } from '../services/api.js';
 import ClientModal from '../components/ClientModal.jsx';
 import { R23Donut } from '../components/VisualKitR23.jsx';
-import '../phase_gmx_exact_views_r23.css';
+import '../phase_shiny_exact_views_r23.css';
 
 const PAGE_SIZE = 25;
 const isVerified = client => Boolean(client.email_verificado || client.telefono_verificado);

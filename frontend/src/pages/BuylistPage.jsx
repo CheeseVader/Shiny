@@ -1,6 +1,6 @@
 import { brandText } from "../config/brand.js";import { useEffect, useMemo, useState } from 'react';
 import { api } from '../services/api.js';
-import '../phase_gmx_exact_views_r23.css';
+import '../phase_shiny_exact_views_r23.css';
 import './BuylistOptionC.css';
 
 const money = (v) => Number(v || 0).toLocaleString('es-MX', { style: 'currency', currency: 'MXN' });
@@ -370,7 +370,7 @@ export default function BuylistPage() {
         '/api/v1/buylist/template.xlsx',
         {
           headers: {
-            Authorization: `Bearer ${localStorage.getItem('TCG_STORE_TEMPLATE_AUTH_TOKEN')}`
+            Authorization: `Bearer ${localStorage.getItem('Shiny_AUTH_TOKEN')}`
           }
         }
       );
@@ -396,7 +396,7 @@ export default function BuylistPage() {
       const a = document.createElement('a');
 
       a.href = url;
-      a.download = 'TCG_STORE_TEMPLATE_Buylist_Plantilla.xlsx';
+      a.download = 'Shiny_Buylist_Plantilla.xlsx';
 
       document.body.appendChild(a);
       a.click();
@@ -506,8 +506,8 @@ export default function BuylistPage() {
             </label>
           </div>
 
-          <div className={`buylist-c-fx ${fx?.available ? 'is-ready' : 'is-missing'}`}>
-            <div><span>TC GLOBAL USD → MXN</span><strong>{fx?.available ? `${Number(fx.rate).toFixed(4)} MXN/USD` : 'Tipo de cambio no disponible'}</strong><small>{fx?.available ? `${fx.source}${fx.location ? ` · ${fx.location}` : ''} · ${fx.rate_date}` : 'Configúralo en Configuración → Finanzas.'}</small></div>
+          <div className="buylist-c-fx is-ready">
+            <div><span>TDC POR TCG · USD → MXN</span><strong>Conversión por juego</strong><small>Cada carta usa el TDC configurado para su TCG en Auto Sync.</small></div>
             <b>⌁</b>
           </div>
 
@@ -531,9 +531,9 @@ export default function BuylistPage() {
           <section className="buylist-c-offer"><span>Oferta calculada</span><strong>{moneyMxn(total)}</strong><div><button className="secondary" onClick={valuate} disabled={!items.length}>Valuar</button><button onClick={saveDraft} disabled={!preview}>Guardar Buylist</button></div></section>
         </aside>
 
-        <div className="buylist-c-note"><strong>Valuación automática.</strong>{brandText(" TCG_STORE_TEMPLATE convierte precios USD a MXN con el TC vigente y compara Mercado MXN contra Precio tienda. La base predeterminada es el menor de ambos; después aplica condición y reglas Buylist.")}</div>
+        <div className="buylist-c-note"><strong>Valuación automática.</strong>{brandText(" Shiny convierte precios USD a MXN con el TC vigente y compara Mercado MXN contra Precio tienda. La base predeterminada es el menor de ambos; después aplica condición y reglas Buylist.")}</div>
 
-        {preview ? <div className="table-wrap buylist-price-table buylist-c-preview"><table><thead><tr><th>Carta</th><th>Condición</th><th>Mercado MXN</th><th>{brandText("Tienda TCG_STORE_TEMPLATE (MXN)")}</th><th>Base Buylist</th><th>Origen</th><th>% compra</th><th>Oferta unit.</th><th>Oferta línea</th><th>Regla</th></tr></thead><tbody>{preview.items.map((x, i) => <tr key={i}><td><strong>{x.carta}</strong></td><td>{x.condicion}</td><td>{x.precio_mercado_mxn ? moneyMxn(x.precio_mercado_mxn) : '—'}</td><td>{moneyMxn(x.precio_tienda)}</td><td><strong>{moneyMxn(x.precio_base_buylist)}</strong></td><td>{String(x.fuente_base_buylist || '').replaceAll('_',' ')}</td><td>{x.porcentaje_compra}%</td><td>{moneyMxn(x.oferta_unitario)}</td><td>{moneyMxn(x.oferta_linea)}</td><td>{x.regla?.id_regla || 'BASE'}</td></tr>)}</tbody></table></div> : null}
+        {preview ? <div className="table-wrap buylist-price-table buylist-c-preview"><table><thead><tr><th>Carta</th><th>Condición</th><th>Mercado MXN</th><th>{brandText("Tienda Shiny (MXN)")}</th><th>Base Buylist</th><th>Origen</th><th>% compra</th><th>Oferta unit.</th><th>Oferta línea</th><th>Regla</th></tr></thead><tbody>{preview.items.map((x, i) => <tr key={i}><td><strong>{x.carta}</strong></td><td>{x.condicion}</td><td>{x.precio_mercado_mxn ? moneyMxn(x.precio_mercado_mxn) : '—'}</td><td>{moneyMxn(x.precio_tienda)}</td><td><strong>{moneyMxn(x.precio_base_buylist)}</strong></td><td>{String(x.fuente_base_buylist || '').replaceAll('_',' ')}</td><td>{x.porcentaje_compra}%</td><td>{moneyMxn(x.oferta_unitario)}</td><td>{moneyMxn(x.oferta_linea)}</td><td>{x.regla?.id_regla || 'BASE'}</td></tr>)}</tbody></table></div> : null}
       </div> : null}
 
       {tab === 'history' ? <div className="buylist-c-history">

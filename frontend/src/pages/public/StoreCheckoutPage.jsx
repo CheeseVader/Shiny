@@ -93,7 +93,7 @@ export default function StoreCheckoutPage() {
 
       if (paymentMethod === 'CARD') {
         if (!data.paymentUrl) throw new Error('CARD_GATEWAY_NOT_CONFIGURED');
-        sessionStorage.setItem('GMX_PENDING_CARD_ORDER', JSON.stringify({ token: data.public_token, id: data.id_pedido }));
+        sessionStorage.setItem('SHINY_PENDING_CARD_ORDER', JSON.stringify({ token: data.public_token, id: data.id_pedido }));
         window.location.assign(data.paymentUrl);
         return;
       }
@@ -105,7 +105,7 @@ export default function StoreCheckoutPage() {
         return;
       }
 
-      const receiptWindow = window.open(`/tienda/comprobante/${data.public_token}`, 'gmx_receipt');
+      const receiptWindow = window.open(`/tienda/comprobante/${data.public_token}`, 'shiny_receipt');
       if (!receiptWindow) setMessage('Tu navegador bloqueó la pestaña del comprobante. Puedes abrirlo desde la confirmación.');
       nav(`/tienda/pedido/${data.public_token}`, { replace: true, state: { checkoutResult: data } });
     } catch (e2) {
@@ -169,7 +169,7 @@ export default function StoreCheckoutPage() {
 
         <h2>Método de pago</h2>
         <div className="payment-method-grid">
-          <label className={paymentMethod === 'CARD' ? 'selected' : ''}><input type="radio" name="payment" value="CARD" checked={paymentMethod === 'CARD'} onChange={(e) => setPaymentMethod(e.target.value)} /><span><b>💳 Tarjeta</b><small>{brandText("Abre un portal de pago hospedado por Stripe. GMX no recibe ni almacena CVV o número de tarjeta.")}</small></span></label>
+          <label className={paymentMethod === 'CARD' ? 'selected' : ''}><input type="radio" name="payment" value="CARD" checked={paymentMethod === 'CARD'} onChange={(e) => setPaymentMethod(e.target.value)} /><span><b>💳 Tarjeta</b><small>{brandText("Abre un portal de pago hospedado por Stripe. Shiny no recibe ni almacena CVV o número de tarjeta.")}</small></span></label>
           <label className={paymentMethod === 'TRANSFER' ? 'selected' : ''}><input type="radio" name="payment" value="TRANSFER" checked={paymentMethod === 'TRANSFER'} onChange={(e) => setPaymentMethod(e.target.value)} /><span><b>🏦 Transferencia</b><small>Después de confirmar mostraremos banco, cuenta, CLABE, referencia y carga de comprobante.</small></span></label>
           <label className={paymentMethod === 'CASH_STORE' ? 'selected' : ''}><input type="radio" name="payment" value="CASH_STORE" checked={paymentMethod === 'CASH_STORE'} onChange={(e) => setPaymentMethod(e.target.value)} /><span><b>🏪 Pago en sucursal</b><small>Selecciona dónde recoger y pagar. El pedido se confirma por correo.</small></span></label>
         </div>

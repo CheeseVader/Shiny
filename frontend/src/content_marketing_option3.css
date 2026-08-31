@@ -1,4 +1,4 @@
-/* GMX Content Center R79 — selected 1:1 compact redesign */
+/* Shiny Content Center R79 — selected 1:1 compact redesign */
 .contentmk-page{
   --cm-ink:#101828;--cm-muted:#667085;--cm-line:#d9e2ef;--cm-soft:#f6f8fb;
   --cm-blue:#155eef;--cm-navy:#102a4c;--cm-purple:#6941c6;
@@ -265,4 +265,23 @@
   .contentmk-page .background-live-preview-image,
   .contentmk-page .background-live-preview .authenticated-media-loading,
   .contentmk-page .background-live-preview .authenticated-media-error{width:100%!important;height:150px!important}
+}
+
+/* ============================================================
+   SHINY - FIX DEFINITIVO CONTENT CENTER HERO
+   ============================================================ */
+.contentmk-page .contentmk-hero {
+    overflow: visible !important;
+}
+
+.contentmk-page .contentmk-hero h1 {
+    display: block !important;
+    position: relative !important;
+    left: 0 !important;
+    margin-left: 0 !important;
+    padding-left: 8px !important;
+    text-indent: 0 !important;
+    transform: none !important;
+    overflow: visible !important;
+    clip-path: none !important;
 }

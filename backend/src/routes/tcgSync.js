@@ -5,7 +5,9 @@ import {
   listSyncProviders, getSyncSets, updateSyncConfig, syncGameSets, syncSelectedCards,
   installSelectedToOperational, cardPriceComparison, listSyncedMasterCards,
   masterCatalogSummary, masterCatalogSets, browseMasterCatalogCards, masterCatalogRarities,
-  listAvailableSources, getSourcePreferences, saveSourcePreferences } from
+  listAvailableSources, getSourcePreferences, saveSourcePreferences,
+  getTcgExchangeRate, saveTcgExchangeRate
+} from
 '../tcgCatalogSyncService.js';
 
 const router = Router();
@@ -16,7 +18,7 @@ const known = new Set([
 
 function sendError(res, e) {
   const msg = String(e?.message || e || 'SYNC_FAILED').replace(/[\r\n\t]+/g, ' ').slice(0, 900);
-  console.error(brandText("[GMX][TCG-SYNC]"), msg, e?.stack || '');
+  console.error(brandText("[Shiny][TCG-SYNC]"), msg, e?.stack || '');
   const knownCode = known.has(msg) || msg.startsWith('UNKNOWN_SET:');
   const remote =
   msg.startsWith('REMOTE_') ||
@@ -182,4 +184,24 @@ router.get('/cards/:rowId/prices', async (req, res) => {
   } catch (e) {sendError(res, e);}
 });
 
+
+router.get('/games/:gameCode/fx',async(req,res)=>{
+  try{
+    res.json({success:true,data:await getTcgExchangeRate(req.params.gameCode)});
+  }catch(e){
+    res.status(400).json({success:false,error:e.message,message:e.message});
+  }
+});
+
+router.put('/games/:gameCode/fx',async(req,res)=>{
+  try{
+    res.json({success:true,data:await saveTcgExchangeRate(req.params.gameCode,req.body||{})});
+  }catch(e){
+    const code=String(e.message||e);
+    const message=code==='INVALID_TCG_FX_RATE'
+      ?'El TDC por TCG debe ser mayor a cero.'
+      :code;
+    res.status(400).json({success:false,error:message,message});
+  }
+});
 export default router;

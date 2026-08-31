@@ -2,7 +2,7 @@
 const fs=require('fs');
 const path=require('path');
 
-const root=process.argv[2]||'C:\\Users\\SrsGarciaEspinoza\\Videos\\GMX';
+const root=process.argv[2]||'C:\\Users\\SrsGarciaEspinoza\\Videos\\Shiny';
 const file=path.join(root,'backend','src','repositories','ordersRepository.js');
 
 if(!fs.existsSync(file)){
@@ -12,7 +12,7 @@ if(!fs.existsSync(file)){
 
 let src=fs.readFileSync(file,'utf8');
 
-if(src.includes('GMX_POS_FIX_001')){
+if(src.includes('SHINY_POS_FIX_001')){
   console.log('POS-FIX-001 ya estaba aplicado.');
   process.exit(0);
 }
@@ -30,11 +30,11 @@ function fail(msg){
 
 const marker = `export async function searchPosCatalog({`;
 const helper = `
-// GMX_POS_FIX_001
+// SHINY_POS_FIX_001
 async function reverseCashSaleOnCancellation(client,{order,branch,user=null}){
   const payments=await client.query(\`
     SELECT COALESCE(SUM(importe_aplicado),0)::numeric AS cash_total
-    FROM gmx.pedido_pagos
+    FROM shiny.pedido_pagos
     WHERE id_pedido=$1
       AND UPPER(COALESCE(metodo,''))='EFECTIVO'
       AND UPPER(COALESCE(estado,''))='PAGADO'
@@ -45,7 +45,7 @@ async function reverseCashSaleOnCancellation(client,{order,branch,user=null}){
 
   const existing=await client.query(\`
     SELECT row_id,id_movimiento
-    FROM gmx.caja_movimientos
+    FROM shiny.caja_movimientos
     WHERE origen_modulo='POS_CANCELACION'
       AND id_origen=$1
       AND categoria='CANCELACION_VENTA'
@@ -61,7 +61,7 @@ async function reverseCashSaleOnCancellation(client,{order,branch,user=null}){
 
   const original=await client.query(\`
     SELECT *
-    FROM gmx.caja_movimientos
+    FROM shiny.caja_movimientos
     WHERE origen_modulo='POS_LOCAL'
       AND id_origen=$1
       AND categoria='VENTA'
@@ -78,10 +78,10 @@ async function reverseCashSaleOnCancellation(client,{order,branch,user=null}){
   if(!cash)throw new Error('CASH_SESSION_REQUIRED_FOR_CANCELLATION');
 
   const actorId=String(user?.id_admin||'').trim();
-  const actorName=String(user?.nombre||user?.email||'GMX Local POS').trim();
+  const actorName=String(user?.nombre||user?.email||'Shiny Local POS').trim();
 
   const reversal=await client.query(\`
-    INSERT INTO gmx.caja_movimientos(
+    INSERT INTO shiny.caja_movimientos(
       id_movimiento,id_caja,fecha,id_sucursal,sucursal,tipo,categoria,
       metodo_pago,importe,impacto_efectivo,referencia,descripcion,
       origen_modulo,id_origen,id_admin,administrador,anulado,id_movimiento_reversion
@@ -98,13 +98,13 @@ async function reverseCashSaleOnCancellation(client,{order,branch,user=null}){
   ]);
 
   await client.query(\`
-    UPDATE gmx.caja_movimientos
+    UPDATE shiny.caja_movimientos
     SET id_movimiento_reversion=$2
     WHERE row_id=$1
   \`,[original.rows[0].row_id,reversal.rows[0].id_movimiento]);
 
   await client.query(\`
-    UPDATE gmx.caja_sesiones
+    UPDATE shiny.caja_sesiones
     SET egresos_efectivo=COALESCE(egresos_efectivo,0)+$2,
         saldo_esperado=COALESCE(fondo_inicial,0)
           +COALESCE(ingresos_efectivo,0)
@@ -114,7 +114,7 @@ async function reverseCashSaleOnCancellation(client,{order,branch,user=null}){
   \`,[cash.row_id,cashTotal]);
 
   await client.query(\`
-    UPDATE gmx.pedido_pagos
+    UPDATE shiny.pedido_pagos
     SET estado='REEMBOLSADO'
     WHERE id_pedido=$1
       AND UPPER(COALESCE(metodo,''))='EFECTIVO'
@@ -137,22 +137,22 @@ src=src.replace(marker,helper+marker);
 const old = `    await reverseBenefitsTx(client,{order,user,reason:reason||'CancelaciÃ³n POS'});
 
     await client.query(\`
-      UPDATE gmx.pedidos
+      UPDATE shiny.pedidos
       SET estado_pedido='CANCELADO',venta_confirmada=false,inventario_liberado=true,`;
 
 const oldUtf8 = `    await reverseBenefitsTx(client,{order,user,reason:reason||'Cancelación POS'});
 
     await client.query(\`
-      UPDATE gmx.pedidos
+      UPDATE shiny.pedidos
       SET estado_pedido='CANCELADO',venta_confirmada=false,inventario_liberado=true,`;
 
 const replacement = `    await reverseBenefitsTx(client,{order,user,reason:reason||'Cancelación POS'});
 
-    // GMX_POS_FIX_001
+    // SHINY_POS_FIX_001
     const cashReversal=await reverseCashSaleOnCancellation(client,{order,branch,user});
 
     await client.query(\`
-      UPDATE gmx.pedidos
+      UPDATE shiny.pedidos
       SET estado_pedido='CANCELADO',
           venta_confirmada=false,
           inventario_liberado=true,

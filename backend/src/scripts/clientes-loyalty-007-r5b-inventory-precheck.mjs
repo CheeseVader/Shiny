@@ -90,7 +90,7 @@ function dbConfig() {
 }
 
 async function main() {
-  section(brandText("GMX — CLIENTES-LOYALTY-007 R5B INVENTORY PRECHECK")
+  section(brandText("Shiny — CLIENTES-LOYALTY-007 R5B INVENTORY PRECHECK")
 
   );
 
@@ -118,7 +118,7 @@ async function main() {
         telefono,
         email,
         fecha_registro
-      FROM gmx.clientes
+      FROM shiny.clientes
       WHERE
         nombre LIKE 'CLIENTES LOYALTY007 TEST %'
         OR email LIKE 'clientes.loyalty007.%@example.invalid'
@@ -157,19 +157,19 @@ async function main() {
         SELECT
           (
             SELECT COUNT(*)
-            FROM gmx.pedidos
+            FROM shiny.pedidos
             WHERE id_cliente=$1
           )::bigint AS pedidos,
 
           (
             SELECT COUNT(*)
-            FROM gmx.fidelidad_cuentas
+            FROM shiny.fidelidad_cuentas
             WHERE id_cliente=$1
           )::bigint AS cuentas,
 
           (
             SELECT COUNT(*)
-            FROM gmx.fidelidad_movimientos
+            FROM shiny.fidelidad_movimientos
             WHERE id_cliente=$1
           )::bigint AS movimientos
         `,
@@ -208,7 +208,7 @@ async function main() {
 
           const deleted = await db.query(
             `
-            DELETE FROM gmx.clientes
+            DELETE FROM shiny.clientes
             WHERE
               row_id=$1
               AND id_cliente=$2
@@ -264,7 +264,7 @@ async function main() {
 
         (
           SELECT COUNT(*)
-          FROM gmx.clientes
+          FROM shiny.clientes
           WHERE
             nombre LIKE 'CLIENTES LOYALTY007 TEST %'
             OR email LIKE 'clientes.loyalty007.%@example.invalid'
@@ -272,10 +272,10 @@ async function main() {
 
         (
           SELECT COUNT(*)
-          FROM gmx.cliente_identidad_unica ciu
+          FROM shiny.cliente_identidad_unica ciu
           WHERE EXISTS (
             SELECT 1
-            FROM gmx.clientes c
+            FROM shiny.clientes c
             WHERE
               c.id_cliente=ciu.id_cliente
               AND (
@@ -351,9 +351,9 @@ async function main() {
 
         i.estado_venta
 
-      FROM gmx.tcg_inventario_sucursales s
+      FROM shiny.tcg_inventario_sucursales s
 
-      JOIN gmx.tcg_inventario i
+      JOIN shiny.tcg_inventario i
         ON i.id_inventario=s.id_inventario
 
       WHERE
@@ -507,9 +507,9 @@ async function main() {
           ELSE i.precio
         END AS effective_price
 
-      FROM gmx.tcg_inventario_sucursales s
+      FROM shiny.tcg_inventario_sucursales s
 
-      JOIN gmx.tcg_inventario i
+      JOIN shiny.tcg_inventario i
         ON i.id_inventario=s.id_inventario
 
       WHERE

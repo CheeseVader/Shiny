@@ -11,35 +11,35 @@ const datasets={
     sql:`SELECT i.id_inventario,i.sku,c.nombre AS carta,i.rareza,i.idioma,i.condicion,i.acabado,
       i.costo,i.precio,i.precio_oferta,i.stock AS stock_global,i.stock_reservado AS reservado_global,
       s.id_sucursal,s.sucursal,s.stock,s.stock_reservado
-      FROM gmx.tcg_inventario i
-      LEFT JOIN gmx.tcg_cartas c ON c.id_carta=i.id_carta
-      LEFT JOIN gmx.tcg_inventario_sucursales s ON s.id_inventario=i.id_inventario`
+      FROM shiny.tcg_inventario i
+      LEFT JOIN shiny.tcg_cartas c ON c.id_carta=i.id_carta
+      LEFT JOIN shiny.tcg_inventario_sucursales s ON s.id_inventario=i.id_inventario`
   },
   sales:{
     order:'fecha DESC NULLS LAST,id_pedido',
     sql:`SELECT p.*,COUNT(d.row_id)::bigint AS lineas,COALESCE(SUM(d.cantidad),0)::bigint AS unidades
-      FROM gmx.pedidos p LEFT JOIN gmx.detalle_pedidos d ON d.id_pedido=p.id_pedido
+      FROM shiny.pedidos p LEFT JOIN shiny.detalle_pedidos d ON d.id_pedido=p.id_pedido
       GROUP BY p.row_id`
   },
   buylist:{
     order:'fecha DESC NULLS LAST,id_buylist',
-    sql:`SELECT * FROM gmx.tcg_buylist`
+    sql:`SELECT * FROM shiny.tcg_buylist`
   },
   movements:{
     order:'fecha DESC NULLS LAST,id_movimiento',
-    sql:`SELECT * FROM gmx.tcg_movimientos_sucursales`
+    sql:`SELECT * FROM shiny.tcg_movimientos_sucursales`
   },
   products:{
     order:'nombre,sku,id',
-    sql:`SELECT * FROM gmx.productos`
+    sql:`SELECT * FROM shiny.productos`
   },
   clients:{
     order:'nombre,id_cliente',
-    sql:`SELECT * FROM gmx.clientes`
+    sql:`SELECT * FROM shiny.clientes`
   },
   providers:{
     order:"COALESCE(NULLIF(nombre_comercial,''),razon_social,id_proveedor),id_proveedor",
-    sql:`SELECT * FROM gmx.proveedores`
+    sql:`SELECT * FROM shiny.proveedores`
   }
 };
 
@@ -56,7 +56,7 @@ function xmlCell(v){
 
 router.get('/all.xls',async(_req,res)=>{
   try{
-    const name=`GMX_EXPORT_COMPLETO_${new Date().toISOString().slice(0,10)}.xls`;
+    const name=`SHINY_EXPORT_COMPLETO_${new Date().toISOString().slice(0,10)}.xls`;
     res.status(200);
     res.setHeader('Content-Type','application/vnd.ms-excel');
     res.setHeader('Content-Disposition',`attachment; filename="${name}"`);
@@ -94,7 +94,7 @@ router.get('/:dataset.csv',async(req,res)=>{
   const ds=datasets[String(req.params.dataset||'').toLowerCase()];
   if(!ds)return res.status(404).json({success:false,error:'EXPORT_DATASET_NOT_FOUND'});
   try{
-    const name=`GMX_${req.params.dataset}_${new Date().toISOString().slice(0,10)}.csv`;
+    const name=`SHINY_${req.params.dataset}_${new Date().toISOString().slice(0,10)}.csv`;
     res.status(200);
     res.setHeader('Content-Type','text/csv; charset=utf-8');
     res.setHeader('Content-Disposition',`attachment; filename="${name}"`);

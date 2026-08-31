@@ -93,7 +93,7 @@ function dbConfig() {
 }
 
 async function main() {
-  section(brandText("GMX — CLIENTES-LOYALTY-007 POS IDEMPOTENCY CONTROLLED SMOKE")
+  section(brandText("Shiny — CLIENTES-LOYALTY-007 POS IDEMPOTENCY CONTROLLED SMOKE")
 
   );
 
@@ -132,13 +132,13 @@ async function main() {
       SELECT
         (
           SELECT COUNT(*)
-          FROM gmx.pedidos
+          FROM shiny.pedidos
           WHERE pos_idempotency_key=$1
         )::bigint AS orders,
 
         (
           SELECT COUNT(*)
-          FROM gmx.clientes
+          FROM shiny.clientes
           WHERE email=$2
              OR telefono=$3
         )::bigint AS clients
@@ -165,7 +165,7 @@ async function main() {
 
     const client = await db.query(
       `
-      INSERT INTO gmx.clientes(
+      INSERT INTO shiny.clientes(
         nombre,
         telefono,
         email,
@@ -240,9 +240,9 @@ async function main() {
           ELSE i.precio
         END::numeric AS effective_price
 
-      FROM gmx.tcg_inventario_sucursales s
+      FROM shiny.tcg_inventario_sucursales s
 
-      JOIN gmx.tcg_inventario i
+      JOIN shiny.tcg_inventario i
         ON i.id_inventario=s.id_inventario
 
       WHERE
@@ -399,33 +399,33 @@ async function main() {
         SELECT
           (
             SELECT COUNT(*)
-            FROM gmx.pedidos
+            FROM shiny.pedidos
             WHERE pos_idempotency_key=$1
           )::bigint AS order_count,
 
           (
             SELECT COUNT(*)
-            FROM gmx.fidelidad_movimientos
+            FROM shiny.fidelidad_movimientos
             WHERE id_pedido=$2
               AND tipo='GENERACION'
           )::bigint AS generation_count,
 
           (
             SELECT COUNT(*)
-            FROM gmx.fidelidad_movimientos
+            FROM shiny.fidelidad_movimientos
             WHERE id_pedido=$2
               AND tipo='REDENCION'
           )::bigint AS redemption_count,
 
           (
             SELECT COUNT(*)
-            FROM gmx.pedido_pagos
+            FROM shiny.pedido_pagos
             WHERE id_pedido=$2
           )::bigint AS payment_count,
 
           (
             SELECT COUNT(*)
-            FROM gmx.caja_movimientos
+            FROM shiny.caja_movimientos
             WHERE referencia=$2
                OR id_origen=$2
           )::bigint AS cash_count
@@ -447,9 +447,9 @@ async function main() {
           s.stock AS branch_stock,
           i.stock AS global_stock
 
-        FROM gmx.tcg_inventario_sucursales s
+        FROM shiny.tcg_inventario_sucursales s
 
-        JOIN gmx.tcg_inventario i
+        JOIN shiny.tcg_inventario i
           ON i.id_inventario=s.id_inventario
 
         WHERE
@@ -507,33 +507,33 @@ async function main() {
         SELECT
           (
             SELECT COUNT(*)
-            FROM gmx.pedidos
+            FROM shiny.pedidos
             WHERE pos_idempotency_key=$1
           )::bigint AS order_count,
 
           (
             SELECT COUNT(*)
-            FROM gmx.fidelidad_movimientos
+            FROM shiny.fidelidad_movimientos
             WHERE id_pedido=$2
               AND tipo='GENERACION'
           )::bigint AS generation_count,
 
           (
             SELECT COUNT(*)
-            FROM gmx.fidelidad_movimientos
+            FROM shiny.fidelidad_movimientos
             WHERE id_pedido=$2
               AND tipo='REDENCION'
           )::bigint AS redemption_count,
 
           (
             SELECT COUNT(*)
-            FROM gmx.pedido_pagos
+            FROM shiny.pedido_pagos
             WHERE id_pedido=$2
           )::bigint AS payment_count,
 
           (
             SELECT COUNT(*)
-            FROM gmx.caja_movimientos
+            FROM shiny.caja_movimientos
             WHERE referencia=$2
                OR id_origen=$2
           )::bigint AS cash_count
@@ -604,9 +604,9 @@ async function main() {
           s.stock AS branch_stock,
           i.stock AS global_stock
 
-        FROM gmx.tcg_inventario_sucursales s
+        FROM shiny.tcg_inventario_sucursales s
 
-        JOIN gmx.tcg_inventario i
+        JOIN shiny.tcg_inventario i
           ON i.id_inventario=s.id_inventario
 
         WHERE
@@ -716,7 +716,7 @@ async function main() {
     try {
       await db.query(
         `
-        DELETE FROM gmx.fidelidad_movimientos
+        DELETE FROM shiny.fidelidad_movimientos
         WHERE id_pedido=$1
         `,
         [orderId]
@@ -724,7 +724,7 @@ async function main() {
 
       await db.query(
         `
-        DELETE FROM gmx.fidelidad_cuentas
+        DELETE FROM shiny.fidelidad_cuentas
         WHERE id_cliente=$1
         `,
         [clientId]
@@ -732,7 +732,7 @@ async function main() {
 
       await db.query(
         `
-        DELETE FROM gmx.caja_movimientos
+        DELETE FROM shiny.caja_movimientos
         WHERE referencia=$1
            OR id_origen=$1
         `,
@@ -741,7 +741,7 @@ async function main() {
 
       await db.query(
         `
-        DELETE FROM gmx.pedido_pagos
+        DELETE FROM shiny.pedido_pagos
         WHERE id_pedido=$1
         `,
         [orderId]
@@ -749,7 +749,7 @@ async function main() {
 
       await db.query(
         `
-        DELETE FROM gmx.detalle_pedidos
+        DELETE FROM shiny.detalle_pedidos
         WHERE id_pedido=$1
         `,
         [orderId]
@@ -757,7 +757,7 @@ async function main() {
 
       await db.query(
         `
-        DELETE FROM gmx.pedidos
+        DELETE FROM shiny.pedidos
         WHERE id_pedido=$1
           AND pos_idempotency_key=$2
         `,
@@ -769,7 +769,7 @@ async function main() {
 
       await db.query(
         `
-        DELETE FROM gmx.clientes
+        DELETE FROM shiny.clientes
         WHERE row_id=$1
           AND id_cliente=$2
           AND email=$3
@@ -798,52 +798,52 @@ async function main() {
         SELECT
           (
             SELECT COUNT(*)
-            FROM gmx.clientes
+            FROM shiny.clientes
             WHERE email=$1
                OR telefono=$2
           )::bigint AS clients,
 
           (
             SELECT COUNT(*)
-            FROM gmx.pedidos
+            FROM shiny.pedidos
             WHERE id_pedido=$3
                OR pos_idempotency_key=$4
           )::bigint AS orders,
 
           (
             SELECT COUNT(*)
-            FROM gmx.detalle_pedidos
+            FROM shiny.detalle_pedidos
             WHERE id_pedido=$3
           )::bigint AS details,
 
           (
             SELECT COUNT(*)
-            FROM gmx.pedido_pagos
+            FROM shiny.pedido_pagos
             WHERE id_pedido=$3
           )::bigint AS payments,
 
           (
             SELECT COUNT(*)
-            FROM gmx.caja_movimientos
+            FROM shiny.caja_movimientos
             WHERE referencia=$3
                OR id_origen=$3
           )::bigint AS cash,
 
           (
             SELECT COUNT(*)
-            FROM gmx.fidelidad_movimientos
+            FROM shiny.fidelidad_movimientos
             WHERE id_pedido=$3
           )::bigint AS loyalty_movements,
 
           (
             SELECT COUNT(*)
-            FROM gmx.fidelidad_cuentas
+            FROM shiny.fidelidad_cuentas
             WHERE id_cliente=$5
           )::bigint AS loyalty_accounts,
 
           (
             SELECT COUNT(*)
-            FROM gmx.cliente_identidad_unica
+            FROM shiny.cliente_identidad_unica
             WHERE id_cliente=$5
           )::bigint AS identities
         `,

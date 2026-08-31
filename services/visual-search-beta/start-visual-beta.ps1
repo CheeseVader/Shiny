@@ -32,7 +32,7 @@ function Test-PortListening {
 }
 
 if (Test-PortListening -Port $Port) {
-    Write-Host "GMX Visual Search Beta ya esta activo en http://127.0.0.1:$Port" -ForegroundColor Green
+    Write-Host "Shiny Visual Search Beta ya esta activo en http://127.0.0.1:$Port" -ForegroundColor Green
     exit 0
 }
 
@@ -53,7 +53,7 @@ try {
     }
 
     if (-not $SkipDependencyInstall) {
-        $marker = Join-Path $here ".venv\.gmx-requirements-ready"
+        $marker = Join-Path $here ".venv\.shiny-requirements-ready"
         $requirements = Join-Path $here "requirements.txt"
 
         $mustInstall = -not (Test-Path $marker)
@@ -73,13 +73,13 @@ try {
     }
 
     if (Test-PortListening -Port $Port) {
-        Write-Host "GMX Visual Search Beta ya fue iniciado por otra instancia." -ForegroundColor Green
+        Write-Host "Shiny Visual Search Beta ya fue iniciado por otra instancia." -ForegroundColor Green
         exit 0
     }
 
     Write-Host ""
-    Write-Host "GMX Visual Search Beta iniciando en http://127.0.0.1:$Port" -ForegroundColor Cyan
-    Write-Host "Integrado al arranque principal de GMX." -ForegroundColor DarkGray
+    Write-Host "Shiny Visual Search Beta iniciando en http://127.0.0.1:$Port" -ForegroundColor Cyan
+    Write-Host "Integrado al arranque principal de Shiny." -ForegroundColor DarkGray
 
     & $py -m uvicorn service:app --host 127.0.0.1 --port $Port
 }

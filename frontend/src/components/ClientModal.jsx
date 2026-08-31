@@ -88,7 +88,7 @@ export default function ClientModal({
     const error = validateForm();
     if (error) {
       setFormError(error);
-      window.gmxNotify?.(error, { type: 'error', duration: 5000 });
+      window.shinyNotify?.(error, { type: 'error', duration: 5000 });
       return;
     }
     setSaving(true);
@@ -98,7 +98,7 @@ export default function ClientModal({
     } catch (error) {
       const msg = String(error?.message || 'No fue posible guardar el cliente.');
       setFormError(msg);
-      window.gmxNotify?.(msg, { type: 'error', duration: 6000 });
+      window.shinyNotify?.(msg, { type: 'error', duration: 6000 });
     } finally {
       setSaving(false);
     }
@@ -106,14 +106,14 @@ export default function ClientModal({
 
 
   return createPortal(
-    <div className="modal-backdrop gmx-portal-backdrop" onMouseDown={onClose}>
+    <div className="modal-backdrop shiny-portal-backdrop" onMouseDown={onClose}>
       <div
         className="modal client-modal"
         onMouseDown={(event) => event.stopPropagation()}>
         
         <div className="modal-head">
           <div>
-            <div className="eyebrow">{brandText("GMX CLIENTES")}</div>
+            <div className="eyebrow">{brandText("Shiny CLIENTES")}</div>
             <h2>
               {client ?
               `Editar ${client.nombre || client.id_cliente}` :

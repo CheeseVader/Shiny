@@ -3,7 +3,7 @@ const fs=require('fs');
 const path=require('path');
 const {spawnSync}=require('child_process');
 
-const root=process.argv[2]||'C:\\Users\\SrsGarciaEspinoza\\Videos\\GMX';
+const root=process.argv[2]||'C:\\Users\\SrsGarciaEspinoza\\Videos\\Shiny';
 const repo=path.join(root,'backend','src','repositories','cashRepository.js');
 const route=path.join(root,'backend','src','routes','cash.js');
 
@@ -35,7 +35,7 @@ function fail(msg){
 }
 
 let src=fs.readFileSync(repo,'utf8');
-if(!src.includes('GMX_CAJA_AUTH_001')){
+if(!src.includes('SHINY_CAJA_AUTH_001')){
   backup(repo,'CAJA_AUTH_001');
 
   const importAnchor="import { pool, query } from '../db.js';";
@@ -43,10 +43,10 @@ if(!src.includes('GMX_CAJA_AUTH_001')){
 
   src=src.replace(importAnchor, `${importAnchor}
 
-// GMX_CAJA_AUTH_001
+// SHINY_CAJA_AUTH_001
 function cashActor(user={}){
   const id=String(user?.id_admin||'LOCAL').trim()||'LOCAL';
-  const name=String(user?.nombre||user?.email||'GMX Local').trim()||'GMX Local';
+  const name=String(user?.nombre||user?.email||'Shiny Local').trim()||'Shiny Local';
   return {id,name};
 }`);
 
@@ -64,7 +64,7 @@ function cashActor(user={}){
   src=src.slice(0,openBeginPos)+
       "  const actor=cashActor(user);\n"+src.slice(openBeginPos);
 
-  const oldOpenValues="      ) VALUES($1,$2,$3,NOW(),$4,0,0,$4,'ABIERTA','LOCAL','GMX Local',$5,NOW())\n      RETURNING *\n    `,[id,branchId,branch.rows[0].nombre_sucursal,amount,notes||null]);";
+  const oldOpenValues="      ) VALUES($1,$2,$3,NOW(),$4,0,0,$4,'ABIERTA','LOCAL','Shiny Local',$5,NOW())\n      RETURNING *\n    `,[id,branchId,branch.rows[0].nombre_sucursal,amount,notes||null]);";
   const newOpenValues="      ) VALUES($1,$2,$3,NOW(),$4,0,0,$4,'ABIERTA',$5,$6,$7,NOW())\n      RETURNING *\n    `,[id,branchId,branch.rows[0].nombre_sucursal,amount,actor.id,actor.name,notes||null]);";
   if(!src.includes(oldOpenValues))fail('No se encontró INSERT de apertura esperado.');
   src=src.replace(oldOpenValues,newOpenValues);
@@ -82,7 +82,7 @@ function cashActor(user={}){
   src=src.slice(0,addBeginPos)+
       "  const actor=cashActor(user);\n"+src.slice(addBeginPos);
 
-  const oldMovValues="      ) VALUES($1,$2,NOW(),$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,'LOCAL','GMX Local',false)\n      RETURNING *\n    `,[\n      id,session.rows[0].id_caja,branchId,session.rows[0].sucursal,\n      normalizedType,normalizedCategory,\n      String(paymentMethod||'EFECTIVO').toUpperCase(),value,impact,\n      reference||null,description||null,originModule||'CAJA_LOCAL',originId||null\n    ]);";
+  const oldMovValues="      ) VALUES($1,$2,NOW(),$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,'LOCAL','Shiny Local',false)\n      RETURNING *\n    `,[\n      id,session.rows[0].id_caja,branchId,session.rows[0].sucursal,\n      normalizedType,normalizedCategory,\n      String(paymentMethod||'EFECTIVO').toUpperCase(),value,impact,\n      reference||null,description||null,originModule||'CAJA_LOCAL',originId||null\n    ]);";
   const newMovValues="      ) VALUES($1,$2,NOW(),$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,false)\n      RETURNING *\n    `,[\n      id,session.rows[0].id_caja,branchId,session.rows[0].sucursal,\n      normalizedType,normalizedCategory,\n      String(paymentMethod||'EFECTIVO').toUpperCase(),value,impact,\n      reference||null,description||null,originModule||'CAJA_LOCAL',originId||null,\n      actor.id,actor.name\n    ]);";
   if(!src.includes(oldMovValues))fail('No se encontró INSERT de movimiento esperado. Confirma que CAJA-FIX-002 está instalado.');
   src=src.replace(oldMovValues,newMovValues);
@@ -101,7 +101,7 @@ function cashActor(user={}){
       "  const actor=cashActor(user);\n"+src.slice(closeBeginPos);
 
   const oldClose=`      SET fecha_cierre=NOW(),efectivo_contado=$2::text,diferencia=$3,
-          estado='CERRADA',id_admin_cierre='LOCAL',admin_cierre='GMX Local',
+          estado='CERRADA',id_admin_cierre='LOCAL',admin_cierre='Shiny Local',
           notas_cierre=$4,fecha_actualizacion=NOW()
       WHERE id_caja=$1 RETURNING *
     \`,[fresh.id_caja,counted,difference,notes||null]);`;
@@ -119,12 +119,12 @@ function cashActor(user={}){
 }
 
 let rsrc=fs.readFileSync(route,'utf8');
-if(!rsrc.includes('GMX_CAJA_AUTH_001')){
+if(!rsrc.includes('SHINY_CAJA_AUTH_001')){
   backup(route,'CAJA_AUTH_001');
 
   rsrc=rsrc.replace(
     "try{res.status(201).json({success:true,data:await openCash(req.body)});}",
-    "try{/* GMX_CAJA_AUTH_001 */res.status(201).json({success:true,data:await openCash(req.body,req.user)});}"
+    "try{/* SHINY_CAJA_AUTH_001 */res.status(201).json({success:true,data:await openCash(req.body,req.user)});}"
   );
   rsrc=rsrc.replace(
     "try{res.status(201).json({success:true,data:await addCashMovement(req.body)});}",

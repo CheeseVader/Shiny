@@ -1,13 +1,13 @@
 param(
-  [string]$Root = "D:\GMX",
-  [string]$Database = "gmx_db",
+  [string]$Root = "D:\Shiny",
+  [string]$Database = "shiny_db",
   [string]$HostName = "localhost",
   [string]$User = "postgres"
 )
 
 $ErrorActionPreference="Stop"
 
-Write-Host "GMX 10.6.2.4.1.1 - Restauración de catálogo geográfico" -ForegroundColor Cyan
+Write-Host "Shiny 10.6.2.4.1.1 - Restauración de catálogo geográfico" -ForegroundColor Cyan
 Write-Host "Buscando 042_catalogo_cp.csv dentro de $Root ..."
 
 $cpFile = Get-ChildItem $Root -Recurse -Filter "042_catalogo_cp.csv" | Where-Object { -not $_.PSIsContainer } |
@@ -26,7 +26,7 @@ $escaped=$cpFile.FullName.Replace("'","''").Replace("\","/")
 $sql=@"
 BEGIN;
 
-CREATE TEMP TABLE gmx_geo_stage(
+CREATE TEMP TABLE shiny_geo_stage(
 
   cp TEXT,
   estado TEXT,
@@ -39,11 +39,11 @@ CREATE TEMP TABLE gmx_geo_stage(
   clave_ciudad TEXT
 );
 
-\copy gmx_geo_stage FROM '$escaped' WITH (FORMAT csv, HEADER true, ENCODING 'UTF8');
+\copy shiny_geo_stage FROM '$escaped' WITH (FORMAT csv, HEADER true, ENCODING 'UTF8');
 
-TRUNCATE TABLE gmx.catalogo_cp RESTART IDENTITY;
+TRUNCATE TABLE shiny.catalogo_cp RESTART IDENTITY;
 
-INSERT INTO gmx.catalogo_cp(
+INSERT INTO shiny.catalogo_cp(
   cp,estado,municipio,ciudad,colonia,tipo_asentamiento,
   clave_estado,clave_municipio,clave_ciudad
 )
@@ -57,7 +57,7 @@ SELECT
   NULLIF(TRIM(clave_estado),''),
   NULLIF(TRIM(clave_municipio),''),
   NULLIF(TRIM(clave_ciudad),'')
-FROM gmx_geo_stage
+FROM shiny_geo_stage
 WHERE NULLIF(TRIM(cp),'') IS NOT NULL;
 
 COMMIT;
@@ -66,10 +66,10 @@ SELECT
   COUNT(*) AS registros,
   COUNT(DISTINCT estado) AS estados,
   COUNT(DISTINCT cp) AS codigos_postales
-FROM gmx.catalogo_cp;
+FROM shiny.catalogo_cp;
 "@
 
-$temp=Join-Path $env:TEMP "gmx_restore_geo_$(Get-Date -Format yyyyMMdd_HHmmss).sql"
+$temp=Join-Path $env:TEMP "shiny_restore_geo_$(Get-Date -Format yyyyMMdd_HHmmss).sql"
 $utf8NoBom = New-Object System.Text.UTF8Encoding($false); [System.IO.File]::WriteAllText($temp, $sql, $utf8NoBom)
 
 try{

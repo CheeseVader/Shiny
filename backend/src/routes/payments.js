@@ -22,7 +22,7 @@ router.post('/transfer/:token/proof',rateLimit({keyPrefix:'TRANSFER_PROOF',max:2
 
 
 /* ============================================================
-   GMX_MP_004_WEBHOOK_ROUTE
+   SHINY_MP_004_WEBHOOK_ROUTE
    ============================================================ */
 
 router.post(

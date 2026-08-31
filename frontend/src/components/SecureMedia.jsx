@@ -8,7 +8,7 @@ export default function SecureMedia({mediaId,className='',alt='',style={}}){
     async function load(){
       if(!mediaId){setSrc('');return;}
       try{
-        const token=localStorage.getItem('GMX_AUTH_TOKEN')||'';
+        const token=localStorage.getItem('SHINY_AUTH_TOKEN')||'';
         const r=await fetch(`/api/v1/content/media/${encodeURIComponent(mediaId)}/file`,{
           headers:token?{Authorization:`Bearer ${token}`}:{}
         });

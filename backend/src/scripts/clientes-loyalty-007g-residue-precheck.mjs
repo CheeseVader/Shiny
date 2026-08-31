@@ -1,4 +1,4 @@
-﻿import fs from "node:fs";
+import fs from "node:fs";
 import path from "node:path";
 import pg from "pg";
 import { fileURLToPath } from "node:url";
@@ -93,7 +93,7 @@ try {
 
       (
         SELECT COUNT(*)
-        FROM gmx.pedidos
+        FROM shiny.pedidos
         WHERE
           pos_idempotency_key
             LIKE 'LOYALTY007-%'
@@ -101,7 +101,7 @@ try {
 
       (
         SELECT COUNT(*)
-        FROM gmx.clientes
+        FROM shiny.clientes
         WHERE
           nombre LIKE
             'CLIENTES LOYALTY007 TEST %'

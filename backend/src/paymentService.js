@@ -15,30 +15,30 @@ const uid = (p) => `${p}-${Date.now()}-${crypto.randomBytes(4).toString('hex').t
 
 
 /* ============================================================
-   GMX_MP_001_PROVIDER_CONFIGURATION
+   SHINY_MP_001_PROVIDER_CONFIGURATION
 
    Mercado Pago credentials are environment-only.
 
-   GMX_MERCADOPAGO_ENVIRONMENT:
+   SHINY_MERCADOPAGO_ENVIRONMENT:
      TEST
      PRODUCTION
 
    TEST:
-     GMX_MERCADOPAGO_TEST_ACCESS_TOKEN
-     GMX_MERCADOPAGO_TEST_PUBLIC_KEY
-     GMX_MERCADOPAGO_TEST_WEBHOOK_SECRET
+     SHINY_MERCADOPAGO_TEST_ACCESS_TOKEN
+     SHINY_MERCADOPAGO_TEST_PUBLIC_KEY
+     SHINY_MERCADOPAGO_TEST_WEBHOOK_SECRET
 
    PRODUCTION:
-     GMX_MERCADOPAGO_PROD_ACCESS_TOKEN
-     GMX_MERCADOPAGO_PROD_PUBLIC_KEY
-     GMX_MERCADOPAGO_PROD_WEBHOOK_SECRET
+     SHINY_MERCADOPAGO_PROD_ACCESS_TOKEN
+     SHINY_MERCADOPAGO_PROD_PUBLIC_KEY
+     SHINY_MERCADOPAGO_PROD_WEBHOOK_SECRET
    ============================================================ */
 
 export function mercadoPagoEnvironment() {
 
   const value =
   String(
-    process.env.GMX_MERCADOPAGO_ENVIRONMENT ||
+    process.env.SHINY_MERCADOPAGO_ENVIRONMENT ||
     'TEST'
   ).
   trim().
@@ -70,19 +70,19 @@ function mercadoPagoCredentials() {
 
       accessToken:
       String(
-        process.env.GMX_MERCADOPAGO_PROD_ACCESS_TOKEN ||
+        process.env.SHINY_MERCADOPAGO_PROD_ACCESS_TOKEN ||
         ''
       ).trim(),
 
       publicKey:
       String(
-        process.env.GMX_MERCADOPAGO_PROD_PUBLIC_KEY ||
+        process.env.SHINY_MERCADOPAGO_PROD_PUBLIC_KEY ||
         ''
       ).trim(),
 
       webhookSecret:
       String(
-        process.env.GMX_MERCADOPAGO_PROD_WEBHOOK_SECRET ||
+        process.env.SHINY_MERCADOPAGO_PROD_WEBHOOK_SECRET ||
         ''
       ).trim()
     };
@@ -93,19 +93,19 @@ function mercadoPagoCredentials() {
 
     accessToken:
     String(
-      process.env.GMX_MERCADOPAGO_TEST_ACCESS_TOKEN ||
+      process.env.SHINY_MERCADOPAGO_TEST_ACCESS_TOKEN ||
       ''
     ).trim(),
 
     publicKey:
     String(
-      process.env.GMX_MERCADOPAGO_TEST_PUBLIC_KEY ||
+      process.env.SHINY_MERCADOPAGO_TEST_PUBLIC_KEY ||
       ''
     ).trim(),
 
     webhookSecret:
     String(
-      process.env.GMX_MERCADOPAGO_TEST_WEBHOOK_SECRET ||
+      process.env.SHINY_MERCADOPAGO_TEST_WEBHOOK_SECRET ||
       ''
     ).trim()
   };
@@ -171,7 +171,7 @@ export function mercadoPagoConfigStatus() {
 }
 
 function stripeClient() {
-  const key = String(process.env.GMX_STRIPE_SECRET_KEY || '').trim();
+  const key = String(process.env.SHINY_STRIPE_SECRET_KEY || '').trim();
   if (!key) return null;
   return new Stripe(key);
 }
@@ -179,14 +179,14 @@ function stripeClient() {
 export function stripeConfigured() {return !!stripeClient();}
 
 export async function transferSettings() {
-  const r = await query(`SELECT parametro,valor FROM gmx.configuracion WHERE parametro LIKE 'public.payment.transfer.%'`);
+  const r = await query(`SELECT parametro,valor FROM shiny.configuracion WHERE parametro LIKE 'public.payment.transfer.%'`);
   const m = Object.fromEntries(r.rows.map((x) => [x.parametro, x.valor]));
   return {
-    bank_name: m['public.payment.transfer.bank_name'] || process.env.GMX_TRANSFER_BANK_NAME || '',
-    account_holder: m['public.payment.transfer.account_holder'] || process.env.GMX_TRANSFER_ACCOUNT_HOLDER || '',
-    account_number: m['public.payment.transfer.account_number'] || process.env.GMX_TRANSFER_ACCOUNT_NUMBER || '',
-    clabe: m['public.payment.transfer.clabe'] || process.env.GMX_TRANSFER_CLABE || '',
-    instructions: m['public.payment.transfer.instructions'] || process.env.GMX_TRANSFER_INSTRUCTIONS || '',
+    bank_name: m['public.payment.transfer.bank_name'] || process.env.SHINY_TRANSFER_BANK_NAME || '',
+    account_holder: m['public.payment.transfer.account_holder'] || process.env.SHINY_TRANSFER_ACCOUNT_HOLDER || '',
+    account_number: m['public.payment.transfer.account_number'] || process.env.SHINY_TRANSFER_ACCOUNT_NUMBER || '',
+    clabe: m['public.payment.transfer.clabe'] || process.env.SHINY_TRANSFER_CLABE || '',
+    instructions: m['public.payment.transfer.instructions'] || process.env.SHINY_TRANSFER_INSTRUCTIONS || '',
     proof_required: String(m['public.payment.transfer.proof_required'] || 'true') === 'true'
   };
 }
@@ -194,7 +194,7 @@ export async function transferSettings() {
 
 
 /* ============================================================
-   GMX_MP_002_PAYMENT_CREATION
+   SHINY_MP_002_PAYMENT_CREATION
 
    Mercado Pago card payment contract.
 
@@ -289,7 +289,7 @@ idempotencyKey)
     const orderResult =
     await client.query(
       `SELECT *
-         FROM gmx.pedidos
+         FROM shiny.pedidos
          WHERE id_pedido=$1
          FOR UPDATE`,
       [
@@ -326,7 +326,7 @@ idempotencyKey)
     const existingByProvider =
     await client.query(
       `SELECT *
-         FROM gmx.payment_transactions
+         FROM shiny.payment_transactions
          WHERE proveedor='MERCADOPAGO'
            AND provider_payment_id=$1
          ORDER BY row_id DESC
@@ -369,7 +369,7 @@ idempotencyKey)
     const existingIdem =
     await client.query(
       `SELECT *
-         FROM gmx.payment_transactions
+         FROM shiny.payment_transactions
          WHERE idempotency_key=$1
          ORDER BY row_id DESC
          LIMIT 1
@@ -443,7 +443,7 @@ idempotencyKey)
 
     const inserted =
     await client.query(
-      `INSERT INTO gmx.payment_transactions(
+      `INSERT INTO shiny.payment_transactions(
           id_transaccion,
           id_pedido,
           public_token,
@@ -487,7 +487,7 @@ idempotencyKey)
     );
 
     await client.query(
-      `UPDATE gmx.pedidos
+      `UPDATE shiny.pedidos
        SET
          payment_provider='MERCADOPAGO',
          payment_provider_session=$2,
@@ -518,7 +518,7 @@ idempotencyKey)
     );
 
     await client.query(
-      `INSERT INTO gmx.auditoria(
+      `INSERT INTO shiny.auditoria(
         fecha,
         modulo,
         accion,
@@ -575,7 +575,7 @@ paymentInput = {})
 {
 
   /*
-   * GMX_POS_003_MERCADOPAGO
+   * SHINY_POS_003_MERCADOPAGO
    * Controlled provider seam for certification.
    */
   const providerCall =
@@ -680,7 +680,7 @@ paymentInput = {})
     description:
     String(
       paymentInput.description || brandText(
-        `Pedido GMX ${order.id_pedido}`)
+        `Pedido Shiny ${order.id_pedido}`)
     ),
 
     installments:
@@ -794,7 +794,7 @@ paymentInput = {})
 
 
 /* ============================================================
-   GMX_MP_003_PAYMENT_CONFIRMATION
+   SHINY_MP_003_PAYMENT_CONFIRMATION
 
    Mercado Pago state confirmation contract.
 
@@ -850,7 +850,7 @@ payment)
     const txResult =
     await client.query(
       `SELECT *
-         FROM gmx.payment_transactions
+         FROM shiny.payment_transactions
          WHERE proveedor='MERCADOPAGO'
            AND provider_payment_id=$1
          ORDER BY row_id DESC
@@ -875,7 +875,7 @@ payment)
     const orderResult =
     await client.query(
       `SELECT *
-         FROM gmx.pedidos
+         FROM shiny.pedidos
          WHERE id_pedido=$1
          FOR UPDATE`,
       [
@@ -1007,7 +1007,7 @@ payment)
     };
 
     await client.query(
-      `UPDATE gmx.payment_transactions
+      `UPDATE shiny.payment_transactions
        SET
          estado=$2,
          monto=COALESCE($3,monto),
@@ -1034,7 +1034,7 @@ payment)
     );
 
     /*
-     * Only APPROVED may convert the GMX order to PAGADO.
+     * Only APPROVED may convert the Shiny order to PAGADO.
      */
 
     if (
@@ -1043,7 +1043,7 @@ payment)
     {
 
       await client.query(
-        `UPDATE gmx.pedidos
+        `UPDATE shiny.pedidos
          SET
            estado_pedido='PAGADO',
            venta_confirmada=true,
@@ -1070,7 +1070,7 @@ payment)
       );
 
       await client.query(
-        `INSERT INTO gmx.auditoria(
+        `INSERT INTO shiny.auditoria(
            fecha,
            modulo,
            accion,
@@ -1096,7 +1096,7 @@ payment)
     const finalTx =
     await client.query(
       `SELECT *
-         FROM gmx.payment_transactions
+         FROM shiny.payment_transactions
          WHERE row_id=$1`,
       [
       tx.row_id]
@@ -1106,7 +1106,7 @@ payment)
     const finalOrder =
     await client.query(
       `SELECT *
-         FROM gmx.pedidos
+         FROM shiny.pedidos
          WHERE id_pedido=$1`,
       [
       order.id_pedido]
@@ -1226,7 +1226,7 @@ paymentId)
   /*
    * Security:
    * confirmation is applied only to a transaction
-   * already registered in GMX with this provider_payment_id.
+   * already registered in Shiny with this provider_payment_id.
    */
 
   return applyMercadoPagoPaymentState(
@@ -1237,7 +1237,7 @@ paymentId)
 
 
 /* ============================================================
-   GMX_MP_004_WEBHOOK
+   SHINY_MP_004_WEBHOOK
 
    Mercado Pago Webhook contract.
 
@@ -1433,7 +1433,7 @@ export async function handleMercadoPagoWebhook({
 
 
 /* ============================================================
-   GMX_MP_006_TOTAL_REFUND
+   SHINY_MP_006_TOTAL_REFUND
 
    Mercado Pago full refund contract.
 
@@ -1442,7 +1442,7 @@ export async function handleMercadoPagoWebhook({
      body: omitted
      X-Idempotency-Key: required
 
-   GMX persistence:
+   Shiny persistence:
      payment_id
      refund_id_proveedor
      idempotency_key
@@ -1537,7 +1537,7 @@ export async function persistMercadoPagoRefundResult({
     const current =
     await client.query(
       `SELECT *
-         FROM gmx.devoluciones_reembolsos
+         FROM shiny.devoluciones_reembolsos
          WHERE id_reembolso=$1
          FOR UPDATE`,
       [
@@ -1599,7 +1599,7 @@ export async function persistMercadoPagoRefundResult({
 
     const updated =
     await client.query(
-      `UPDATE gmx.devoluciones_reembolsos
+      `UPDATE shiny.devoluciones_reembolsos
          SET
            metodo='TARJETA',
            proveedor='MERCADOPAGO',
@@ -1658,7 +1658,7 @@ export async function persistMercadoPagoRefundResult({
     );
 
     await client.query(
-      `INSERT INTO gmx.auditoria(
+      `INSERT INTO shiny.auditoria(
          fecha,
          modulo,
          accion,
@@ -1745,13 +1745,13 @@ export async function createMercadoPagoTotalRefund({
   ).trim();
 
   /*
-   * Check GMX before hitting provider.
+   * Check Shiny before hitting provider.
    */
 
   const existing =
   await query(
     `SELECT *
-       FROM gmx.devoluciones_reembolsos
+       FROM shiny.devoluciones_reembolsos
        WHERE id_reembolso=$1
        LIMIT 1`,
     [
@@ -1914,7 +1914,7 @@ export async function createMercadoPagoTotalRefund({
 
 
 /* ============================================================
-   GMX_MP_007_PARTIAL_REFUND
+   SHINY_MP_007_PARTIAL_REFUND
 
    Partial refund contract.
 
@@ -1969,7 +1969,7 @@ paymentId)
            0
          )::numeric(18,2)
            AS total
-       FROM gmx.devoluciones_reembolsos
+       FROM shiny.devoluciones_reembolsos
        WHERE UPPER(
                COALESCE(
                  proveedor,
@@ -2012,7 +2012,7 @@ paymentId)
          monto,
          moneda,
          provider_payment_id
-       FROM gmx.payment_transactions
+       FROM shiny.payment_transactions
        WHERE proveedor='MERCADOPAGO'
          AND provider_payment_id=$1
        ORDER BY row_id DESC
@@ -2151,7 +2151,7 @@ export async function createMercadoPagoPartialRefund({
     const payment =
     await client.query(
       `SELECT *
-         FROM gmx.payment_transactions
+         FROM shiny.payment_transactions
          WHERE proveedor='MERCADOPAGO'
            AND provider_payment_id=$1
          ORDER BY row_id DESC
@@ -2184,7 +2184,7 @@ export async function createMercadoPagoPartialRefund({
     const currentRefund =
     await client.query(
       `SELECT *
-         FROM gmx.devoluciones_reembolsos
+         FROM shiny.devoluciones_reembolsos
          WHERE id_reembolso=$1
          FOR UPDATE`,
       [
@@ -2281,7 +2281,7 @@ export async function createMercadoPagoPartialRefund({
              0
            )::numeric(18,2)
              AS total
-         FROM gmx.devoluciones_reembolsos
+         FROM shiny.devoluciones_reembolsos
          WHERE UPPER(
                  COALESCE(
                    proveedor,
@@ -2346,7 +2346,7 @@ export async function createMercadoPagoPartialRefund({
      */
 
     await client.query(
-      `UPDATE gmx.devoluciones_reembolsos
+      `UPDATE shiny.devoluciones_reembolsos
        SET
          metodo='TARJETA',
          proveedor='MERCADOPAGO',
@@ -2411,7 +2411,7 @@ export async function createMercadoPagoPartialRefund({
      */
 
     await query(
-      `UPDATE gmx.devoluciones_reembolsos
+      `UPDATE shiny.devoluciones_reembolsos
        SET
          estado='ERROR',
          error_codigo=
@@ -2476,7 +2476,7 @@ export async function createMercadoPagoPartialRefund({
   } catch (e) {
 
     await query(
-      `UPDATE gmx.devoluciones_reembolsos
+      `UPDATE shiny.devoluciones_reembolsos
        SET
          estado='ERROR',
          error_codigo=$2,
@@ -2506,7 +2506,7 @@ export async function createMercadoPagoPartialRefund({
   {
 
     await query(
-      `UPDATE gmx.devoluciones_reembolsos
+      `UPDATE shiny.devoluciones_reembolsos
        SET
          estado='ERROR',
          error_codigo=
@@ -2588,7 +2588,7 @@ export async function createMercadoPagoPartialRefund({
 
 
 /* ============================================================
-   GMX_MP_008_TIMEOUT_RETRY
+   SHINY_MP_008_TIMEOUT_RETRY
 
    Payment timeout / retry safety.
 
@@ -2596,7 +2596,7 @@ export async function createMercadoPagoPartialRefund({
      A retry NEVER creates a new payment attempt identity.
 
    One logical payment attempt:
-     - one GMX payment_transaction
+     - one Shiny payment_transaction
      - one stable idempotency_key
      - zero or one provider_payment_id
 
@@ -2730,7 +2730,7 @@ idempotencyKey)
     const orderResult =
     await client.query(
       `SELECT *
-         FROM gmx.pedidos
+         FROM shiny.pedidos
          WHERE id_pedido=$1
          FOR UPDATE`,
       [
@@ -2763,7 +2763,7 @@ idempotencyKey)
     const existing =
     await client.query(
       `SELECT *
-         FROM gmx.payment_transactions
+         FROM shiny.payment_transactions
          WHERE idempotency_key=$1
          ORDER BY row_id DESC
          LIMIT 1
@@ -2836,7 +2836,7 @@ idempotencyKey)
 
     const inserted =
     await client.query(
-      `INSERT INTO gmx.payment_transactions(
+      `INSERT INTO shiny.payment_transactions(
           id_transaccion,
           id_pedido,
           public_token,
@@ -2933,7 +2933,7 @@ updater)
     const current =
     await client.query(
       `SELECT *
-         FROM gmx.payment_transactions
+         FROM shiny.payment_transactions
          WHERE idempotency_key=$1
          ORDER BY row_id DESC
          LIMIT 1
@@ -2973,7 +2973,7 @@ updater)
 
     const updated =
     await client.query(
-      `UPDATE gmx.payment_transactions
+      `UPDATE shiny.payment_transactions
          SET
            metadata_json=$2::jsonb,
            fecha_actualizacion=NOW()
@@ -3063,7 +3063,7 @@ export async function persistMercadoPagoRetryResult({
     const attempt =
     await client.query(
       `SELECT *
-         FROM gmx.payment_transactions
+         FROM shiny.payment_transactions
          WHERE idempotency_key=$1
          ORDER BY row_id DESC
          LIMIT 1
@@ -3104,13 +3104,13 @@ export async function persistMercadoPagoRetryResult({
 
     /*
      * A provider payment ID may never belong to
-     * another GMX transaction.
+     * another Shiny transaction.
      */
 
     const duplicateProvider =
     await client.query(
       `SELECT *
-         FROM gmx.payment_transactions
+         FROM shiny.payment_transactions
          WHERE proveedor='MERCADOPAGO'
            AND provider_payment_id=$1
            AND row_id<>$2
@@ -3230,7 +3230,7 @@ export async function persistMercadoPagoRetryResult({
 
     const updated =
     await client.query(
-      `UPDATE gmx.payment_transactions
+      `UPDATE shiny.payment_transactions
          SET
            estado=$2,
            provider_session_id=$3,
@@ -3250,7 +3250,7 @@ export async function persistMercadoPagoRetryResult({
     );
 
     await client.query(
-      `UPDATE gmx.pedidos
+      `UPDATE shiny.pedidos
        SET
          payment_provider='MERCADOPAGO',
          payment_provider_session=$2,
@@ -3264,7 +3264,7 @@ export async function persistMercadoPagoRetryResult({
     );
 
     await client.query(
-      `INSERT INTO gmx.auditoria(
+      `INSERT INTO shiny.auditoria(
         fecha,
         modulo,
         accion,
@@ -3386,7 +3386,7 @@ paymentInput = {},
   reservation.transaction;
 
   /*
-   * If GMX already persisted the provider payment,
+   * If Shiny already persisted the provider payment,
    * never create another charge.
    */
 
@@ -3513,7 +3513,7 @@ paymentInput = {},
     description:
     String(
       paymentInput.description || brandText(
-        `Pedido GMX ${order.id_pedido}`)
+        `Pedido Shiny ${order.id_pedido}`)
     ),
 
     installments:
@@ -3778,16 +3778,16 @@ paymentInput = {},
 
 
 /* ============================================================
-   GMX_MP_009_RECONCILIATION
+   SHINY_MP_009_RECONCILIATION
 
    Mercado Pago reconciliation.
 
    Comparison only:
      provider payment
        vs
-     GMX payment_transactions
+     Shiny payment_transactions
        vs
-     GMX pedidos
+     Shiny pedidos
 
    This function DOES NOT silently repair inconsistencies.
 
@@ -4188,7 +4188,7 @@ paymentId,
   const transactionResult =
   await query(
     `SELECT *
-       FROM gmx.payment_transactions
+       FROM shiny.payment_transactions
        WHERE proveedor='MERCADOPAGO'
          AND provider_payment_id=$1
        ORDER BY row_id DESC
@@ -4212,7 +4212,7 @@ paymentId,
   const orderResult =
   await query(
     `SELECT *
-       FROM gmx.pedidos
+       FROM shiny.pedidos
        WHERE id_pedido=$1
        LIMIT 1`,
     [
@@ -4332,7 +4332,7 @@ export async function reconcileMercadoPagoPayments({
   await query(
     `SELECT
          provider_payment_id
-       FROM gmx.payment_transactions
+       FROM shiny.payment_transactions
        WHERE proveedor='MERCADOPAGO'
          AND provider_payment_id IS NOT NULL
          AND BTRIM(
@@ -4462,7 +4462,7 @@ reconciliation)
 }
 
 export async function createStripeSessionForOrder(order, token, baseUrl) {
-  // GMX_PAY_IDEMP_001
+  // SHINY_PAY_IDEMP_001
   const stripe = stripeClient();
   if (!stripe) throw new Error('CARD_GATEWAY_NOT_CONFIGURED');
 
@@ -4479,7 +4479,7 @@ export async function createStripeSessionForOrder(order, token, baseUrl) {
 
     const orderR = await client.query(
       `SELECT id_pedido,estado_pago
-       FROM gmx.pedidos
+       FROM shiny.pedidos
        WHERE id_pedido=$1
        FOR UPDATE`,
       [order.id_pedido]
@@ -4491,7 +4491,7 @@ export async function createStripeSessionForOrder(order, token, baseUrl) {
 
     const existing = await client.query(
       `SELECT *
-       FROM gmx.payment_transactions
+       FROM shiny.payment_transactions
        WHERE id_pedido=$1
          AND proveedor='STRIPE'
          AND metodo='CARD'
@@ -4523,7 +4523,7 @@ export async function createStripeSessionForOrder(order, token, baseUrl) {
         }
 
         await client.query(
-          `UPDATE gmx.payment_transactions
+          `UPDATE shiny.payment_transactions
            SET estado='EXPIRED',
                idempotency_key=NULL,
                fecha_actualizacion=NOW()
@@ -4539,7 +4539,7 @@ export async function createStripeSessionForOrder(order, token, baseUrl) {
       line_items: [{
         price_data: {
           currency: 'mxn',
-          product_data: { name: brandText(`Pedido GMX ${order.id_pedido}`) },
+          product_data: { name: brandText(`Pedido Shiny ${order.id_pedido}`) },
           unit_amount: Math.round(Number(order.total || 0) * 100)
         },
         quantity: 1
@@ -4550,7 +4550,7 @@ export async function createStripeSessionForOrder(order, token, baseUrl) {
     });
 
     await client.query(
-      `INSERT INTO gmx.payment_transactions(
+      `INSERT INTO shiny.payment_transactions(
         id_transaccion,id_pedido,public_token,proveedor,metodo,estado,monto,moneda,
         provider_session_id,metadata_json,idempotency_key)
        VALUES($1,$2,$3,'STRIPE','CARD','PENDING',$4,'MXN',$5,$6::jsonb,$7)`,
@@ -4566,7 +4566,7 @@ export async function createStripeSessionForOrder(order, token, baseUrl) {
     );
 
     await client.query(
-      `UPDATE gmx.pedidos
+      `UPDATE shiny.pedidos
        SET payment_provider='STRIPE',
            payment_provider_session=$2,
            estado_pago='PENDIENTE',
@@ -4594,35 +4594,35 @@ async function markStripePaid(session) {
   let order = null;
   try {
     await client.query('BEGIN');
-    const r = await client.query(`SELECT * FROM gmx.pedidos WHERE id_pedido=$1 FOR UPDATE`, [orderId]);
+    const r = await client.query(`SELECT * FROM shiny.pedidos WHERE id_pedido=$1 FOR UPDATE`, [orderId]);
     if (!r.rowCount) throw new Error('ORDER_NOT_FOUND');
     order = r.rows[0];
 
     if (order.estado_pago !== 'PAGADO') {
-      await client.query(`UPDATE gmx.pedidos SET estado_pago='PAGADO',fecha_pago=NOW(),
+      await client.query(`UPDATE shiny.pedidos SET estado_pago='PAGADO',fecha_pago=NOW(),
         payment_confirmed_at=NOW(),referencia_pago=$2,fecha_actualizacion=NOW()
         WHERE id_pedido=$1`, [orderId, session.payment_intent || session.id]);
 
-      await client.query(`UPDATE gmx.payment_transactions SET estado='PAID',
+      await client.query(`UPDATE shiny.payment_transactions SET estado='PAID',
         provider_payment_id=$2,fecha_actualizacion=NOW()
         WHERE id_pedido=$1 AND provider_session_id=$3`, [orderId, String(session.payment_intent || ''), session.id]);
 
-      await client.query(`INSERT INTO gmx.auditoria(fecha,modulo,accion,referencia,detalle,usuario)
+      await client.query(`INSERT INTO shiny.auditoria(fecha,modulo,accion,referencia,detalle,usuario)
         VALUES(NOW(),'PAYMENTS','CARD_PAID',$1,$2,'STRIPE')`, [orderId, session.id]);
     }
     await client.query('COMMIT');
   } catch (e) {try {await client.query('ROLLBACK');} catch {}throw e;} finally {client.release();}
 
-  const base = String(process.env.GMX_PUBLIC_BASE_URL || 'http://127.0.0.1:5173').replace(/\/$/, '');
+  const base = String(process.env.SHINY_PUBLIC_BASE_URL || 'http://127.0.0.1:5173').replace(/\/$/, '');
   if (order?.email) {
     const receiptUrl = `${base}/tienda/comprobante/${encodeURIComponent(token || order.public_token)}`;
     const mail = await queueAndSendEmail({
       to: order.email,
-      subject: brandText(`GMX · Pago confirmado ${order.id_pedido}`),
+      subject: brandText(`Shiny · Pago confirmado ${order.id_pedido}`),
       html: paymentReceiptHtml({ order: { ...order, estado_pago: 'PAGADO' }, receiptUrl, paymentLabel: 'Pago con tarjeta confirmado' }),
       reference: order.id_pedido
     });
-    await query(`UPDATE gmx.pedidos SET email_confirmacion_estado=$2 WHERE id_pedido=$1`, [
+    await query(`UPDATE shiny.pedidos SET email_confirmacion_estado=$2 WHERE id_pedido=$1`, [
     order.id_pedido, mail.sent ? 'SENT' : mail.queued ? 'QUEUED' : 'NOT_SENT']
     );
   }
@@ -4643,7 +4643,7 @@ export async function confirmStripeSession(sessionId, token) {
 
 export async function handleStripeWebhook(rawBody, signature) {
   const stripe = stripeClient();
-  const secret = String(process.env.GMX_STRIPE_WEBHOOK_SECRET || '').trim();
+  const secret = String(process.env.SHINY_STRIPE_WEBHOOK_SECRET || '').trim();
   if (!stripe || !secret) throw new Error('STRIPE_WEBHOOK_NOT_CONFIGURED');
   const event = stripe.webhooks.constructEvent(rawBody, signature, secret);
   if (event.type === 'checkout.session.completed' || event.type === 'checkout.session.async_payment_succeeded') {
@@ -4657,10 +4657,10 @@ export async function ensureTransferTransaction(order, token, baseUrl) {
   const bank = await transferSettings();
   if (!bank.bank_name || !bank.account_number && !bank.clabe) throw new Error('TRANSFER_ACCOUNT_NOT_CONFIGURED');
 
-  const existing = await query(`SELECT * FROM gmx.payment_transactions
+  const existing = await query(`SELECT * FROM shiny.payment_transactions
     WHERE id_pedido=$1 AND metodo='TRANSFER' ORDER BY row_id DESC LIMIT 1`, [order.id_pedido]);
   if (!existing.rowCount) {
-    await query(`INSERT INTO gmx.payment_transactions(
+    await query(`INSERT INTO shiny.payment_transactions(
       id_transaccion,id_pedido,public_token,proveedor,metodo,estado,monto,moneda,referencia)
       VALUES($1,$2,$3,'MANUAL_BANK','TRANSFER','AWAITING_TRANSFER',$4,'MXN',$5)`, [
     uid('PAY'), order.id_pedido, token, Number(order.total || 0), order.numero_comprobante || order.id_pedido]
@@ -4671,11 +4671,11 @@ export async function ensureTransferTransaction(order, token, baseUrl) {
     const receiptUrl = `${String(baseUrl).replace(/\/$/, '')}/tienda/pago/transferencia/${encodeURIComponent(token)}`;
     const mail = await queueAndSendEmail({
       to: order.email,
-      subject: brandText(`GMX · Instrucciones de transferencia ${order.id_pedido}`),
+      subject: brandText(`Shiny · Instrucciones de transferencia ${order.id_pedido}`),
       html: transferInstructionsHtml({ order, receiptUrl, bank }),
       reference: order.id_pedido
     });
-    await query(`UPDATE gmx.pedidos SET email_confirmacion_estado=$2 WHERE id_pedido=$1`, [
+    await query(`UPDATE shiny.pedidos SET email_confirmacion_estado=$2 WHERE id_pedido=$1`, [
     order.id_pedido, mail.sent ? 'SENT' : mail.queued ? 'QUEUED' : 'NOT_SENT']
     );
   }
@@ -4683,7 +4683,7 @@ export async function ensureTransferTransaction(order, token, baseUrl) {
 }
 
 export async function saveTransferProof(token, file) {
-  const orderR = await query(`SELECT * FROM gmx.pedidos WHERE public_token=$1 ORDER BY row_id LIMIT 1`, [token]);
+  const orderR = await query(`SELECT * FROM shiny.pedidos WHERE public_token=$1 ORDER BY row_id LIMIT 1`, [token]);
   if (!orderR.rowCount) throw new Error('ORDER_NOT_FOUND');
   const order = orderR.rows[0];
   if (order.metodo_pago_publico !== 'TRANSFER') throw new Error('ORDER_NOT_TRANSFER');
@@ -4700,28 +4700,28 @@ export async function saveTransferProof(token, file) {
   const full = path.join(PROOF_DIR, filename);
   fs.writeFileSync(full, buf);
 
-  const tx = await query(`SELECT * FROM gmx.payment_transactions WHERE id_pedido=$1 AND metodo='TRANSFER'
+  const tx = await query(`SELECT * FROM shiny.payment_transactions WHERE id_pedido=$1 AND metodo='TRANSFER'
     ORDER BY row_id DESC LIMIT 1`, [order.id_pedido]);
   if (tx.rowCount) {
-    await query(`UPDATE gmx.payment_transactions SET estado='PROOF_RECEIVED',proof_name=$2,proof_mime=$3,
+    await query(`UPDATE shiny.payment_transactions SET estado='PROOF_RECEIVED',proof_name=$2,proof_mime=$3,
       proof_path=$4,proof_uploaded_at=NOW(),fecha_actualizacion=NOW() WHERE row_id=$1`, [
     tx.rows[0].row_id, String(file?.name || filename).slice(0, 250), mime, full]
     );
   } else {
-    await query(`INSERT INTO gmx.payment_transactions(
+    await query(`INSERT INTO shiny.payment_transactions(
       id_transaccion,id_pedido,public_token,proveedor,metodo,estado,monto,moneda,referencia,proof_name,proof_mime,proof_path,proof_uploaded_at)
       VALUES($1,$2,$3,'MANUAL_BANK','TRANSFER','PROOF_RECEIVED',$4,'MXN',$5,$6,$7,$8,NOW())`, [
     uid('PAY'), order.id_pedido, token, Number(order.total || 0), order.numero_comprobante || order.id_pedido,
     String(file?.name || filename).slice(0, 250), mime, full]
     );
   }
-  await query(`UPDATE gmx.pedidos SET transfer_proof_status='RECEIVED',fecha_actualizacion=NOW() WHERE id_pedido=$1`, [order.id_pedido]);
+  await query(`UPDATE shiny.pedidos SET transfer_proof_status='RECEIVED',fecha_actualizacion=NOW() WHERE id_pedido=$1`, [order.id_pedido]);
 
-  const base = String(process.env.GMX_PUBLIC_BASE_URL || 'http://127.0.0.1:5173').replace(/\/$/, '');
+  const base = String(process.env.SHINY_PUBLIC_BASE_URL || 'http://127.0.0.1:5173').replace(/\/$/, '');
   if (order.email) {
     await queueAndSendEmail({
       to: order.email,
-      subject: brandText(`GMX · Comprobante de transferencia recibido ${order.id_pedido}`),
+      subject: brandText(`Shiny · Comprobante de transferencia recibido ${order.id_pedido}`),
       html: paymentReceiptHtml({
         order: { ...order, estado_pago: 'COMPROBANTE_RECIBIDO' },
         receiptUrl: `${base}/tienda/comprobante/${encodeURIComponent(token)}`,

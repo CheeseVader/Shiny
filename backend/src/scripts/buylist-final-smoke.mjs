@@ -3,7 +3,7 @@ import fs from 'fs';
 import path from 'path';
 import { query, pool } from '../db.js';
 
-const ROOT = brandText("C:\\Users\\igarcia\\Videos\\GMX\\backend");
+const ROOT = brandText("C:\\Users\\igarcia\\Videos\\Shiny\\backend");
 
 function section(t) {
   console.log('');
@@ -20,7 +20,7 @@ async function tableExists(name) {
   const r = await query(`
     SELECT 1
     FROM information_schema.tables
-    WHERE table_schema='gmx'
+    WHERE table_schema='shiny'
       AND table_name=$1
     LIMIT 1
   `, [name]);
@@ -31,7 +31,7 @@ async function columns(name) {
   const r = await query(`
     SELECT ordinal_position,column_name,data_type,is_nullable
     FROM information_schema.columns
-    WHERE table_schema='gmx'
+    WHERE table_schema='shiny'
       AND table_name=$1
     ORDER BY ordinal_position
   `, [name]);
@@ -40,7 +40,7 @@ async function columns(name) {
 
 try {
 
-  section(brandText("GMX BUYLIST FINAL SMOKE"));
+  section(brandText("Shiny BUYLIST FINAL SMOKE"));
 
   console.log('BUYLIST');
   console.log('NO DATABASE MUTATION');
@@ -57,7 +57,7 @@ try {
   const tables = await query(`
     SELECT table_name
     FROM information_schema.tables
-    WHERE table_schema='gmx'
+    WHERE table_schema='shiny'
       AND (
         table_name ILIKE '%buylist%'
         OR table_name ILIKE '%compra_tcg%'
@@ -157,13 +157,13 @@ try {
   );
 
   const hasInsert =
-  /INSERT\s+INTO\s+gmx\.[a-z0-9_]*buylist/i.test(source);
+  /INSERT\s+INTO\s+shiny\.[a-z0-9_]*buylist/i.test(source);
 
   const hasUpdate =
-  /UPDATE\s+gmx\.[a-z0-9_]*buylist/i.test(source);
+  /UPDATE\s+shiny\.[a-z0-9_]*buylist/i.test(source);
 
   const hasSelect =
-  /FROM\s+gmx\.[a-z0-9_]*buylist/i.test(source);
+  /FROM\s+shiny\.[a-z0-9_]*buylist/i.test(source);
 
   assert(hasInsert, 'BUYLIST_CREATE_MISSING');
   assert(hasUpdate, 'BUYLIST_UPDATE_MISSING');
@@ -291,7 +291,7 @@ try {
 
   const negativeGlobal = await query(`
     SELECT id_inventario,stock,stock_reservado
-    FROM gmx.tcg_inventario
+    FROM shiny.tcg_inventario
     WHERE stock<0
        OR stock_reservado<0
     LIMIT 20
@@ -304,7 +304,7 @@ try {
 
   const negativeBranch = await query(`
     SELECT id_inventario,id_sucursal,stock,stock_reservado
-    FROM gmx.tcg_inventario_sucursales
+    FROM shiny.tcg_inventario_sucursales
     WHERE stock<0
        OR stock_reservado<0
     LIMIT 20
@@ -329,8 +329,8 @@ try {
       g.id_inventario,
       g.stock AS global_stock,
       COALESCE(SUM(s.stock),0)::bigint AS branch_stock
-    FROM gmx.tcg_inventario g
-    LEFT JOIN gmx.tcg_inventario_sucursales s
+    FROM shiny.tcg_inventario g
+    LEFT JOIN shiny.tcg_inventario_sucursales s
       ON s.id_inventario=g.id_inventario
     GROUP BY g.id_inventario,g.stock
     HAVING g.stock<>COALESCE(SUM(s.stock),0)
@@ -398,7 +398,7 @@ try {
       tc.constraint_name,
       tc.constraint_type
     FROM information_schema.table_constraints tc
-    WHERE tc.table_schema='gmx'
+    WHERE tc.table_schema='shiny'
       AND tc.table_name ILIKE '%buylist%'
       AND tc.constraint_type IN (
         'PRIMARY KEY',
@@ -439,7 +439,7 @@ try {
 
       const r = await query(`
         SELECT *
-        FROM gmx."${table}"
+        FROM shiny."${table}"
         WHERE "${col}"<0
         LIMIT 5
       `);
@@ -464,7 +464,7 @@ try {
       tc.table_name,
       tc.constraint_name
     FROM information_schema.table_constraints tc
-    WHERE tc.table_schema='gmx'
+    WHERE tc.table_schema='shiny'
       AND tc.table_name ILIKE '%buylist%'
       AND tc.constraint_type='FOREIGN KEY'
   `);
@@ -472,7 +472,7 @@ try {
   console.log(`BUYLIST_FOREIGN_KEYS=${fk.rowCount}`);
 
   /*
-   * Some GMX legacy relations may be enforced by application
+   * Some Shiny legacy relations may be enforced by application
    * code rather than declared FK constraints, so discovery
    * itself is reported rather than requiring a fixed count.
    */
@@ -526,7 +526,7 @@ try {
 
     const r = await query(`
       SELECT COUNT(*)::int AS total
-      FROM gmx."${table}"
+      FROM shiny."${table}"
       WHERE ${conditions.join(' OR ')}
     `);
 

@@ -3,7 +3,7 @@ const fs=require('fs');
 const path=require('path');
 const {spawnSync}=require('child_process');
 
-const root=process.argv[2]||'C:\\Users\\SrsGarciaEspinoza\\Videos\\GMX';
+const root=process.argv[2]||'C:\\Users\\SrsGarciaEspinoza\\Videos\\Shiny';
 const payment=path.join(root,'backend','src','paymentService.js');
 const routes=path.join(root,'backend','src','routes','payments.js');
 
@@ -25,14 +25,14 @@ function restore(){ for(const [f,b] of backups){ try{fs.copyFileSync(b,f);}catch
 function fail(msg){ restore(); console.error(msg); console.error('Archivos restaurados automáticamente.'); process.exit(3); }
 
 let src=fs.readFileSync(payment,'utf8');
-if(!src.includes('GMX_PAY_IDEMP_001')){
+if(!src.includes('SHINY_PAY_IDEMP_001')){
   backup(payment,'PAY_IDEMP_001');
   const start=src.indexOf('export async function createStripeSessionForOrder(');
   const end=src.indexOf('\nasync function markStripePaid',start);
   if(start<0||end<0)fail('No se encontró createStripeSessionForOrder completo.');
 
   const replacement=`export async function createStripeSessionForOrder(order,token,baseUrl){
-  // GMX_PAY_IDEMP_001
+  // SHINY_PAY_IDEMP_001
   const stripe=stripeClient();
   if(!stripe)throw new Error('CARD_GATEWAY_NOT_CONFIGURED');
 
@@ -49,7 +49,7 @@ if(!src.includes('GMX_PAY_IDEMP_001')){
 
     const orderR=await client.query(
       \`SELECT id_pedido,estado_pago
-       FROM gmx.pedidos
+       FROM shiny.pedidos
        WHERE id_pedido=$1
        FOR UPDATE\`,
       [order.id_pedido]
@@ -61,7 +61,7 @@ if(!src.includes('GMX_PAY_IDEMP_001')){
 
     const existing=await client.query(
       \`SELECT *
-       FROM gmx.payment_transactions
+       FROM shiny.payment_transactions
        WHERE id_pedido=$1
          AND proveedor='STRIPE'
          AND metodo='CARD'
@@ -93,7 +93,7 @@ if(!src.includes('GMX_PAY_IDEMP_001')){
         }
 
         await client.query(
-          \`UPDATE gmx.payment_transactions
+          \`UPDATE shiny.payment_transactions
            SET estado='EXPIRED',
                idempotency_key=NULL,
                fecha_actualizacion=NOW()
@@ -109,7 +109,7 @@ if(!src.includes('GMX_PAY_IDEMP_001')){
       line_items:[{
         price_data:{
           currency:'mxn',
-          product_data:{name:\`Pedido GMX \${order.id_pedido}\`},
+          product_data:{name:\`Pedido Shiny \${order.id_pedido}\`},
           unit_amount:Math.round(Number(order.total||0)*100)
         },
         quantity:1
@@ -120,7 +120,7 @@ if(!src.includes('GMX_PAY_IDEMP_001')){
     });
 
     await client.query(
-      \`INSERT INTO gmx.payment_transactions(
+      \`INSERT INTO shiny.payment_transactions(
         id_transaccion,id_pedido,public_token,proveedor,metodo,estado,monto,moneda,
         provider_session_id,metadata_json,idempotency_key)
        VALUES($1,$2,$3,'STRIPE','CARD','PENDING',$4,'MXN',$5,$6::jsonb,$7)\`,
@@ -136,7 +136,7 @@ if(!src.includes('GMX_PAY_IDEMP_001')){
     );
 
     await client.query(
-      \`UPDATE gmx.pedidos
+      \`UPDATE shiny.pedidos
        SET payment_provider='STRIPE',
            payment_provider_session=$2,
            estado_pago='PENDIENTE',

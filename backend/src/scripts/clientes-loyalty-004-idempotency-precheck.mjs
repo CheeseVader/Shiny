@@ -1,5 +1,5 @@
 import { brandText } from "../config/brand.js"; /**
- * GMX — CLIENTES-LOYALTY-004
+ * Shiny — CLIENTES-LOYALTY-004
  * IDEMPOTENCY PRECHECK
  *
  * MODE: 100% READ ONLY
@@ -251,7 +251,7 @@ function printRows(rows, max = 300) {
 }
 
 async function main() {
-  section(brandText("GMX — CLIENTES-LOYALTY-004 IDEMPOTENCY PRECHECK")
+  section(brandText("Shiny — CLIENTES-LOYALTY-004 IDEMPOTENCY PRECHECK")
 
   );
 
@@ -472,7 +472,7 @@ async function main() {
           column_default
         FROM information_schema.columns
         WHERE
-          table_schema='gmx'
+          table_schema='shiny'
           AND table_name='pedidos'
           AND (
             lower(column_name)
@@ -509,7 +509,7 @@ async function main() {
           indexdef
         FROM pg_indexes
         WHERE
-          schemaname='gmx'
+          schemaname='shiny'
           AND tablename='pedidos'
           AND (
             lower(indexname)
@@ -544,7 +544,7 @@ async function main() {
           indexdef
         FROM pg_indexes
         WHERE
-          schemaname='gmx'
+          schemaname='shiny'
           AND tablename='fidelidad_movimientos'
         ORDER BY indexname
         `
@@ -597,7 +597,7 @@ async function main() {
           ON n.oid=c.relnamespace
 
         WHERE
-          n.nspname='gmx'
+          n.nspname='shiny'
 
           AND c.relname IN (
             'pedidos',
@@ -660,7 +660,7 @@ async function main() {
           pos_idempotency_key,
           COUNT(*)::bigint
             AS occurrences
-        FROM gmx.pedidos
+        FROM shiny.pedidos
         WHERE
           pos_idempotency_key IS NOT NULL
           AND btrim(
@@ -773,7 +773,7 @@ async function main() {
           )::bigint
             AS partial_return_points
 
-        FROM gmx.fidelidad_movimientos
+        FROM shiny.fidelidad_movimientos
 
         WHERE
           id_pedido IS NOT NULL
@@ -811,7 +811,7 @@ async function main() {
             AS generation_rows,
           SUM(puntos)::bigint
             AS generated_points
-        FROM gmx.fidelidad_movimientos
+        FROM shiny.fidelidad_movimientos
         WHERE tipo='GENERACION'
           AND id_pedido IS NOT NULL
         GROUP BY
@@ -855,7 +855,7 @@ async function main() {
             AS redemption_rows,
           SUM(puntos)::bigint
             AS redeemed_points
-        FROM gmx.fidelidad_movimientos
+        FROM shiny.fidelidad_movimientos
         WHERE tipo='REDENCION'
           AND id_pedido IS NOT NULL
         GROUP BY
@@ -915,10 +915,10 @@ async function main() {
           END
             AS original_found
 
-        FROM gmx.fidelidad_movimientos r
+        FROM shiny.fidelidad_movimientos r
 
         LEFT JOIN
-          gmx.fidelidad_movimientos original
+          shiny.fidelidad_movimientos original
             ON original.id_movimiento
                = r.reversa_de
 
@@ -946,7 +946,7 @@ async function main() {
           reversa_de,
           COUNT(*)::bigint
             AS reversal_count
-        FROM gmx.fidelidad_movimientos
+        FROM shiny.fidelidad_movimientos
         WHERE
           reversa_de IS NOT NULL
         GROUP BY reversa_de
@@ -985,7 +985,7 @@ async function main() {
           beneficios_revertidos,
           COUNT(*)::bigint
             AS pedidos
-        FROM gmx.pedidos
+        FROM shiny.pedidos
         GROUP BY beneficios_revertidos
         ORDER BY beneficios_revertidos
         `
@@ -1015,7 +1015,7 @@ async function main() {
             AS occurrences,
           SUM(puntos)::bigint
             AS points_sum
-        FROM gmx.fidelidad_movimientos
+        FROM shiny.fidelidad_movimientos
         WHERE tipo='DEVOLUCION_RETIRO'
         GROUP BY
           id_pedido,
@@ -1062,7 +1062,7 @@ async function main() {
               WHERE tipo='REVERSA'
             )::bigint
               AS reversal_rows
-          FROM gmx.fidelidad_movimientos
+          FROM shiny.fidelidad_movimientos
           WHERE id_pedido IS NOT NULL
           GROUP BY id_pedido
         )
@@ -1077,7 +1077,7 @@ async function main() {
           )::bigint
             AS reversal_rows
 
-        FROM gmx.pedidos p
+        FROM shiny.pedidos p
 
         LEFT JOIN movement_state m
           ON m.id_pedido=p.id_pedido

@@ -1,4 +1,4 @@
-/* GMX 10.6.2.4.1.11 — Cotizaciones UX */
+/* Shiny 10.6.2.4.1.11 — Cotizaciones UX */
 .quotes-v11{display:grid;gap:18px}
 .quote-create-panel,.quote-history-panel{width:100%;box-sizing:border-box}
 .quote-panel-head,.quote-history-head{display:flex;justify-content:space-between;align-items:flex-start;gap:16px}
@@ -50,7 +50,7 @@
   .quote-summary-bar .grand,.quote-summary-bar button{grid-column:1/-1}
 }
 
-/* GMX 10.6.2.4.1.11.1 — Searchable registered catalog menus */
+/* Shiny 10.6.2.4.1.11.1 — Searchable registered catalog menus */
 .quote-picker-input{display:grid;grid-template-columns:1fr 44px;align-items:stretch}
 .quote-picker-input input{border-radius:10px 0 0 10px !important}
 .quote-picker-toggle{
@@ -88,7 +88,7 @@
 .quote-kind-pill.product{background:#f2f4f7;color:#344054}.quote-kind-pill.tcg{background:#eef4ff;color:#3538cd}
 @media(max-width:800px){.quote-catalog-toolbar{grid-template-columns:1fr}.quote-catalog-legend{justify-content:flex-start}}
 
-/* GMX 10.6.2.4.1.12.1 — Selected client visual fix */
+/* Shiny 10.6.2.4.1.12.1 — Selected client visual fix */
 .quote-selected-client-v2{
   display:grid;
   grid-template-columns:auto minmax(0,1fr);

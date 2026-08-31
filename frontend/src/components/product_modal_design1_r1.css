@@ -1,0 +1,556 @@
+/* SHINY_PRODUCT_MODAL_DESIGN1_R11
+   Diseño 1 aprobado: equilibrado, limpio y compacto.
+   Solo presentación: no altera lógica de negocio.
+*/
+
+.product-modal-complete{
+  width:min(920px,calc(100vw - 40px)) !important;
+  max-width:920px !important;
+  max-height:calc(100vh - 40px) !important;
+  padding:0 !important;
+  overflow:auto !important;
+  border-radius:18px !important;
+  background:#fff !important;
+}
+
+.product-modal-complete .modal-head{
+  padding:22px 26px 14px !important;
+  border-bottom:0 !important;
+  align-items:flex-start !important;
+}
+
+.product-modal-complete .modal-head .eyebrow{
+  display:none !important;
+}
+
+.product-modal-complete .modal-head h2{
+  margin:0 !important;
+  font-size:24px !important;
+  line-height:1.18 !important;
+  letter-spacing:-.02em !important;
+}
+
+.product-modal-complete .modal-head h2::after{
+  content:"Crea un producto para venta e inventario";
+  display:block;
+  margin-top:5px;
+  color:#64748b;
+  font-size:13px;
+  line-height:1.35;
+  font-weight:500;
+  letter-spacing:0;
+}
+
+.product-modal-complete .icon-btn{
+  width:34px !important;
+  height:34px !important;
+  min-width:34px !important;
+  border:0 !important;
+  background:transparent !important;
+  box-shadow:none !important;
+  font-size:26px !important;
+}
+
+.product-modal-complete .form-grid{
+  display:grid !important;
+  grid-template-columns:1fr 1fr 1fr !important;
+  grid-template-areas:
+    "sku barcode name"
+    "price category category"
+    "stock stockmin stockmin"
+    "description description description"
+    "image image state"
+    "branch branch branch"
+    "note note note"
+    "preview preview preview" !important;
+  gap:15px 14px !important;
+  padding:8px 26px 20px !important;
+  align-items:start !important;
+}
+
+.product-modal-complete .form-grid > label{
+  margin:0 !important;
+  width:auto !important;
+  min-width:0 !important;
+  display:grid !important;
+  gap:6px !important;
+  color:#334155 !important;
+  font-size:12px !important;
+  line-height:1.2 !important;
+  font-weight:700 !important;
+}
+
+.product-modal-complete .form-grid input,
+.product-modal-complete .form-grid select,
+.product-modal-complete .form-grid textarea{
+  width:100% !important;
+  min-width:0 !important;
+  min-height:42px !important;
+  box-sizing:border-box !important;
+  border:1px solid #d8e0eb !important;
+  border-radius:9px !important;
+  padding:10px 12px !important;
+  background:#fff !important;
+  box-shadow:none !important;
+  color:#0f172a !important;
+  font:inherit !important;
+  font-weight:500 !important;
+}
+
+.product-modal-complete .form-grid input:focus,
+.product-modal-complete .form-grid select:focus,
+.product-modal-complete .form-grid textarea:focus{
+  outline:none !important;
+  border-color:#8aa4c8 !important;
+  box-shadow:0 0 0 3px rgba(15,45,82,.08) !important;
+}
+
+.product-modal-complete .form-grid textarea{
+  min-height:72px !important;
+  resize:vertical !important;
+}
+
+/* Ubicación exacta Diseño 1 */
+.product-modal-complete .form-grid > label:has(input[name="sku"]){grid-area:sku !important;}
+.product-modal-complete .form-grid > label:has(input[name="codigo_barras"]){grid-area:barcode !important;}
+.product-modal-complete .form-grid > label:has(input[name="nombre"]){grid-area:name !important;}
+.product-modal-complete .form-grid > label:has(textarea[name="descripcion"]){grid-area:description !important;}
+.product-modal-complete .form-grid > label:has(input[name="precio"]){grid-area:price !important;}
+.product-modal-complete .form-grid > label:has(input[name="initial_stock"]),
+.product-modal-complete .form-grid > label:has(input[title*="sucursales"]){grid-area:stock !important;}
+.product-modal-complete .form-grid > label:has(input[name="stock_minimo"]){grid-area:stockmin !important;}
+.product-modal-complete .form-grid > label:has(select[name="categoria"]){grid-area:category !important;}
+.product-modal-complete .form-grid > label:has(select[name="estado"]){grid-area:state !important;}
+.product-modal-complete .form-grid > label:has(select[name="initial_branch_id"]){grid-area:branch !important;}
+
+/* El diseño aprobado no muestra costo en alta rápida. La lógica permanece en JSX. */
+.product-modal-complete .form-grid > label:has(input[name="costo"]){
+  display:none !important;
+}
+
+/* El administrador local ya contiene carga + URL; evitamos el campo Imagen/URL duplicado. */
+.product-modal-complete .form-grid > label:has(input[name="imagen"]){
+  display:none !important;
+}
+
+.product-modal-complete .product-stock-source-note{
+  grid-area:note !important;
+  min-height:0 !important;
+  padding:0 !important;
+  border:0 !important;
+  background:transparent !important;
+  color:#64748b !important;
+  font-size:11px !important;
+  line-height:1.35 !important;
+}
+
+/* ProductLocalImageManager existente, reducido al aspecto del Diseño 1 */
+.product-modal-complete .form-grid > .wide:has(input[type="file"]){
+  grid-area:image !important;
+  min-width:0 !important;
+  padding:0 !important;
+  border:0 !important;
+  border-radius:0 !important;
+  display:grid !important;
+  grid-template-columns:auto minmax(180px,1fr) !important;
+  grid-template-areas:
+    "heading heading"
+    "upload url"
+    "message message" !important;
+  gap:7px 10px !important;
+  align-items:center !important;
+}
+
+.product-modal-complete .form-grid > .wide:has(input[type="file"]) > div:first-child{
+  grid-area:heading !important;
+}
+
+.product-modal-complete .form-grid > .wide:has(input[type="file"]) > div:first-child strong{
+  font-size:12px !important;
+  color:#334155 !important;
+}
+
+.product-modal-complete .form-grid > .wide:has(input[type="file"]) > div:first-child > div{
+  display:none !important;
+}
+
+.product-modal-complete .form-grid > .wide:has(input[type="file"]) > div:nth-of-type(2){
+  grid-area:upload !important;
+  display:flex !important;
+  gap:6px !important;
+  flex-wrap:nowrap !important;
+}
+
+.product-modal-complete .form-grid > .wide:has(input[type="file"]) > div:nth-of-type(3){
+  grid-area:url !important;
+  display:block !important;
+  min-width:0 !important;
+}
+
+.product-modal-complete .form-grid > .wide:has(input[type="file"]) > div:nth-of-type(3) input{
+  min-height:42px !important;
+}
+
+.product-modal-complete .form-grid > .wide:has(input[type="file"]) > div:nth-of-type(3) button{
+  display:none !important;
+}
+
+.product-modal-complete .form-grid > .wide:has(input[type="file"]) > small{
+  grid-area:message !important;
+  font-size:11px !important;
+}
+
+.product-modal-complete .form-grid > .wide:has(input[type="file"]) button{
+  min-height:42px !important;
+  padding:9px 12px !important;
+  border:1px solid #d8e0eb !important;
+  border-radius:9px !important;
+  background:#f8fafc !important;
+  white-space:nowrap !important;
+}
+
+.product-modal-complete .product-image-preview{
+  grid-area:preview !important;
+  max-height:110px !important;
+  overflow:hidden !important;
+  border-radius:10px !important;
+}
+
+.product-modal-complete .product-image-preview img{
+  width:auto !important;
+  max-height:100px !important;
+  object-fit:contain !important;
+}
+
+/* Footer 1:1 */
+.product-modal-complete .modal-actions{
+  position:sticky !important;
+  bottom:0 !important;
+  z-index:3 !important;
+  display:flex !important;
+  align-items:center !important;
+  gap:10px !important;
+  margin:0 !important;
+  padding:14px 26px !important;
+  border-top:1px solid #e8edf4 !important;
+  background:rgba(255,255,255,.97) !important;
+  backdrop-filter:blur(8px) !important;
+}
+
+.product-modal-complete .modal-actions button{
+  min-height:40px !important;
+  padding:9px 18px !important;
+  border-radius:9px !important;
+}
+
+.product-modal-complete .modal-actions .secondary{
+  border-color:transparent !important;
+  background:transparent !important;
+  box-shadow:none !important;
+}
+
+@media(max-width:760px){
+  .product-modal-complete{
+    width:calc(100vw - 20px) !important;
+    max-height:calc(100vh - 20px) !important;
+  }
+
+  .product-modal-complete .form-grid{
+    grid-template-columns:1fr 1fr !important;
+    grid-template-areas:
+      "sku barcode"
+      "name name"
+      "price category"
+      "stock stockmin"
+      "description description"
+      "image image"
+      "state state"
+      "branch branch"
+      "note note"
+      "preview preview" !important;
+    padding-left:18px !important;
+    padding-right:18px !important;
+  }
+
+  .product-modal-complete .modal-head,
+  .product-modal-complete .modal-actions{
+    padding-left:18px !important;
+    padding-right:18px !important;
+  }
+}
+
+@media(max-width:520px){
+  .product-modal-complete .form-grid{
+    grid-template-columns:1fr !important;
+    grid-template-areas:
+      "sku"
+      "barcode"
+      "name"
+      "price"
+      "category"
+      "stock"
+      "stockmin"
+      "description"
+      "image"
+      "state"
+      "branch"
+      "note"
+      "preview" !important;
+  }
+
+  .product-modal-complete .form-grid > .wide:has(input[type="file"]){
+    grid-template-columns:1fr !important;
+    grid-template-areas:"heading" "upload" "url" "message" !important;
+  }
+}
+
+/* SHINY_PRODUCT_TCG_CURRENCY_R1 */
+.product-modal-complete .form-grid{
+  grid-template-areas:
+    "sku barcode name"
+    "price currency tcg"
+    "category category category"
+    "fx fx fx"
+    "stock stockmin stockmin"
+    "description description description"
+    "image image state"
+    "branch branch branch"
+    "note note note"
+    "preview preview preview" !important;
+}
+.product-modal-complete .form-grid > label:has(select[name="moneda_precio"]){grid-area:currency !important;}
+.product-modal-complete .form-grid > label:has(select[name="tcg_game_code"]){grid-area:tcg !important;}
+.product-modal-complete .product-tcg-fx-preview{
+  grid-area:fx !important;
+  display:flex !important;
+  align-items:center !important;
+  gap:10px !important;
+  min-height:36px !important;
+  padding:8px 10px !important;
+  border:1px solid #e2e8f0 !important;
+  border-radius:9px !important;
+  background:#f8fafc !important;
+  color:#475569 !important;
+  font-size:12px !important;
+}
+.product-modal-complete .product-tcg-fx-preview b{color:#0f172a !important;}
+@media(max-width:760px){
+  .product-modal-complete .form-grid{
+    grid-template-areas:
+      "sku barcode"
+      "name name"
+      "price currency"
+      "tcg category"
+      "fx fx"
+      "stock stockmin"
+      "description description"
+      "image image"
+      "state state"
+      "branch branch"
+      "note note"
+      "preview preview" !important;
+  }
+}
+@media(max-width:520px){
+  .product-modal-complete .form-grid{
+    grid-template-areas:
+      "sku"
+      "barcode"
+      "name"
+      "price"
+      "currency"
+      "tcg"
+      "category"
+      "fx"
+      "stock"
+      "stockmin"
+      "description"
+      "image"
+      "state"
+      "branch"
+      "note"
+      "preview" !important;
+  }
+}
+
+/* SHINY_PRODUCT_MODAL_1TO1_IDENTIFIER_TCG_R1 */
+.product-modal-complete{
+  width:min(980px,calc(100vw - 32px)) !important;
+  max-width:980px !important;
+  max-height:calc(100vh - 28px) !important;
+  border-radius:18px !important;
+  overflow:auto !important;
+}
+.product-modal-complete .modal-head{
+  padding:24px 26px 12px !important;
+}
+.product-modal-complete .modal-head .eyebrow{display:none !important;}
+.product-modal-complete .modal-head h2{
+  margin:0 !important;
+  font-size:28px !important;
+  line-height:1.15 !important;
+}
+.product-modal-complete .modal-head h2::after{
+  content:"Crea un producto para venta e inventario";
+  display:block;
+  margin-top:8px;
+  font-size:14px;
+  line-height:1.4;
+  font-weight:500;
+  color:#64748b;
+}
+.product-modal-complete form{
+  padding:14px 26px 0 !important;
+}
+.product-modal-complete .form-grid{
+  display:grid !important;
+  grid-template-columns:1.15fr 1fr 1.15fr !important;
+  grid-template-areas:
+    "identifier name name"
+    "price currency tcg"
+    "fx fx fx"
+    "stock stockmin category"
+    "description description description"
+    "image image state"
+    "branch branch branch"
+    "note note note"
+    "preview preview preview" !important;
+  gap:16px 18px !important;
+  align-items:start !important;
+}
+.product-modal-complete .form-grid > label:has(input[name="sku"]){grid-area:identifier !important;}
+.product-modal-complete .form-grid > label:has(input[name="nombre"]){grid-area:name !important;}
+.product-modal-complete .form-grid > label:has(input[name="precio"]){grid-area:price !important;}
+.product-modal-complete .form-grid > label:has(select[name="moneda_precio"]){grid-area:currency !important;}
+.product-modal-complete .form-grid > label:has(select[name="tcg_game_code"]){grid-area:tcg !important;}
+.product-modal-complete .form-grid > label:has(input[name="initial_stock"]),
+.product-modal-complete .form-grid > label:has(input[name="stock"]){grid-area:stock !important;}
+.product-modal-complete .form-grid > label:has(input[name="stock_minimo"]){grid-area:stockmin !important;}
+.product-modal-complete .form-grid > label:has(select[name="categoria"]),
+.product-modal-complete .form-grid > label:has(input[name="categoria"]){grid-area:category !important;}
+.product-modal-complete .form-grid > label:has(textarea[name="descripcion"]){grid-area:description !important;}
+.product-modal-complete .product-tcg-fx-preview{grid-area:fx !important;}
+.product-modal-complete .product-local-image-manager{grid-area:image !important;}
+.product-modal-complete .form-grid > label:has(select[name="estado"]){grid-area:state !important;}
+.product-modal-complete .form-grid > label:has(select[name="initial_branch_id"]){grid-area:branch !important;}
+.product-modal-complete .product-stock-source-note{grid-area:note !important;}
+.product-modal-complete .product-image-preview{grid-area:preview !important;}
+
+.product-modal-complete .form-grid > label{
+  min-width:0 !important;
+  font-size:13px !important;
+  font-weight:700 !important;
+}
+.product-modal-complete input,
+.product-modal-complete select,
+.product-modal-complete textarea{
+  min-height:44px !important;
+  border-radius:10px !important;
+}
+.product-modal-complete textarea[name="descripcion"]{
+  min-height:82px !important;
+  resize:vertical !important;
+}
+.product-modal-complete .product-tcg-fx-preview{
+  min-height:38px !important;
+  margin-top:-4px !important;
+  padding:8px 11px !important;
+  border:1px solid #e2e8f0 !important;
+  border-radius:9px !important;
+  background:#f8fafc !important;
+  display:flex !important;
+  gap:10px !important;
+  align-items:center !important;
+  color:#475569 !important;
+  font-size:12px !important;
+}
+.product-modal-complete .product-stock-source-note{
+  padding:0 !important;
+  border:0 !important;
+  background:transparent !important;
+  color:#64748b !important;
+  font-size:12px !important;
+}
+.product-modal-complete .product-local-image-manager{
+  padding:0 !important;
+  border:0 !important;
+  background:transparent !important;
+}
+.product-modal-complete .product-local-image-manager h4,
+.product-modal-complete .product-local-image-manager h3{
+  margin:0 0 7px !important;
+  font-size:13px !important;
+}
+.product-modal-complete .product-local-image-manager p,
+.product-modal-complete .product-local-image-manager small{
+  display:none !important;
+}
+.product-modal-complete .product-local-image-manager button{
+  min-height:42px !important;
+  border-radius:10px !important;
+}
+.product-modal-complete .product-local-image-manager button:last-of-type{
+  display:inline-flex !important;
+}
+.product-modal-complete .modal-actions{
+  position:sticky !important;
+  bottom:0 !important;
+  margin:18px -26px 0 !important;
+  padding:14px 26px !important;
+  background:rgba(255,255,255,.97) !important;
+  border-top:1px solid #e5e7eb !important;
+  backdrop-filter:blur(8px) !important;
+}
+
+@media(max-width:800px){
+  .product-modal-complete{
+    width:min(760px,calc(100vw - 20px)) !important;
+  }
+  .product-modal-complete .form-grid{
+    grid-template-columns:1fr 1fr !important;
+    grid-template-areas:
+      "identifier name"
+      "price currency"
+      "tcg tcg"
+      "fx fx"
+      "stock stockmin"
+      "category category"
+      "description description"
+      "image image"
+      "state state"
+      "branch branch"
+      "note note"
+      "preview preview" !important;
+  }
+}
+@media(max-width:560px){
+  .product-modal-complete{
+    width:calc(100vw - 12px) !important;
+    max-height:calc(100vh - 12px) !important;
+  }
+  .product-modal-complete .modal-head{padding:18px 18px 10px !important;}
+  .product-modal-complete form{padding:10px 18px 0 !important;}
+  .product-modal-complete .form-grid{
+    grid-template-columns:1fr !important;
+    grid-template-areas:
+      "identifier"
+      "name"
+      "price"
+      "currency"
+      "tcg"
+      "fx"
+      "stock"
+      "stockmin"
+      "category"
+      "description"
+      "image"
+      "state"
+      "branch"
+      "note"
+      "preview" !important;
+  }
+  .product-modal-complete .modal-actions{
+    margin:16px -18px 0 !important;
+    padding:12px 18px !important;
+  }
+}
