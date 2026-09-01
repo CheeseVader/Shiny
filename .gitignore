@@ -86,3 +86,6 @@ backend/uploads/products/*
 *.backup-*
 *.BACKUP
 *.BACKUP-*
+
+# Scripts PowerShell locales
+*.ps1

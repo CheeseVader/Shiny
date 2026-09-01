@@ -49,9 +49,11 @@ export default function useAdminBrand() {
     load();
     const refresh = () => load();
     window.addEventListener('tcg_store_template-theme-changed', refresh);
+    window.addEventListener('tcg_store_template-brand-changed', refresh);
     return () => {
       active = false;
       window.removeEventListener('tcg_store_template-theme-changed', refresh);
+      window.removeEventListener('tcg_store_template-brand-changed', refresh);
     };
   }, []);
 

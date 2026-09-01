@@ -565,6 +565,20 @@ export async function createSale({
         provider: String(p?.provider || p?.proveedor || '').trim()
       };
     });
+    // SHINY_POS_CARD_VALIDATE_BACKEND_R4
+    for (const p of normalizedPayments) {
+      if (p.method !== 'TARJETA') continue;
+
+      const reference = String(p.reference || '').trim();
+      const provider = String(p.provider || '').trim();
+
+      if (!reference) throw new Error('CARD_REFERENCE_REQUIRED');
+      if (!provider) throw new Error('CARD_PROVIDER_REQUIRED');
+
+      if (!provider.includes('BANK=')) throw new Error('CARD_BANK_REQUIRED');
+      if (!provider.includes('BRAND=')) throw new Error('CARD_BRAND_REQUIRED');
+      if (!provider.includes('TYPE=')) throw new Error('CARD_TYPE_REQUIRED');
+    }
 
     // SHINY_POS_003_MERCADOPAGO
     const cardPayments =
@@ -576,20 +590,10 @@ export async function createSale({
      * POS-003 certification covers one Mercado Pago card
      * payment for the full POS sale.
      */
-    if (
-    cardPayments.length && (
+    /* SHINY_POS_CARD_MP_MIXED_GUARD_REMOVED_R4 */
 
-    cardPayments.length !== 1 ||
-    normalizedPayments.length !== 1))
-
-    {
-      throw new Error(
-        'MERCADOPAGO_MIXED_PAYMENT_NOT_SUPPORTED'
-      );
-    }
-
-    const isMercadoPagoCardSale =
-    cardPayments.length === 1;
+    // SHINY_POS_CARD_MANUAL_R4
+    const isMercadoPagoCardSale = false;
 
     const hasCashRequested = normalizedPayments.some((p) => p.method === 'EFECTIVO');
     const cashSession = hasCashRequested ?

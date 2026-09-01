@@ -46,7 +46,7 @@ export default function MixedPaymentsPanel({
 
       return rows;
     });
-  }, [primaryMethod, saleTotal, setPayments]);
+  }, [primaryMethod, saleTotal]);
 
   // Recalcular el importe principal inmediatamente cuando cambian métodos secundarios.
   useEffect(() => {

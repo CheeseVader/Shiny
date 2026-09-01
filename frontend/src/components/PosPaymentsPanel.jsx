@@ -23,7 +23,7 @@ export default function PosPaymentsPanel({total=0,payments,setPayments}){
       }
       return rows;
     });
-  },[t,setPayments]);
+  },[t]);
 
   const rows=Array.isArray(payments)?payments:[];
   const assigned=rows.reduce((s,r)=>s+n(r.amount),0);

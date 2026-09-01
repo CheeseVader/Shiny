@@ -51,6 +51,7 @@ import StoreTransferPage from './pages/public/StoreTransferPage.jsx';
 import StoreRecoverAccountPage from './pages/public/StoreRecoverAccountPage.jsx';
 
 
+import SalesHistoryPage from './pages/SalesHistoryPage.jsx';
 export default function App(){
   const location=useLocation();
   let currentUser={};
@@ -95,6 +96,7 @@ export default function App(){
         <Route path="sucursales" element={<BranchesPage/>}/>
         <Route path="pos" element={<OrdersPage mode="pos"/>}/>
         <Route path="pedidos" element={<OrdersPage mode="orders"/>}/>
+        <Route path="historial-ventas" element={<SalesHistoryPage/>}/>
         <Route path="compras" element={<PurchasesCashPage/>}/>
         <Route path="caja" element={<PurchasesCashPage/>}/>
         <Route path="devoluciones" element={<CommercialPage/>}/>
@@ -119,6 +121,7 @@ export default function App(){
       <Route path="/inventario" element={<Navigate to="/admin/inventario" replace/>}/>
       <Route path="/sucursales" element={<Navigate to="/admin/sucursales" replace/>}/>
       <Route path="/pedidos" element={<Navigate to="/admin/pedidos" replace/>}/>
+      <Route path="/historial-ventas" element={<Navigate to="/admin/historial-ventas" replace/>}/>
       <Route path="/pos" element={<Navigate to="/admin/pos" replace/>}/>
       <Route path="/compras" element={<Navigate to="/admin/compras" replace/>}/>
       <Route path="/caja" element={<Navigate to="/admin/caja" replace/>}/>

@@ -15,7 +15,50 @@ import useAdminBrand from '../hooks/useAdminBrand.js';
 import './OrdersPageOrdersR62.css';
 import './OrdersPageR75Integration.css';
 import '../return_pin_authorization_r77.css';
-import './OrdersPagePOSRecommendedR78.css';
+import './OrdersPagePOSRecommendedR78.css';
+import '../shiny_pos_clean_r3.css';
+// SHINY_POS_CARD_CATALOG_R4
+const SHINY_POS_BANKS = [
+  ['BBVA','BBVA'],
+  ['BANAMEX','Banamex'],
+  ['BANORTE','Banorte'],
+  ['SANTANDER','Santander'],
+  ['HSBC','HSBC'],
+  ['SCOTIABANK','Scotiabank'],
+  ['BANCO_AZTECA','Banco Azteca'],
+  ['BANREGIO','Banregio'],
+  ['HEY_BANCO','Hey Banco'],
+  ['INBURSA','Inbursa'],
+  ['AFIRME','Afirme'],
+  ['BANBAJIO','BanBajio'],
+  ['MIFEL','Banca Mifel'],
+  ['MULTIVA','Banco Multiva'],
+  ['INVEX','INVEX'],
+  ['NU','Nu'],
+  ['KLAR','Klar'],
+  ['UALA','Uala'],
+  ['MERCADO_PAGO','Mercado Pago'],
+  ['STORI','Stori'],
+  ['PLATA','Plata'],
+  ['RAPPI','RappiCard'],
+  ['AMEX','American Express'],
+  ['OTRO','Otro banco / emisor']
+];
+
+const SHINY_POS_CARD_BRANDS = [
+  ['VISA','Visa'],
+  ['MASTERCARD','Mastercard'],
+  ['AMEX','American Express'],
+  ['CARNET','Carnet'],
+  ['OTRA','Otra']
+];
+
+const SHINY_POS_CARD_TYPES = [
+  ['CREDITO','Credito'],
+  ['DEBITO','Debito'],
+  ['PREPAGO','Prepago'],
+  ['OTRO','Otro']
+];
 function money(value) {
   if (value === null || value === '' || typeof value === 'undefined') return '—';
   return Number(value).toLocaleString('es-MX', { style: 'currency', currency: 'MXN' });
@@ -56,8 +99,13 @@ export default function OrdersPage({ mode = '' }) {
   const [orders, setOrders] = useState([]);
   const [branchId, setBranchId] = useState('');
   const [clientId, setClientId] = useState('');
+  const [selectedPosClient, setSelectedPosClient] = useState(null);
   const [paymentMethod, setPaymentMethod] = useState('EFECTIVO');
   const [paymentReference, setPaymentReference] = useState('');
+  // SHINY_POS_CARD_STATE_R4
+  const [cardBank, setCardBank] = useState('');
+  const [cardBrand, setCardBrand] = useState('');
+  const [cardType, setCardType] = useState('');
   const [payments, setPayments] = useState([{ method: 'EFECTIVO', amount: 0, cashReceived: 0, reference: '' }]);
   const [notes, setNotes] = useState('');
   const [productSearch, setProductSearch] = useState('');
@@ -193,6 +241,46 @@ export default function OrdersPage({ mode = '' }) {
   const [catalogOpen, setCatalogOpen] = useState(false);
   // POS-UX-004 — selector de cliente en modal y catálogo/existencias unificados con filtro de sucursal.
   const [clientModalOpen, setClientModalOpen] = useState(false);
+  // SHINY_POS_RESET_CLIENT_AFTER_SALE_R1
+  function resetPosClientAfterSale() {
+    try { setClientId(''); } catch {}
+    try { setClientSearch(''); } catch {}
+    try { setSelectedPosClient(null); } catch {}
+    try { setLoyalty(null); } catch {}
+    try { setPointsToRedeem(0); } catch {}
+    try { setPaymentReference(''); } catch {}
+    try { setPayments([{ method: 'EFECTIVO', amount: 0, cashReceived: 0, reference: '' }]); } catch {}
+    try { setNotes(''); } catch {}
+    try { setPromoCode(''); } catch {}
+    try { setBenefitPreview(null); } catch {}
+    try { setManualDiscountType('PORCENTAJE'); } catch {}
+    try { setManualDiscountValue(0); } catch {}
+    try { setManualDiscountReason(''); } catch {}
+    try { setManualDiscountPin(''); } catch {}
+    try { setDiscountModalOpen(false); } catch {}
+    try { setNotesModalOpen(false); } catch {}
+    try { setPromoModalOpen(false); } catch {}
+    try { setPointsModalOpen(false); } catch {}
+    try { setCheckoutModalOpen(false); } catch {}
+    try { setClientModalOpen(false); } catch {}
+    try { setClientSearchOpen(false); } catch {}
+    try { setProductSearch(''); } catch {}
+    try { setMessage(''); } catch {}
+    try { setSaleAttempt({ key: '', fingerprint: '' }); } catch {}
+    try { setPosSource(null); } catch {}
+    try { setCart([]); } catch {}
+
+    try {
+      const current = new URL(window.location.href);
+      current.searchParams.delete('client');
+      current.searchParams.delete('membershipSku');
+      window.history.replaceState(
+        {},
+        '',
+        current.pathname + (current.searchParams.toString() ? '?' + current.searchParams.toString() : '')
+      );
+    } catch {}
+  }
   const [catalogBranchId, setCatalogBranchId] = useState('');
   // POS-UX-002B — feedback inmediato al agregar artículos desde el catálogo.
   const [catalogAddFeedback, setCatalogAddFeedback] = useState(null);
@@ -658,7 +746,8 @@ export default function OrdersPage({ mode = '' }) {
       const matches = exact.length ? exact : rows;
       if (matches.length === 1) {
         addToCart(matches[0]);setProductSearch('');setScanMode(true);
-        setMessage(`${source}: ${code} agregado al carrito.`);
+        // SHINY_POS_CLEAR_ADD_MESSAGE_R1
+      setMessage('');
         setTimeout(() => scanInputRef.current?.focus(), 0);return;
       }
       if (matches.length > 1) {
@@ -724,7 +813,8 @@ export default function OrdersPage({ mode = '' }) {
 
     if (candidates.length === 1 && candidates[0].score >= 0.90) {
       addToCart(candidates[0]);
-      setMessage(brandText(`${candidates[0].name || candidates[0].sku} reconocido por Shiny Vision y agregado al carrito.`));
+      // SHINY_POS_CLEAR_ADD_MESSAGE_R1
+      setMessage('');
       return;
     }
 
@@ -946,7 +1036,8 @@ export default function OrdersPage({ mode = '' }) {
       setCart((current) => [...current, { ...item, key, quantity: 1 }]);
     }
 
-    setMessage(`${item.name || 'Artículo'} agregado al carrito. Cantidad: ${nextQuantity}.`);
+    // SHINY_POS_CLEAR_ADD_MESSAGE_R1
+      setMessage('');
     setCatalogAddFeedback({ key, name: item.name || 'Artículo', quantity: nextQuantity, blocked: false, stamp: Date.now() });
     return true;
   }
@@ -987,6 +1078,57 @@ export default function OrdersPage({ mode = '' }) {
     if (!/^\d*(?:[.,]\d{0,2})?$/.test(pasted.trim())) event.preventDefault();
   }
 
+  // SHINY_POS_FULL_RESET_R3
+  function shinyResetPosAfterSaleR3() {
+    setClientId('');
+    setClientSearch('');
+    setSelectedPosClient(null);
+    if (typeof setLoyalty === 'function') setLoyalty(null);
+    if (typeof setPointsToRedeem === 'function') setPointsToRedeem(0);
+    if (typeof setClientSearchOpen === 'function') setClientSearchOpen(false);
+    setClientModalOpen(false);
+    if (typeof setMembershipClientRequiredOpen === 'function') setMembershipClientRequiredOpen(false);
+
+    if (typeof setPaymentMethod === 'function') setPaymentMethod('EFECTIVO');
+    if (typeof setPaymentReference === 'function') setPaymentReference('');
+    if (typeof setPayments === 'function') setPayments([{ method: 'EFECTIVO', amount: 0, cashReceived: 0, reference: '' }]);
+
+    if (typeof setNotes === 'function') setNotes('');
+    if (typeof setPromoCode === 'function') setPromoCode('');
+    if (typeof setBenefitPreview === 'function') setBenefitPreview(null);
+
+    if (typeof setManualDiscountType === 'function') setManualDiscountType('PORCENTAJE');
+    if (typeof setManualDiscountValue === 'function') setManualDiscountValue(0);
+    if (typeof setManualDiscountReason === 'function') setManualDiscountReason('');
+    if (typeof setManualDiscountPin === 'function') setManualDiscountPin('');
+
+    if (typeof setDiscountModalOpen === 'function') setDiscountModalOpen(false);
+    if (typeof setNotesModalOpen === 'function') setNotesModalOpen(false);
+    if (typeof setPromoModalOpen === 'function') setPromoModalOpen(false);
+    if (typeof setPointsModalOpen === 'function') setPointsModalOpen(false);
+    if (typeof setCheckoutModalOpen === 'function') setCheckoutModalOpen(false);
+
+    if (typeof setProductSearch === 'function') setProductSearch('');
+    if (typeof setSaleAttempt === 'function') setSaleAttempt({ key: '', fingerprint: '' });
+    if (typeof setPosSource === 'function') setPosSource(null);
+
+    setCart([]);
+    if (typeof setMessage === 'function') setMessage('');
+
+    document.body.classList.remove('modal-open');
+    document.body.style.removeProperty('overflow');
+
+    try {
+      const current = new URL(window.location.href);
+      current.searchParams.delete('client');
+      current.searchParams.delete('membershipSku');
+      window.history.replaceState(
+        {},
+        '',
+        current.pathname + (current.searchParams.toString() ? '?' + current.searchParams.toString() : '')
+      );
+    } catch {}
+  }
   function checkout() {
     setMessage('');
     if (!cart.length) {setMessage('El carrito está vacío.');return;}
@@ -1014,6 +1156,25 @@ export default function OrdersPage({ mode = '' }) {
       return;
     }
 
+    // SHINY_POS_CARD_VALIDATE_R4
+    if (paymentMethod === 'TARJETA') {
+      if (!String(cardBank || '').trim()) {
+        setMessage('Selecciona el banco emisor.');
+        return;
+      }
+      if (!String(cardBrand || '').trim()) {
+        setMessage('Selecciona la marca / red de la tarjeta.');
+        return;
+      }
+      if (!String(cardType || '').trim()) {
+        setMessage('Selecciona el tipo de tarjeta.');
+        return;
+      }
+      if (!String(paymentReference || '').trim()) {
+        setMessage('Captura la referencia / folio del pago.');
+        return;
+      }
+    }
     try {
       if (posSource?.type === 'ORDER' && posSource?.rowId) {
         const body = await api(`/api/v1/orders/${posSource.rowId}/pay`, {
@@ -1025,11 +1186,15 @@ export default function OrdersPage({ mode = '' }) {
           })
         });
         setCompletedOrder(body.data);
+      // SHINY_POS_RESET_AFTER_SUCCESS_R3
+      shinyResetPosAfterSaleR3();
         setMessage(`Pedido ${body.data.id_pedido} cobrado correctamente desde POS.`);
         setCheckoutModalOpen(false);
         setPosSource(null);
         setCart([]);
-        await Promise.all([loadOrders(''), loadInventory(branchId)]);
+
+        // SHINY_POS_RESET_AFTER_ORDER_PAYMENT_R1
+        resetPosClientAfterSale();        await Promise.all([loadOrders(''), loadInventory(branchId)]);
         return;
       }
 
@@ -1049,7 +1214,11 @@ export default function OrdersPage({ mode = '' }) {
           method: index === 0 ? paymentMethod : row.method,
           amount: Number(sanitizeMoneyInput(row.amount) || 0),
           cashReceived: (index === 0 ? paymentMethod : row.method) === 'EFECTIVO' ? Number(sanitizeMoneyInput(row.cashReceived) || 0) : null,
-          reference: index === 0 ? paymentMethod === 'EFECTIVO' ? '' : sanitizePaymentReference(paymentReference) : sanitizePaymentReference(row.reference)
+          reference: index === 0 ? paymentMethod === 'EFECTIVO' ? '' : sanitizePaymentReference(paymentReference) : sanitizePaymentReference(row.reference),
+          // SHINY_POS_CARD_PROVIDER_R4
+          provider: (index === 0 ? paymentMethod : row.method) === 'TARJETA'
+            ? `BANK=${cardBank};BRAND=${cardBrand};TYPE=${cardType}`
+            : ''
         })),
         notes,
         promoCode,
@@ -1084,7 +1253,11 @@ export default function OrdersPage({ mode = '' }) {
       setCheckoutModalOpen(false);
       setMessage(`Venta ${body.data.id_pedido} registrada correctamente.`);
       setCompletedOrder(body.data);
-      setSaleAttempt({ key: '', fingerprint: '' });
+      // SHINY_POS_RESET_AFTER_SUCCESS_R3
+      shinyResetPosAfterSaleR3();
+
+      // SHINY_POS_RESET_AFTER_NEW_SALE_R1
+      resetPosClientAfterSale();      setSaleAttempt({ key: '', fingerprint: '' });
       setCart([]);
       setPaymentReference('');
       setPayments([{ method: 'EFECTIVO', amount: 0, cashReceived: 0, reference: '' }]);
@@ -1101,6 +1274,9 @@ export default function OrdersPage({ mode = '' }) {
       loadOrders('')]
       );
     } catch (error) {
+      // SHINY_POS_CLEAR_FAILED_IDEMPOTENCY_R6
+      // Una operacion que fallo no debe reutilizar saleRequestId.
+      setSaleAttempt({ key: '', fingerprint: '' });
       setMessage(error.message);
     }
   }
@@ -1372,6 +1548,8 @@ export default function OrdersPage({ mode = '' }) {
 
       setMessage(`Pedido ${body.data.id_pedido} pagado correctamente.`);
       setCompletedOrder(body.data);
+      // SHINY_POS_RESET_AFTER_SUCCESS_R3
+      shinyResetPosAfterSaleR3();
       setPayOrder(null);
       setPayReference('');
       setPayNotes('');
@@ -1596,8 +1774,7 @@ export default function OrdersPage({ mode = '' }) {
             <h2>Punto de venta</h2>
           </div>
         </div> : null}
-
-        {message ? <div className="message">{message}</div> : null}
+        {/* SHINY_POS_NO_TOP_MESSAGE_R3 */}
         {completedOrder ? <div className="pos-sale-completed">
           <div><span className="eyebrow">VENTA COMPLETADA</span><strong>{completedOrder.id_pedido}</strong><small>{completedOrder.nombre_cliente || 'Público general'} · {money(completedOrder.total)}</small></div>
           <div className="pos-receipt-actions">
@@ -1745,7 +1922,31 @@ export default function OrdersPage({ mode = '' }) {
               </aside>
             </div>
 
-            <div className="tcg_store_template-pos-actions shiny-r78-pos-actions">
+            
+            {/* SHINY_POS_CLIENT_LEGEND_R1 */}
+            {clientId ? (
+              <div
+                style={{
+                  marginTop: '10px',
+                  padding: '10px 12px',
+                  border: '1px solid #d8e3ff',
+                  borderRadius: '12px',
+                  background: '#f8fbff',
+                  fontSize: '14px',
+                  color: '#16325c',
+                  fontWeight: 600
+                }}
+              >
+                Cliente: {selectedPosClient?.nombre || clientSearch || clientId}
+              </div>
+            ) : null}                {/* SHINY_POS_CLIENT_LEGEND_R3 */}
+                {clientId ? (
+                  <div className="shiny-pos-client-legend-r3">
+                    <span>Cliente:</span>
+                    <strong>{selectedPosClient?.nombre || clientSearch || clientId}</strong>
+                  </div>
+                ) : null}
+<div className="tcg_store_template-pos-actions shiny-r78-pos-actions">
               <button type="button" className="tcg_store_template-pos-action" onClick={() => {setCatalogBranchId(branchId);setProductSearch('');setCatalogOpen(true);}}><span className="shiny-r78-action-icon">◇</span>Catálogo / Existencias</button>
               <button type="button" className="tcg_store_template-pos-action" onClick={() => {setClientSearch('');setClientSearchOpen(false);setClientModalOpen(true);}}><span className="shiny-r78-action-icon">◉</span>{clientId ? 'Cliente seleccionado' : 'Cliente'}</button>
               <button type="button" className="tcg_store_template-pos-action" disabled={!canUseManualDiscount} onClick={() => setDiscountModalOpen(true)}><span className="shiny-r78-action-icon">%</span>Descuento</button>
@@ -1783,7 +1984,36 @@ export default function OrdersPage({ mode = '' }) {
               <div className="tcg_store_template-pos-checkout-help">Para dividir el pago, usa <b>+ Agregar método</b>. Si no, captura solamente el método principal.</div>
               <MixedPaymentsPanel total={saleTotal} primaryMethod={paymentMethod} payments={payments} setPayments={setPaymentsSafe} />
               {paymentMethod !== 'EFECTIVO' ? <label className="tcg_store_template-pos-primary-reference">Referencia / folio<input value={paymentReference} onChange={(e) => setPaymentReference(sanitizePaymentReference(e.target.value))} placeholder={paymentMethod === 'TRANSFERENCIA' ? 'Referencia bancaria' : 'Referencia'} /></label> : null}
-              {paymentMethod === 'TARJETA' ? <div className="tcg_store_template-pos-card-warning">Tarjeta está preparada para Mercado Pago. La venta no se marcará como autorizada hasta validar la integración del proveedor.</div> : null}
+              {paymentMethod === 'TARJETA' ? (
+                <div className="shiny-pos-card-manual-r4" style={{display:'grid',gap:'10px',marginTop:'10px'}}>
+                  <div style={{display:'grid',gridTemplateColumns:'1.25fr 1fr 1fr',gap:'10px'}}>
+                    <label>Banco emisor
+                      <select value={cardBank} onChange={(e) => setCardBank(e.target.value)}>
+                        <option value="">Selecciona banco</option>
+                        {SHINY_POS_BANKS.map(([code, name]) => <option key={code} value={code}>{name}</option>)}
+                      </select>
+                    </label>
+
+                    <label>Marca / red
+                      <select value={cardBrand} onChange={(e) => setCardBrand(e.target.value)}>
+                        <option value="">Selecciona tarjeta</option>
+                        {SHINY_POS_CARD_BRANDS.map(([code, name]) => <option key={code} value={code}>{name}</option>)}
+                      </select>
+                    </label>
+
+                    <label>Tipo
+                      <select value={cardType} onChange={(e) => setCardType(e.target.value)}>
+                        <option value="">Selecciona tipo</option>
+                        {SHINY_POS_CARD_TYPES.map(([code, name]) => <option key={code} value={code}>{name}</option>)}
+                      </select>
+                    </label>
+                  </div>
+
+                  <div className="tcg_store_template-pos-card-warning">
+                    El cobro se realiza en la terminal bancaria externa. Shiny registra banco, marca, tipo y referencia / folio.
+                  </div>
+                </div>
+              ) : null}
               <div className="tcg_store_template-pos-checkout-actions"><button type="button" className="secondary" onClick={() => setCheckoutModalOpen(false)}>Volver</button><button type="button" className="tcg_store_template-pos-confirm-charge" onClick={performCheckout}>CONFIRMAR COBRO · {money(saleTotal)}</button></div>
             </div></div> : null}
 
@@ -1793,7 +2023,20 @@ export default function OrdersPage({ mode = '' }) {
               <div className="tcg_store_template-pos-client-list">
                 <button type="button" className={`tcg_store_template-pos-client-row ${!clientId ? 'selected' : ''}`} onClick={() => {setClientId('');setClientSearch('');setLoyalty(null);setPointsToRedeem(0);setClientModalOpen(false);}}><strong>Público general</strong><span>Venta sin cliente asociado</span></button>
                 {clientLoading ? <div className="tcg_store_template-pos-empty">Buscando clientes…</div> : null}
-                {!clientLoading && clients.map((client) => <button type="button" className={`tcg_store_template-pos-client-row ${clientId === client.id_cliente ? 'selected' : ''}`} key={client.row_id} onClick={() => {setClientId(client.id_cliente);setClientSearch(client.nombre || client.email || client.telefono || client.id_cliente);setClientModalOpen(false);}}>
+                {!clientLoading && clients.map((client) => <button type="button" className={`tcg_store_template-pos-client-row ${clientId === client.id_cliente ? 'selected' : ''}`} key={client.row_id} onClick={() => {
+                  // SHINY_POS_CLIENT_SELECT_R3
+                  setClientId(client.id_cliente);
+                  setClientSearch(client.nombre || client.email || client.telefono || client.id_cliente);
+                  setSelectedPosClient(client);
+                  if (typeof setClientSearchOpen === 'function') setClientSearchOpen(false);
+                  setClientModalOpen(false);
+                  if (typeof setMembershipClientRequiredOpen === 'function') setMembershipClientRequiredOpen(false);
+                  if (typeof setMessage === 'function') setMessage('');
+                  requestAnimationFrame(() => {
+                    document.body.classList.remove('modal-open');
+                    document.body.style.removeProperty('overflow');
+                  });
+                }}>
                   <strong>{client.nombre || client.id_cliente}</strong><span>{[client.telefono, client.email, client.id_cliente].filter(Boolean).join(' · ')}</span>
                 </button>)}
                 {!clientLoading && !clients.length ? <div className="tcg_store_template-pos-empty">No hay clientes que coincidan.</div> : null}

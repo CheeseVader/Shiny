@@ -1,3 +1,4 @@
+import { SPECIALIZED_REMOTE_PROVIDERS, SPECIALIZED_PROVIDER_ROWS, SPECIALIZED_SOURCE_REGISTRY } from './tcgSpecializedProviders.js';
 import { brandText } from "./config/brand.js";import fs from 'node:fs';
 import { createHash } from 'node:crypto';
 import path from 'node:path';
@@ -90,7 +91,37 @@ function rarityCode(name = '') {
   return initials || clean.replace(/[^A-Z0-9]/g, '').slice(0, 8) || 'RAR';
 }
 
+// SHINY_TCG_SPECIALIZED_PROVIDERS_R1
+let specializedProviderInitPromise = null;
+async function ensureSpecializedProviderRows() {
+  if (!specializedProviderInitPromise) {
+    specializedProviderInitPromise = (async () => {
+      for (const p of SPECIALIZED_PROVIDER_ROWS) {
+        await query(`INSERT INTO shiny.tcg_sync_providers(
+          game_code,provider_code,provider_name,source_kind,official_source_url,status,
+          supports_sets,supports_cards,supports_images,supports_prices,requires_api_key)
+          VALUES($1,$2,$3,$4,$5,'READY',$6,$7,$8,$9,$10)
+          ON CONFLICT(game_code) DO UPDATE SET
+            provider_code=EXCLUDED.provider_code,provider_name=EXCLUDED.provider_name,
+            source_kind=EXCLUDED.source_kind,official_source_url=EXCLUDED.official_source_url,
+            status=CASE WHEN shiny.tcg_sync_providers.status='ERROR' THEN 'ERROR' ELSE 'READY' END,
+            supports_sets=EXCLUDED.supports_sets,supports_cards=EXCLUDED.supports_cards,
+            supports_images=EXCLUDED.supports_images,supports_prices=EXCLUDED.supports_prices,
+            requires_api_key=EXCLUDED.requires_api_key`, [
+          p.gameCode,p.providerCode,p.providerName,p.sourceKind,p.sourceUrl,
+          p.supportsSets,p.supportsCards,p.supportsImages,p.supportsPrices,p.requiresApiKey
+        ]);
+        await query(`INSERT INTO shiny.tcg_sync_game_config(game_code) VALUES($1)
+          ON CONFLICT(game_code) DO NOTHING`, [p.gameCode]);
+      }
+      return true;
+    })().catch((e) => { specializedProviderInitPromise = null; throw e; });
+  }
+  return specializedProviderInitPromise;
+}
+
 async function providerRow(gameCode) {
+  await ensureSpecializedProviderRows();
   const r = await query(`SELECT * FROM shiny.tcg_sync_providers WHERE game_code=$1 LIMIT 1`, [gameCode]);
   if (!r.rowCount) throw new Error('SYNC_PROVIDER_NOT_CONFIGURED');
   return r.rows[0];
@@ -140,13 +171,14 @@ async function ensureMasterRarity(client, gameCode, rarity) {
 }
 
 function canonicalCardKey(card) {
-  return [
+  const parts = [
   txt(card.gameCode).toLowerCase(),
   txt(card.setCode).toLowerCase(),
   txt(card.collectorNumber || card.number || '__NO_NUMBER__').toLowerCase(),
   txt(card.name).toLowerCase(),
-  txt(card.language || 'en').toLowerCase()].
-  join('|');
+  txt(card.language || 'en').toLowerCase()];
+  if (txt(card.variantKey)) parts.push(txt(card.variantKey).toLowerCase());
+  return parts.join('|');
 }
 
 async function upsertMasterCard(client, card, { incremental = false } = {}) {
@@ -613,6 +645,7 @@ async function yugiohCards(setCode, { downloadImages = false, syncPrices = true 
 
 
 const SOURCE_REGISTRY = {
+  ...SPECIALIZED_SOURCE_REGISTRY,
   POKEMON: {
     catalog: [
     { code: 'AUTO', name: 'Automático', description: 'Pokémon TCG API con TCGdex como respaldo' },
@@ -684,6 +717,7 @@ function normalizeSourcePreferences(gameCode, prefs = {}) {
 }
 
 async function sourcePreferences(gameCode) {
+  await ensureSpecializedProviderRows();
   const r = await query(`SELECT source_preferences FROM shiny.tcg_sync_game_config WHERE game_code=$1 LIMIT 1`, [gameCode]);
   return normalizeSourcePreferences(gameCode, r.rows[0]?.source_preferences || {});
 }
@@ -795,12 +829,14 @@ export async function saveSourcePreferences(gameCode, input = {}) {
 }
 
 const REMOTE_PROVIDERS = {
+  ...SPECIALIZED_REMOTE_PROVIDERS,
   POKEMON: { sets: pokemonSets, cards: pokemonCards },
   MAGIC: { sets: magicSets, cards: magicCards },
   YUGIOH: { sets: yugiohSets, cards: yugiohCards }
 };
 
 export async function listSyncProviders() {
+  await ensureSpecializedProviderRows();
   return query(`SELECT p.*,m.nombre AS game_name,m.publisher,
       c.enabled,c.region,c.language,c.sync_cards,c.sync_prices,c.download_images,
       c.selected_sets,c.auto_sync_enabled,c.auto_sync_frequency,c.source_preferences,c.updated_at AS config_updated_at,

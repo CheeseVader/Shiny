@@ -9,7 +9,7 @@ const groups = [
   ['/admin/sucursales', 'Sucursales', 'branches', 'SUCURSALES']]
 },
 { label: 'OPERACIÓN', items: [
-  ['/admin/pos', 'POS', 'orders', 'PEDIDOS'], ['/admin/pedidos', 'Pedidos', 'orders', 'PEDIDOS'], ['/admin/devoluciones', 'Devoluciones', 'buylist', 'COMERCIAL'], ['/admin/generar-codigo', 'Generar código', 'system', 'COMERCIAL'], ['/admin/compras', 'Compras / Recepción', 'purchases', 'COMPRAS'],
+  ['/admin/pos', 'POS', 'orders', 'PEDIDOS'], ['/admin/pedidos', 'Pedidos', 'orders', 'PEDIDOS'], ['/admin/historial-ventas', 'Historial de ventas', 'reports', 'PEDIDOS'], ['/admin/devoluciones', 'Devoluciones', 'buylist', 'COMERCIAL'], ['/admin/generar-codigo', 'Generar código', 'system', 'COMERCIAL'], ['/admin/compras', 'Compras / Recepción', 'purchases', 'COMPRAS'],
   ['/admin/caja', 'Caja / Arqueo', 'inventory', 'CAJA'], ['/admin/comercial', 'Gestión Comercial', 'clients', 'COMERCIAL']]
 },
 { label: 'TCG', items: [

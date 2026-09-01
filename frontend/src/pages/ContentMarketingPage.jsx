@@ -1,4 +1,4 @@
-import { brandText } from "../config/brand.js";import { useEffect, useMemo, useRef, useState } from 'react';
+import { brandText } from "../config/brand.js";import useAdminBrand from '../hooks/useAdminBrand.js';import { useEffect, useMemo, useRef, useState } from 'react';
 import { api } from '../services/api.js';
 import { authenticatedDownload } from '../utils/download.js';
 import DualAppearanceDesigner from '../components/DualAppearanceDesigner.jsx';
@@ -47,6 +47,7 @@ function AuthenticatedMediaImage({ mediaId, className = '', alt = '' }) {
 }
 
 export default function ContentMarketingPage() {
+  const adminBrand = useAdminBrand();
   const [tab, setTab] = useState('appearance');
   const [settings, setSettings] = useState({ ...DEFAULT_APPEARANCE });
   const [media, setMedia] = useState([]);
@@ -206,14 +207,14 @@ export default function ContentMarketingPage() {
     <header className="contentmk-hero">
       <div>
         <div className="eyebrow">CONTENIDO · MARKETING</div>
-        <h1>Shiny Content Center</h1>
+        <h1>{adminBrand.name} Content Center</h1>
         <p>Apariencia de la tienda/backoffice y biblioteca multimedia. Hero y slideshow se administran dentro de Apariencia.</p>
       </div>
       <div className="contentmk-kpis"><span><b>{media.length}</b> multimedia</span></div>
     </header>
 
     <section className="contentmk-overview-kpis" aria-label="Resumen de contenido y marca">
-      <article><span>Marca activa</span><strong>{settings['appearance.brand_name'] || brandText("Shiny")}</strong><small>Identidad de tienda y administración</small></article>
+      <article><span>Marca activa</span><strong>{adminBrand.name}</strong><small>Identidad de tienda y administración</small></article>
       <article><span>Recursos activos</span><strong>{contentOverview.active}</strong><small>de {media.length} archivos</small></article>
       <article><span>Imágenes</span><strong>{contentOverview.images}</strong><small>Biblioteca visual disponible</small></article>
       <article className={contentOverview.hero ? '' : 'attention'}><span>Hero / slideshow</span><strong>{contentOverview.hero}</strong><small>{contentOverview.hero ? 'Recursos listos' : 'Conviene agregar una portada'}</small></article>

@@ -105,6 +105,7 @@ export default function DualAppearanceDesigner({ settings, setSettings, media = 
 
         } catch {}
         window.dispatchEvent(new Event('tcg_store_template-theme-changed'));
+        window.dispatchEvent(new Event('tcg_store_template-brand-changed'));
       }
       setMessage(scope === 'client' ? 'Tema del CLIENTE guardado.' : 'Tema de ADMINISTRACIÓN guardado.');
     } catch (e) {setMessage(e.message);}

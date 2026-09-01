@@ -16,6 +16,7 @@ const pageMeta = {
   '/admin/sucursales': ['Sucursales', 'MULTISUCURSAL'],
   '/admin/pos': ['POS', 'VENTAS'],
   '/admin/pedidos': ['Pedidos', 'VENTAS'],
+  '/admin/historial-ventas': ['Historial de ventas', 'VENTAS Â· COBROS Y PAGOS'],
   '/admin/compras': ['Compras / Recepción', 'OPERACIÓN'],
   '/admin/caja': ['Caja / Arqueo', 'EFECTIVO'],
   '/admin/devoluciones': ['Devoluciones', 'OPERACIÓN'],

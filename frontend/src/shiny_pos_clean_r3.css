@@ -1,0 +1,18 @@
+/* SHINY_POS_CLIENT_LEGEND_R3 */
+.shiny-pos-client-legend-r3{
+  display:flex;
+  align-items:center;
+  gap:6px;
+  width:100%;
+  box-sizing:border-box;
+  margin-top:8px;
+  padding:7px 10px;
+  border:1px solid rgba(15,23,42,.12);
+  border-radius:8px;
+  background:#fff;
+  color:#0f172a;
+  font-size:13px;
+  line-height:1.2;
+}
+.shiny-pos-client-legend-r3 span{opacity:.68}
+.shiny-pos-client-legend-r3 strong{font-weight:700}
