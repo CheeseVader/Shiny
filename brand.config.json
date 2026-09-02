@@ -1,4 +1,4 @@
-{
+﻿{
     "name":  "Shiny",
     "shortName":  "Shiny",
     "legalName":  "Shiny",
@@ -11,9 +11,9 @@
     "accentColor":  "#d4af37",
     "logo":  "/branding/logo.png",
     "favicon":  "/branding/favicon.png",
-    "pwaIcon192":  "/pwa-192x192.png",
-    "pwaIcon512":  "/pwa-512x512.png",
-    "maskableIcon512":  "/maskable-icon-512x512.png",
+    "pwaIcon192":  "/shiny-pwa-192x192.png",
+    "pwaIcon512":  "/shiny-pwa-512x512.png",
+    "maskableIcon512":  "/shiny-maskable-512x512.png",
     "currency":  "MXN",
     "locale":  "es-MX",
     "timezone":  "America/Tijuana"
