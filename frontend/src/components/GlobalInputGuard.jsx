@@ -39,6 +39,17 @@ function classify(el){
 
   if(looksLikeFreeSearch)return '';
 
+  // LOGIN/RBAC: un identificador de acceso puede ser username O correo.
+  // autocomplete="username" y name="username" son texto libre de identidad;
+  // no deben heredar validacion estricta de email por contener la palabra "correo" en el label.
+  const isLoginIdentity=
+    el.type!=='email' &&
+    (
+      String(el.autocomplete||'').toLowerCase()==='username' ||
+      String(el.name||'').toLowerCase()==='username'
+    );
+
+  if(isLoginIdentity)return '';
   if(el.type==='email'||/\b(email|correo)\b/.test(key))return 'email';
   if(el.type==='tel'||/\b(teléfono|telefono|celular|phone|móvil|movil)\b/.test(key))return 'phone';
   if(/\b(código postal|codigo postal|\bcp\b|\bzip\b)\b/.test(key))return 'postal';

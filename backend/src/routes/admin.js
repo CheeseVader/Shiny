@@ -22,19 +22,29 @@ async function activeSuperadminCount(){
 }
 async function ensureAdminEmailAvailable(email,excludeRowId=null){
   const normalized=String(email||'').trim().toLowerCase();
+  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalized))throw new Error('INVALID_EMAIL');
   const params=[normalized];
   let sql=`SELECT row_id FROM shiny.administradores WHERE LOWER(email)=$1`;
-
-  if(excludeRowId!==null){
-    params.push(Number(excludeRowId));
-    sql+=` AND row_id<>$2`;
-  }
-
+  if(excludeRowId!==null){params.push(Number(excludeRowId));sql+=` AND row_id<>$2`;}
   sql+=` LIMIT 1`;
-
   const r=await query(sql,params);
   if(r.rowCount){
     const error=new Error('ADMIN_EMAIL_ALREADY_EXISTS');
+    error.statusCode=409;
+    throw error;
+  }
+}
+
+async function ensureAdminUsernameAvailable(username,excludeRowId=null){
+  const normalized=String(username||'').trim().toLowerCase();
+  if(!/^[a-z0-9._-]{3,32}$/.test(normalized))throw new Error('INVALID_USERNAME');
+  const params=[normalized];
+  let sql=`SELECT row_id FROM shiny.administradores WHERE LOWER(username)=$1`;
+  if(excludeRowId!==null){params.push(Number(excludeRowId));sql+=` AND row_id<>$2`;}
+  sql+=` LIMIT 1`;
+  const r=await query(sql,params);
+  if(r.rowCount){
+    const error=new Error('ADMIN_USERNAME_ALREADY_EXISTS');
     error.statusCode=409;
     throw error;
   }
@@ -80,8 +90,8 @@ router.get('/access/modules',requirePermission('ADMIN','read'),async(req,res)=>{
 
 router.get('/users',requirePermission('ADMIN','read'),async(_req,res)=>{
   try{
-    const r=await query(`SELECT row_id,id_admin,nombre,email,SPLIT_PART(email,'@',1) AS username,rol,activo,fecha_creacion,fecha_actualizacion,
-      sucursal_principal,sucursales_permitidas FROM shiny.administradores ORDER BY nombre,email,row_id`);
+    const r=await query(`SELECT row_id,id_admin,nombre,username,email,rol,activo,fecha_creacion,fecha_actualizacion,
+      sucursal_principal,sucursales_permitidas FROM shiny.administradores ORDER BY nombre,username,email,row_id`);
     res.json({success:true,data:r.rows});
   }catch(e){res.status(500).json({success:false,error:e.message});}
 });
@@ -103,10 +113,13 @@ router.post('/users',requirePermission('ADMIN','authorize'),async(req,res)=>{
   try{
     const b=req.body||{};
     const username=String(b.username||'').trim().toLowerCase();
+    const email=String(b.email||'').trim().toLowerCase();
+    const password=String(b.password||'');
     if(!/^[a-z0-9._-]{3,32}$/.test(username))throw new Error('INVALID_USERNAME');
-    const email=`${username}@shiny.local`;
-    if(!email||password.length<10)throw new Error('EMAIL_AND_PASSWORD_10_REQUIRED');
+    if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))throw new Error('INVALID_EMAIL');
+    if(password.length<10)throw new Error('PASSWORD_10_REQUIRED');
 
+    await ensureAdminUsernameAvailable(username);
     await ensureAdminEmailAvailable(email);
 
     const requestedRole=String(b.rol||'OPERADOR').toUpperCase();
@@ -122,10 +135,10 @@ router.post('/users',requirePermission('ADMIN','authorize'),async(req,res)=>{
 
     const id=String(b.id_admin||'').trim()||`ADM-${Date.now()}`;
     const r=await query(`INSERT INTO shiny.administradores(
-      id_admin,nombre,email,password_hash,rol,activo,fecha_creacion,fecha_actualizacion,sucursal_principal,sucursales_permitidas)
-      VALUES($1,$2,$3,$4,$5,$6,NOW(),NOW(),$7,$8::jsonb)
-      RETURNING row_id,id_admin,nombre,email,SPLIT_PART(email,'@',1) AS username,rol,activo,sucursal_principal,sucursales_permitidas`,
-      [id,b.nombre||null,email,hashPassword(password),requestedRole,b.activo!==false,
+      id_admin,nombre,username,email,password_hash,rol,activo,fecha_creacion,fecha_actualizacion,sucursal_principal,sucursales_permitidas)
+      VALUES($1,$2,$3,$4,$5,$6,$7,NOW(),NOW(),$8,$9::jsonb)
+      RETURNING row_id,id_admin,nombre,username,email,rol,activo,sucursal_principal,sucursales_permitidas`,
+      [id,b.nombre||null,username,email,hashPassword(password),requestedRole,b.activo!==false,
        requestedRole==='SUPERADMIN'?null:branchScope.principal,
        JSON.stringify(requestedRole==='SUPERADMIN'?[]:branchScope.allowed)]);
 
@@ -140,9 +153,18 @@ router.put('/users/:rowId',requirePermission('ADMIN','authorize'),async(req,res)
     const existing=await getAdminByRowId(rowId);
     if(!existing)throw new Error('ADMIN_NOT_FOUND');
 
-    const newEmail=existing.email;
-    if(!newEmail)throw new Error('EMAIL_REQUIRED');
+    const requestedUsername=String(b.username??existing.username??'').trim().toLowerCase();
+    const newEmail=String(b.email??existing.email??'').trim().toLowerCase();
+    if(!/^[a-z0-9._-]{3,32}$/.test(requestedUsername))throw new Error('INVALID_USERNAME');
+    if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(newEmail))throw new Error('INVALID_EMAIL');
+    await ensureAdminUsernameAvailable(requestedUsername,rowId);
     await ensureAdminEmailAvailable(newEmail,rowId);
+    const usernameChanged=String(existing.username||'').toLowerCase()!==requestedUsername;
+    const emailChanged=String(existing.email||'').toLowerCase()!==newEmail;
+    if(usernameChanged||emailChanged){
+      // Cambiar usuario o correo es una operacion sensible.
+      await requireCurrentPassword(req,b.currentPassword);
+    }
 
     const newRole=String(b.rol||existing.rol||'OPERADOR').toUpperCase();
     if(!['SUPERADMIN','ADMIN','SUPERVISOR','OPERADOR','CONSULTA'].includes(newRole))throw new Error('INVALID_ADMIN_ROLE');
@@ -175,14 +197,33 @@ router.put('/users/:rowId',requirePermission('ADMIN','authorize'),async(req,res)
       throw new Error('CANNOT_DISABLE_CURRENT_USER');
     }
 
+    if(emailChanged){
+      // permisos_admin usa email como referencia. Se migra junto con la cuenta.
+      await query(`UPDATE shiny.permisos_admin SET email=LOWER($2),actualizacion=NOW()
+        WHERE LOWER(email)=LOWER($1)`,[existing.email,newEmail]);
+
+      // Las sesiones conservan id_admin como identidad principal; actualizamos el email
+      // almacenado para mantener diagnosticos y trazabilidad coherentes.
+      await query(`UPDATE shiny.admin_sessions SET email=LOWER($2)
+        WHERE id_admin=$3 AND LOWER(email)=LOWER($1)`,
+        [existing.email,newEmail,existing.id_admin]);
+    }
+
     const r=await query(`UPDATE shiny.administradores
-      SET nombre=$2,email=LOWER($3),rol=$4,activo=$5,
-          sucursal_principal=$6,sucursales_permitidas=$7::jsonb,fecha_actualizacion=NOW()
+      SET nombre=$2,username=LOWER($3),email=LOWER($4),rol=$5,activo=$6,
+          sucursal_principal=$7,sucursales_permitidas=$8::jsonb,fecha_actualizacion=NOW()
       WHERE row_id=$1
-      RETURNING row_id,id_admin,nombre,email,SPLIT_PART(email,'@',1) AS username,rol,activo,sucursal_principal,sucursales_permitidas`,
-      [rowId,b.nombre??existing.nombre,newEmail,newRole,newActive,
+      RETURNING row_id,id_admin,nombre,username,email,rol,activo,sucursal_principal,sucursales_permitidas`,
+      [rowId,b.nombre??existing.nombre,requestedUsername,newEmail,newRole,newActive,
        newRole==='SUPERADMIN'?null:branchScope.principal,
        JSON.stringify(newRole==='SUPERADMIN'?[]:branchScope.allowed)]);
+
+    if(usernameChanged||emailChanged){
+      await query(`UPDATE shiny.admin_sessions
+        SET revoked_at=NOW()
+        WHERE id_admin=$1 AND revoked_at IS NULL AND id<>$2`,
+        [existing.id_admin,req.user.session_id]);
+    }
 
     if(b.password){
       if(String(b.password).length<10)throw new Error('PASSWORD_10_REQUIRED');
@@ -212,7 +253,7 @@ router.post('/users/:rowId/send-password-reset',requirePermission('ADMIN','autho
     if(!target)throw new Error('ADMIN_NOT_FOUND');
     if(target.activo===false)throw new Error('ADMIN_INACTIVE');
 
-    // Operación sensible: quien la solicita confirma su propia contraseña.
+    // OperaciÃ³n sensible: quien la solicita confirma su propia contraseña.
     await requireCurrentPassword(req,req.body?.currentPassword);
 
     const baseUrl=String(process.env.SHINY_PUBLIC_BASE_URL||'http://127.0.0.1:5173');
@@ -432,7 +473,7 @@ router.get('/technical/diagnostic',requireSuperadmin,async(req,res)=>{
         FROM shiny.admin_sessions s ORDER BY s.last_seen_at DESC NULLS LAST LIMIT 100`)
     ]);
 
-    await audit(req,'SISTEMA','TECHNICAL_DIAGNOSTIC','SUPERADMIN','Consulta técnica de diagnóstico');
+    await audit(req,'SISTEMA','TECHNICAL_DIAGNOSTIC','SUPERADMIN','Consulta tÃ©cnica de diagnÃ³stico');
     res.json({success:true,data:{
       database:db.rows[0],schema:schema.rows[0],tables:tables.rows,
       migrations:migrations.rows,audit:auditRows.rows,sessions:sessions.rows,

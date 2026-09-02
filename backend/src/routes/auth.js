@@ -19,7 +19,7 @@ router.post('/recover',rateLimit({keyPrefix:'ADMIN_RECOVER',max:6}),async(req,re
       requestedBy:'PUBLIC_ADMIN_RECOVERY'
     });
 
-    // La respuesta pública nunca revela si la cuenta existe.
+    // La respuesta pÃºblica nunca revela si la cuenta existe.
     const data={accepted:true};
     if(r.development_reset_url)data.development_reset_url=r.development_reset_url;
     res.json({success:true,data});
@@ -106,41 +106,77 @@ router.post('/login',rateLimit({keyPrefix:'ADMIN_LOGIN',max:10}),async(req,res)=
   try{
     const username=String(req.body?.username||'').trim().toLowerCase();
     const password=String(req.body?.password||'');
-    if(!username||!password)return res.status(400).json({success:false,error:'CREDENTIALS_REQUIRED'});
+    if(!username||!password){
+      return res.status(400).json({success:false,error:'CREDENTIALS_REQUIRED'});
+    }
 
-    const r=await query(`SELECT * FROM shiny.administradores
+    const r=await query(`SELECT *
+      FROM shiny.administradores
       WHERE (
-        LOWER(SPLIT_PART(email,'@',1))=LOWER($1)
+        LOWER(username)=LOWER($1)
         OR LOWER(email)=LOWER($1)
-        OR (LOWER($1)='admin' AND UPPER(rol)='SUPERADMIN')
-      ) AND COALESCE(activo,true)=true
+        OR (
+          COALESCE(NULLIF(TRIM(username),''),'')=''
+          AND LOWER(SPLIT_PART(email,'@',1))=LOWER($1)
+        )
+      )
+      AND COALESCE(activo,true)=true
       ORDER BY CASE
-        WHEN LOWER(SPLIT_PART(email,'@',1))=LOWER($1) THEN 0
+        WHEN LOWER(username)=LOWER($1) THEN 0
         WHEN LOWER(email)=LOWER($1) THEN 1
-        WHEN LOWER($1)='admin' AND UPPER(rol)='SUPERADMIN' THEN 2
+        WHEN LOWER(SPLIT_PART(email,'@',1))=LOWER($1) THEN 2
         ELSE 9
-      END, row_id
+      END,row_id
       LIMIT 1`,[username]);
-    if(!r.rowCount||!verifyPassword(password,r.rows[0].password_hash))
+
+    if(!r.rowCount||!verifyPassword(password,r.rows[0].password_hash)){
       return res.status(401).json({success:false,error:'INVALID_CREDENTIALS'});
+    }
 
     const admin=r.rows[0];
     const token=newToken();
     const hours=Math.min(Math.max(Number(process.env.SHINY_SESSION_HOURS||12),1),72);
-    await query(`INSERT INTO shiny.admin_sessions(token_hash,id_admin,email,expires_at,ip_address,user_agent)
-      VALUES($1,$2,$3,NOW()+($4||' hours')::interval,$5,$6)`,
-      [hashToken(token),admin.id_admin,admin.email,String(hours),req.ip,String(req.headers['user-agent']||'').slice(0,500)]);
 
-    req.user={email:admin.email,username:String(admin.email||'').split('@')[0]};
+    await query(`INSERT INTO shiny.admin_sessions(
+        token_hash,id_admin,email,expires_at,ip_address,user_agent
+      )
+      VALUES($1,$2,$3,NOW()+($4||' hours')::interval,$5,$6)`,
+      [
+        hashToken(token),
+        admin.id_admin,
+        admin.email,
+        String(hours),
+        req.ip,
+        String(req.headers['user-agent']||'').slice(0,500)
+      ]
+    );
+
+    req.user={
+      email:admin.email,
+      username:admin.username,
+      id_admin:admin.id_admin,
+      rol:admin.rol
+    };
+
     await audit(req,'AUTH','LOGIN',admin.id_admin,'Inicio de sesión local');
 
     res.json({success:true,data:{
-      token,expiresInHours:hours,user:{
-        id_admin:admin.id_admin,nombre:admin.nombre,email:admin.email,username:String(admin.email||'').split('@')[0],rol:admin.rol,
-        sucursal_principal:admin.sucursal_principal,sucursales_permitidas:admin.sucursales_permitidas
+      token,
+      expiresInHours:hours,
+      user:{
+        id_admin:admin.id_admin,
+        nombre:admin.nombre,
+        email:admin.email,
+        username:admin.username,
+        rol:admin.rol,
+        sucursal_principal:admin.sucursal_principal,
+        sucursales_permitidas:admin.sucursales_permitidas
       }
     }});
-  }catch(_e){res.status(500).json({success:false,error:'LOGIN_FAILED'});}
+  }catch(e){
+    console.error('[ADMIN_LOGIN]',e?.message||e);
+    res.status(500).json({success:false,error:'LOGIN_FAILED'});
+  }
 });
 
 router.get('/me',requireAuth,async(req,res)=>{

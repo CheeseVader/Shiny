@@ -59,7 +59,7 @@ export default function LoginPage() {
 
       const role = String(r.data?.user?.rol || '').toUpperCase();
 
-      // Shiny POS R11 — doble modalidad:
+      // Shiny POS R11 â€” doble modalidad:
       // - Web normal: OPERADOR -> /admin/pos y Shiny solicita Fullscreen con un clic.
       // - Launcher/terminal kiosk: /login?kiosk=1 -> /admin/pos?kiosk=1.
       if (role === 'OPERADOR') {
@@ -73,8 +73,8 @@ export default function LoginPage() {
       nav(target, { replace: true, state: null });
     } catch (e2) {
       const map = {
-        INVALID_CREDENTIALS: 'Correo o contraseña incorrectos.',
-        CREDENTIALS_REQUIRED: 'Escribe correo y contraseña.',
+        INVALID_CREDENTIALS: 'Usuario/correo o contraseña incorrectos.',
+        CREDENTIALS_REQUIRED: 'Escribe usuario o correo y contraseña.',
         TOO_MANY_ATTEMPTS: 'Demasiados intentos. Espera antes de volver a intentar.'
       };
       setError(map[e2.message] || e2.message);
@@ -111,7 +111,7 @@ export default function LoginPage() {
       <div className="eyebrow">{brandText("Shiny · ADMIN")}</div>
       <h1>Iniciar sesión</h1>
       <p>Acceso administrativo seguro.</p>
-      <label>Usuario<input type="text" autoComplete="username" value={username} onChange={(e) => setUsername(e.target.value.toLowerCase())} autoCapitalize="none" spellCheck={false} required /></label>
+      <label>Usuario o correo<input type="text" autoComplete="username" value={username} onChange={(e) => setUsername(e.target.value.toLowerCase())} autoCapitalize="none" spellCheck={false} required /></label>
       <label>Contrase&ntilde;a<input type="password" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} required /></label>
       {error ? <div className="alert error">{error}</div> : null}
       <button disabled={loading}>{loading ? 'Validando...' : 'Entrar'}</button>

@@ -8,7 +8,7 @@ export const MODULES=[
   {id:'INVENTARIO',label:'Inventario',group:'GENERAL'},
   {id:'SUCURSALES',label:'Sucursales',group:'GENERAL'},
   {id:'PEDIDOS',label:'Pedidos / POS',group:'OPERACION'},
-  {id:'COMPRAS',label:'Compras / Recepción',group:'OPERACION'},
+  {id:'COMPRAS',label:'Compras / RecepciÃ³n',group:'OPERACION'},
   {id:'CAJA',label:'Caja / Arqueo',group:'OPERACION'},
   {id:'COMERCIAL',label:'Gestión Comercial',group:'OPERACION'},
   {id:'TCG',label:'TCG',group:'TCG'},
@@ -77,7 +77,7 @@ export async function resolveUserAccess(user){
   for(const m of MODULES){
     if(role==='SUPERADMIN'){permissions[m.id]=full();continue;}
     // OPERADOR es un rol POS fijo: conserva las dependencias API necesarias para vender,
-    // pero su navegación de backoffice se limita en frontend al entorno POS.
+    // pero su navegaciÃ³n de backoffice se limita en frontend al entorno POS.
     if(role==='OPERADOR'){permissions[m.id]=roleDefaults(role,m.id);continue;}
     const p=byModule.get(m.id);
     permissions[m.id]=p?{
@@ -102,7 +102,7 @@ export async function requireAuth(req,res,next){
     if(!header.startsWith('Bearer '))return res.status(401).json({success:false,error:'AUTH_REQUIRED'});
     const token=header.slice(7).trim();
     const r=await query(`
-      SELECT s.id AS session_id,s.id_admin,s.email,s.expires_at,a.nombre,a.rol,a.activo,
+      SELECT s.id AS session_id,s.id_admin,a.email,a.username,s.expires_at,a.nombre,a.rol,a.activo,
              a.sucursal_principal,a.sucursales_permitidas
       FROM shiny.admin_sessions s JOIN shiny.administradores a ON a.id_admin=s.id_admin
       WHERE s.token_hash=$1 AND s.revoked_at IS NULL AND s.expires_at>NOW() LIMIT 1
@@ -195,7 +195,7 @@ export function applyDefaultBranchScope(req,res,next){
     const scope=req.access?.branchScope;
     if(!scope||scope.all||scope.allowed.length!==1)return next();
 
-    // Muchas pantallas históricas esperan branchId pero no siempre lo envían
+    // Muchas pantallas histÃ³ricas esperan branchId pero no siempre lo envÃ­an
     // en sus cargas auxiliares. Para un usuario de una sola sucursal,
     // utilizamos esa sucursal como contexto predeterminado.
     if(String(req.method||'GET').toUpperCase()==='GET'){
@@ -233,7 +233,7 @@ export function filterResponseByBranchScope(req,res,next){
           });
         }
 
-        // Filtra colecciones anidadas conocidas sin alterar catálogos globales.
+        // Filtra colecciones anidadas conocidas sin alterar catÃ¡logos globales.
         const data={...payload.data};
         for(const key of ['rows','items','orders','sales','inventory','movements','purchases','expenses','payables','branches','sessions']){
           if(Array.isArray(data[key])){

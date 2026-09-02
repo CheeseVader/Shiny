@@ -31,3 +31,93 @@
     box-sizing:border-box;
   }
 }
+
+/* === SHINY USUARIOS R3.1: INFORMACION DEL USUARIO === */
+.usrd-account-card{
+  min-width:0;
+  height:auto;
+}
+
+.usrd-account-card .usrd-card-head{
+  margin-bottom:18px;
+}
+
+.usrd-account-grid{
+  display:grid !important;
+  grid-template-columns:repeat(2,minmax(0,1fr)) !important;
+  gap:16px 18px !important;
+  align-items:start !important;
+}
+
+.usrd-account-grid > label,
+.usrd-sensitive-confirm > label{
+  display:flex !important;
+  flex-direction:column !important;
+  align-items:stretch !important;
+  gap:7px !important;
+  min-width:0 !important;
+  margin:0 !important;
+}
+
+.usrd-account-grid > label > span,
+.usrd-sensitive-confirm > label > span{
+  display:block;
+  min-height:18px;
+  font-size:12px;
+  font-weight:700;
+  line-height:18px;
+}
+
+.usrd-account-grid input,
+.usrd-account-grid select,
+.usrd-sensitive-confirm input{
+  width:100% !important;
+  min-width:0 !important;
+  height:42px !important;
+  box-sizing:border-box !important;
+  margin:0 !important;
+}
+
+.usrd-sensitive-confirm{
+  display:grid;
+  grid-template-columns:minmax(0,1fr);
+  gap:6px;
+  margin-top:16px;
+  padding-top:16px;
+  border-top:1px solid #e8edf3;
+}
+
+.usrd-sensitive-confirm small{
+  display:block;
+  margin:0;
+  line-height:1.45;
+}
+
+.usrd-account-card .usrd-save-row{
+  display:flex !important;
+  justify-content:flex-end !important;
+  align-items:center !important;
+  margin-top:18px !important;
+  padding-top:16px !important;
+  border-top:1px solid #e8edf3;
+}
+
+.usrd-account-card .usrd-save-row button{
+  min-width:150px;
+}
+
+@media(max-width:900px){
+  .usrd-account-grid{
+    grid-template-columns:1fr !important;
+  }
+}
+
+@media(max-width:640px){
+  .usrd-account-card .usrd-save-row{
+    justify-content:stretch !important;
+  }
+  .usrd-account-card .usrd-save-row button{
+    width:100%;
+  }
+}
+/* === FIN SHINY USUARIOS R3.1 === */
