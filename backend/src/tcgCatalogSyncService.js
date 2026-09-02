@@ -1,3 +1,4 @@
+import { tcgFetchJson, tcgFetchBuffer } from './tcgHttpClient.js';
 import { SPECIALIZED_REMOTE_PROVIDERS, SPECIALIZED_PROVIDER_ROWS, SPECIALIZED_SOURCE_REGISTRY } from './tcgSpecializedProviders.js';
 import { brandText } from "./config/brand.js";import fs from 'node:fs';
 import { createHash } from 'node:crypto';
@@ -18,55 +19,20 @@ const n = (v) => {
 };
 const slug = (v) => txt(v).replace(/[^A-Za-z0-9._-]+/g, '-').replace(/-+/g, '-').slice(0, 120);
 
-async function fetchJson(url, { headers = {}, timeout = 30000 } = {}) {
-  const ctrl = new AbortController();
-  const timer = setTimeout(() => ctrl.abort(), timeout);
-  const host = (() => {try {return new URL(url).host;} catch {return 'remote';}})();
-  try {
-    const response = await fetch(url, {
-      headers: {
-        'Accept': 'application/json',
-        'User-Agent': "TCG-Store-TCG-Catalog-Sync/10.6.2.3.1",
-        ...headers
-      },
-      signal: ctrl.signal
-    });
-    if (!response.ok) {
-      let detail = '';
-      try {detail = String(await response.text()).replace(/\s+/g, ' ').slice(0, 220);} catch {}
-      throw new Error(`REMOTE_HTTP_${response.status}:${host}${detail ? `:${detail}` : ''}`);
-    }
-    try {
-      return await response.json();
-    } catch (e) {
-      throw new Error(`REMOTE_INVALID_JSON:${host}:${String(e.message || e).slice(0, 180)}`);
-    }
-  } catch (e) {
-    if (String(e.message || '').startsWith('REMOTE_')) throw e;
-    const code = e?.name === 'AbortError' ? 'REMOTE_TIMEOUT' : 'REMOTE_FETCH_FAILED';
-    throw new Error(`${code}:${host}:${String(e?.cause?.message || e.message || e).slice(0, 220)}`);
-  } finally {
-    clearTimeout(timer);
-  }
+async function fetchJson(url, { headers = {}, timeout = 180000 } = {}) {
+  return tcgFetchJson(url, {
+    headers,
+    timeout,
+    userAgent: "TCG-Store-TCG-Catalog-Sync/10.6.2.3.1"
+  });
 }
 
-async function fetchBuffer(url, { timeout = 30000 } = {}) {
-  const ctrl = new AbortController();
-  const timer = setTimeout(() => ctrl.abort(), timeout);
-  try {
-    const response = await fetch(url, {
-      headers: { 'User-Agent': "TCG-Store-TCG-Catalog-Sync/10.6.2.3" },
-      signal: ctrl.signal
-    });
-    if (!response.ok) throw new Error(`IMAGE_HTTP_${response.status}`);
-    const ab = await response.arrayBuffer();
-    return {
-      buffer: Buffer.from(ab),
-      contentType: response.headers.get('content-type') || ''
-    };
-  } finally {
-    clearTimeout(timer);
-  }
+async function fetchBuffer(url, { timeout = 180000 } = {}) {
+  const buffer = await tcgFetchBuffer(url, {
+    timeout,
+    userAgent: "TCG-Store-TCG-Catalog-Sync/10.6.2.3"
+  });
+  return { buffer, contentType: '' };
 }
 
 async function cacheImage(gameCode, setCode, externalId, url) {
@@ -392,7 +358,7 @@ async function mapTcgdexSetId(setCode) {
 
 async function tcgdexPokemonCards(setCode, { downloadImages = false, syncPrices = true } = {}) {
   const tcgdexSetId = await mapTcgdexSetId(setCode);
-  const set = await fetchJson(`https://api.tcgdex.net/v2/en/sets/${encodeURIComponent(tcgdexSetId)}`, { timeout: 45000 });
+  const set = await fetchJson(`https://api.tcgdex.net/v2/en/sets/${encodeURIComponent(tcgdexSetId)}`, { timeout: 180000 });
   const briefs = Array.isArray(set?.cards) ? set.cards : [];
   if (!briefs.length) throw new Error(`TCGDEX_SET_HAS_NO_CARDS:${tcgdexSetId}`);
 
@@ -466,39 +432,77 @@ function ygoPrices(card, setEntry) {
 }
 
 async function pokemonSets() {
+  /* SHINY_POKEMON_RPI_SLOW_NET_R3
+     La RPI llega a api.pokemontcg.io, pero la respuesta es lenta.
+     Antes se pedían hasta 250 sets con timeout de ~30 s y eso terminaba en 502. */
   const headers = {};
-  if (process.env.SHINY_POKEMON_TCG_API_KEY) headers['X-Api-Key'] = process.env.SHINY_POKEMON_TCG_API_KEY;
+  if (process.env.SHINY_POKEMON_TCG_API_KEY) {
+    headers['X-Api-Key'] = process.env.SHINY_POKEMON_TCG_API_KEY;
+  }
+
+  let page = 1;
+  const pageSize = 25;
+  const all = [];
 
   try {
-    let page = 1,all = [];
     while (true) {
-      const j = await fetchJson(`https://api.pokemontcg.io/v2/sets?page=${page}&pageSize=250&orderBy=-releaseDate`, { headers });
-      all.push(...(j.data || []));
-      if (all.length >= Number(j.totalCount || all.length) || !(j.data || []).length) break;
+      const url =
+        `https://api.pokemontcg.io/v2/sets?page=${page}` +
+        `&pageSize=${pageSize}&orderBy=-releaseDate`;
+
+      const j = await fetchJson(url, {
+        headers,
+        timeout: 180000
+      });
+
+      const batch = Array.isArray(j?.data) ? j.data : [];
+      all.push(...batch);
+
+      const total = Number(j?.totalCount || 0);
+      if (!batch.length || (total > 0 && all.length >= total) || batch.length < pageSize) {
+        break;
+      }
+
       page++;
+      if (page > 50) throw new Error('POKEMON_SET_PAGINATION_LIMIT');
     }
+
+    if (!all.length) throw new Error('POKEMON_API_RETURNED_NO_SETS');
+
     const sets = all.map((x) => ({
-      code: x.id, name: x.name, releaseDate: txt(x.releaseDate).replaceAll('/', '-'),
+      code: x.id,
+      name: x.name,
+      releaseDate: txt(x.releaseDate).replaceAll('/', '-'),
       total: Number(x.total || x.printedTotal || 0),
       sourceUrl: `https://api.pokemontcg.io/v2/sets/${encodeURIComponent(x.id)}`
     }));
+
     sets._shinySource = 'Pokémon TCG API';
     return sets;
   } catch (primaryError) {
-    // Fallback: TCGdex is an open Pokémon catalog API and does not require an API key.
     try {
-      const all = await fetchJson('https://api.tcgdex.net/v2/en/sets', { timeout: 30000 });
+      const all = await fetchJson('https://api.tcgdex.net/v2/en/sets', {
+        timeout: 15000
+      });
+
       const sets = (Array.isArray(all) ? all : []).map((x) => ({
-        code: txt(x.id), name: txt(x.name), releaseDate: '',
+        code: txt(x.id),
+        name: txt(x.name),
+        releaseDate: '',
         total: Number(x.cardCount?.total || x.cardCount?.official || 0),
         sourceUrl: `https://api.tcgdex.net/v2/en/sets/${encodeURIComponent(x.id)}`
       })).filter((x) => x.code && x.name);
+
+      if (!sets.length) throw new Error('TCGDEX_RETURNED_NO_SETS');
+
       sets._shinySource = 'TCGdex fallback';
       sets._shinyPrimaryError = String(primaryError.message || primaryError);
       return sets;
     } catch (fallbackError) {
       throw new Error(
-        `POKEMON_SET_SYNC_UNAVAILABLE:primary=${String(primaryError.message || primaryError).slice(0, 260)};fallback=${String(fallbackError.message || fallbackError).slice(0, 260)}`
+        `POKEMON_SET_SYNC_UNAVAILABLE:` +
+        `primary=${String(primaryError.message || primaryError).slice(0, 300)};` +
+        `fallback=${String(fallbackError.message || fallbackError).slice(0, 180)}`
       );
     }
   }
@@ -512,7 +516,7 @@ async function pokemonCards(setCode, { downloadImages = false, syncPrices = true
     let page = 1,all = [];
     while (true) {
       const q = encodeURIComponent(`set.id:${setCode}`);
-      const j = await fetchJson(`https://api.pokemontcg.io/v2/cards?q=${q}&page=${page}&pageSize=250`, { headers, timeout: 45000 });
+      const j = await fetchJson(`https://api.pokemontcg.io/v2/cards?q=${q}&page=${page}&pageSize=250`, { headers, timeout: 180000 });
       all.push(...(j.data || []));
       if (all.length >= Number(j.totalCount || all.length) || !(j.data || []).length) break;
       page++;
@@ -565,7 +569,7 @@ async function magicCards(setCode, { downloadImages = false, syncPrices = true }
   let url = `https://api.scryfall.com/cards/search?q=${encodeURIComponent(`set:${setCode}`)}&unique=prints&order=set&dir=asc&include_extras=true`;
   const all = [];
   while (url) {
-    const j = await fetchJson(url, { timeout: 45000 });
+    const j = await fetchJson(url, { timeout: 180000 });
     all.push(...(j.data || []));
     url = j.has_more ? j.next_page : null;
     if (url) await new Promise((r) => setTimeout(r, 120));
@@ -594,7 +598,7 @@ async function magicCards(setCode, { downloadImages = false, syncPrices = true }
 }
 
 async function yugiohSets() {
-  const j = await fetchJson('https://db.ygoprodeck.com/api/v7/cardsets.php', { timeout: 45000 });
+  const j = await fetchJson('https://db.ygoprodeck.com/api/v7/cardsets.php', { timeout: 180000 });
   const rows = Array.isArray(j) ? j : [];
   const counts = new Map();
   for (const x of rows) {
@@ -619,7 +623,7 @@ async function yugiohCards(setCode, { downloadImages = false, syncPrices = true 
   const master = await query(`SELECT * FROM shiny.tcg_master_sets WHERE id_juego='YUGIOH' AND codigo=$1 LIMIT 1`, [setCode]);
   if (!master.rowCount) throw new Error('SET_NOT_FOUND_IN_MASTER');
   const setName = master.rows[0].nombre;
-  const j = await fetchJson(`https://db.ygoprodeck.com/api/v7/cardinfo.php?cardset=${encodeURIComponent(setName)}`, { timeout: 60000 });
+  const j = await fetchJson(`https://db.ygoprodeck.com/api/v7/cardinfo.php?cardset=${encodeURIComponent(setName)}`, { timeout: 180000 });
   const all = j.data || [];
   const cards = [];
   for (const x of all) {
@@ -775,7 +779,7 @@ async function pokemonCardsByPreference(setCode, opts, prefs) {
     let page = 1,all = [];
     while (true) {
       const q = encodeURIComponent(`set.id:${setCode}`);
-      const j = await fetchJson(`https://api.pokemontcg.io/v2/cards?q=${q}&page=${page}&pageSize=250`, { headers, timeout: 45000 });
+      const j = await fetchJson(`https://api.pokemontcg.io/v2/cards?q=${q}&page=${page}&pageSize=250`, { headers, timeout: 180000 });
       all.push(...(j.data || []));
       if (all.length >= Number(j.totalCount || all.length) || !(j.data || []).length) break;
       page++;

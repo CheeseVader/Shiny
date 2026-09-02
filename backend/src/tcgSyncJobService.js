@@ -1,5 +1,5 @@
 import { brandText } from "./config/brand.js";import { randomUUID } from 'node:crypto';
-import { syncSelectedCards, installSelectedToOperational } from './tcgCatalogSyncService.js';
+import { syncSelectedCards, installSelectedToOperational, syncGameSets } from './tcgCatalogSyncService.js';
 
 const jobs = new Map();
 const TTL_MS = 60 * 60 * 1000;
@@ -43,6 +43,67 @@ function progressFromPayload(payload = {}) {
   const setRatio = Math.min(1, setsDone / setsTotal);
   const blended = Math.max(cardRatio, setRatio * 0.92);
   return Math.max(5, Math.min(84, Math.round(5 + blended * 79)));
+}
+
+
+/* SHINY_TCG_SET_JOB_R4 */
+export function startTcgSetJob(gameCode) {
+  cleanup();
+  const id = randomUUID();
+  const code = String(gameCode || '').toUpperCase();
+  const startedAt = now();
+
+  jobs.set(id, {
+    id,
+    jobType: 'sets',
+    gameCode: code,
+    status: 'running',
+    progress: 2,
+    phase: 'queued',
+    message: 'Preparando sincronización de expansiones…',
+    startedAt,
+    updatedAt: startedAt,
+    etaSeconds: null,
+    selectedSets: 0,
+    processedSets: 0,
+    processedCards: 0,
+    estimatedCards: 0,
+    currentSet: null,
+    result: null,
+    error: null
+  });
+
+  queueMicrotask(async () => {
+    try {
+      setJob(id, {
+        progress: 10,
+        phase: 'downloading',
+        message: `Conectando con el proveedor de ${code}…`
+      });
+
+      const result = await syncGameSets(code);
+
+      setJob(id, {
+        progress: 100,
+        status: 'completed',
+        phase: 'completed',
+        message: `${Number(result?.sets || 0)} expansiones disponibles.`,
+        etaSeconds: 0,
+        processedSets: Number(result?.sets || 0),
+        result
+      });
+    } catch (e) {
+      setJob(id, {
+        status: 'failed',
+        phase: 'failed',
+        message: 'No fue posible sincronizar expansiones.',
+        error: safeText(e?.message || e, 900),
+        etaSeconds: null
+      });
+    }
+  });
+
+  return { ...jobs.get(id) };
 }
 
 export function startTcgAddJob(gameCode, { setCodes = [], downloadImages = false, syncPrices = true } = {}) {

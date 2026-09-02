@@ -207,14 +207,99 @@ export default function TCGAutoSyncPanel() {
     return list;
   }
 
-  async function loadSets(code = gameCode) {
-    if (!code) {setSets([]);return;}
-    const r = await api(`/api/v1/tcg-sync/games/${encodeURIComponent(code)}/sets`);
-    const list = r.data || [];
+  /* SHINY_TCG_SET_JOB_FRONTEND_R4 */
+  async function runSetSyncJob(code) {
+    const token = localStorage.getItem('SHINY_AUTH_TOKEN') || '';
+    const headers = {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+      'X-TCG-Store-Template-Progress': 'manual'
+    };
+
+    const startResponse = await fetch(
+      `/api/v1/tcg-sync/games/${encodeURIComponent(code)}/set-job`,
+      { method: 'POST', headers, body: '{}' }
+    );
+
+    const startJson = await startResponse.json().catch(() => ({}));
+    if (!startResponse.ok) {
+      throw new Error(startJson.message || startJson.error || `HTTP ${startResponse.status}`);
+    }
+
+    const jobId = startJson.data?.id;
+    if (!jobId) throw new Error('SET_SYNC_JOB_ID_MISSING');
+
+    while (true) {
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+
+      const statusResponse = await fetch(
+        `/api/v1/tcg-sync/jobs/${encodeURIComponent(jobId)}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'X-TCG-Store-Template-Progress': 'manual'
+          },
+          cache: 'no-store'
+        }
+      );
+
+      const statusJson = await statusResponse.json().catch(() => ({}));
+      if (!statusResponse.ok) {
+        throw new Error(statusJson.message || statusJson.error || `HTTP ${statusResponse.status}`);
+      }
+
+      const job = statusJson.data || {};
+      setMessage(job.message || `Sincronizando ${code}…`);
+
+      if (job.status === 'completed') return job.result || {};
+      if (job.status === 'failed') {
+        throw new Error(job.error || job.message || 'SET_SYNC_JOB_FAILED');
+      }
+    }
+  }
+
+
+
+  async function loadSets(code = gameCode, { hydrateIfEmpty = true } = {}) {
+    if (!code) {setSets([]);return [];}
+
+    let r = await api(`/api/v1/tcg-sync/games/${encodeURIComponent(code)}/sets`, {
+      cache: 'no-store'
+    });
+    let list = Array.isArray(r.data) ? r.data : [];
+
+    /* SHINY_AUTO_SYNC_EMPTY_DB_HYDRATE_R1
+       En una instalación nueva (RPI), tcg_master_sets puede estar vacío.
+       Antes el Paso 2 sólo hacía GET y por eso quedaba permanentemente en 0.
+       Si no hay expansiones, poblar el catálogo desde la API y volver a leer. */
+    if (!list.length && hydrateIfEmpty) {
+      setMessage(`Descargando expansiones de ${code}…`);
+      try {
+        const sync = { data: await runSetSyncJob(code) };
+
+        r = await api(`/api/v1/tcg-sync/games/${encodeURIComponent(code)}/sets`, {
+          cache: 'no-store'
+        });
+        list = Array.isArray(r.data) ? r.data : [];
+
+        if (list.length) {
+          const source = sync?.data?.sourceUsed || sync?.data?.provider || 'API';
+          setMessage(`${source}: ${list.length} expansiones disponibles.`);
+        } else {
+          setMessage(`El proveedor de ${code} respondió, pero no entregó expansiones.`);
+        }
+      } catch (e) {
+        setMessage(`No fue posible descargar expansiones de ${code}: ${e.message}`);
+      }
+    }
+
     setSets(list);
     const cfg = providers.find((x) => x.game_code === code);
     const configured = Array.isArray(cfg?.selected_sets) ? cfg.selected_sets : [];
-    if (configured.length) setSelected(configured.filter((x) => list.some((s) => s.codigo === x)));
+    if (configured.length) {
+      setSelected(configured.filter((x) => list.some((s) => s.codigo === x)));
+    }
+    return list;
   }
 
   /* SHINY_AUTO_SYNC_STEP2_AUTOLOAD_R44 */
@@ -261,9 +346,7 @@ export default function TCGAutoSyncPanel() {
     if (!gameCode) return;
     setBusy('sets');setMessage('');
     try {
-      const r = await api(`/api/v1/tcg-sync/games/${encodeURIComponent(gameCode)}/sync-sets`, {
-        method: 'POST', body: '{}'
-      });
+      const r = { data: await runSetSyncJob(gameCode) };
       setMessage(
         r.data.mode === 'REMOTE_API' ?
         `${r.data.sourceUsed || r.data.provider}: ${r.data.sets} expansiones actualizadas.${r.data.warning ? ` ${r.data.warning}` : ''}` :

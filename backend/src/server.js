@@ -170,6 +170,12 @@ const server = app.listen(PORT, '127.0.0.1', () => {
   initStorefrontLiveSync().catch((e) => console.error(brandText("[Shiny] Storefront live sync:"), e.message));
 });
 
+/* SHINY_TCG_LONG_REQUEST_TIMEOUT_R3 */
+server.requestTimeout = 10 * 60 * 1000;
+server.headersTimeout = 10 * 60 * 1000 + 5000;
+server.keepAliveTimeout = 65000;
+
+
 async function shutdown(signal) {
   console.log(brandText(`[Shiny] ${signal}: shutting down...`));
   server.close(async () => {
