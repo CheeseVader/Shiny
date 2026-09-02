@@ -1,4 +1,5 @@
 import { brandText } from "./config/brand.js";import 'dotenv/config';
+import './rpiKioskProvisioner.js';
 import express from 'express';
 import helmet from 'helmet';
 import cors from 'cors';
