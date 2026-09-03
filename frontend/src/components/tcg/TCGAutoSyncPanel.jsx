@@ -448,7 +448,7 @@ export default function TCGAutoSyncPanel() {
     setSyncDialog({
       visible:true,title:`Agregando ${selected.length} expansión(es)`,
       detail:'Preparando trabajo…',progress:1,setsDone:0,setsTotal:selected.length,
-      cardsDone:0,cardsTotal:0,currentSet:'',cancelling:false
+      cardsDone:0,cardsTotal:0,setCardsDone:0,setCardsTotal:0,currentSet:'',phase:'queued',cancelling:false
     });
 
     try {
@@ -473,7 +473,7 @@ export default function TCGAutoSyncPanel() {
 
       let finalJob = null;
       while (true) {
-        await new Promise((r) => setTimeout(r, 1000));
+        await new Promise((r) => setTimeout(r, 500));
         const statusResponse = await fetch(`/api/v1/tcg-sync/jobs/${encodeURIComponent(jobId)}`, {
           headers: { Authorization: `Bearer ${token}`, 'X-TCG-Store-Template-Progress': 'manual' },
           cache: 'no-store'
@@ -491,7 +491,10 @@ export default function TCGAutoSyncPanel() {
           setsTotal:Number(job.selectedSets||selected.length),
           cardsDone:Number(job.processedCards||0),
           cardsTotal:Number(job.estimatedCards||0),
+          setCardsDone:Number(job.setProcessedCards||0),
+          setCardsTotal:Number(job.setActualCards||0),
           currentSet:job.currentSet||'',
+          phase:job.phase||'',
           cancelling:job.phase==='cancelling'
         }));
 
@@ -879,7 +882,19 @@ export default function TCGAutoSyncPanel() {
             <div className="shiny-sync-job-meta">
               <span>Expansiones <b>{syncDialog.setsDone||0}/{syncDialog.setsTotal||0}</b></span>
               <span>Cartas <b>{syncDialog.cardsDone||0}/{syncDialog.cardsTotal||0}</b></span>
-              <span>Actual <b>{syncDialog.currentSet||'—'}</b></span>
+              <span>Actual <b>{
+  syncDialog.phase==='fetching_set'
+    ? `${syncDialog.currentSet||'Expansión'} · esperando proveedor`
+    : syncDialog.phase==='saving_cards'
+      ? `${syncDialog.currentSet||'Expansión'} · ${syncDialog.setCardsDone||0}/${syncDialog.setCardsTotal||syncDialog.cardsTotal||0}`
+      : syncDialog.phase==='installing'
+        ? 'Instalando en catálogo'
+        : syncDialog.phase==='finalizing'
+          ? 'Finalizando actualización'
+          : syncDialog.phase==='cancelling'
+            ? 'Cancelando'
+            : syncDialog.currentSet||'Preparando'
+}</b></span>
             </div>
             <div className="shiny-sync-job-actions">
               <button type="button" className="gas-outline" onClick={()=>setSyncDialog((x)=>x?{...x,visible:false}:x)}>

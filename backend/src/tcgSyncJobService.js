@@ -82,10 +82,8 @@ export function startTcgSetJob(gameCode) {
       });
 
       const result = await syncGameSets(code);
-
-      const partial=(syncResult.errors||[]).length>0;
       setJob(id,{
-        progress:100,status:partial?'completed_partial':'completed',phase:partial?'completed_partial':'completed',
+        progress:100,status:'completed',phase:'completed',
         message: `${Number(result?.sets || 0)} expansiones disponibles.`,
         etaSeconds: 0,
         processedSets: Number(result?.sets || 0),
@@ -151,6 +149,8 @@ export function startTcgAddJob(gameCode, { setCodes = [], downloadImages = false
         .map((x)=>x?.setCode)
         .filter(Boolean);
 
+      const partial=(syncResult.errors||[]).length>0;
+
       if(!successfulSetCodes.length&&(syncResult.errors||[]).length){
         const detail=syncResult.errors
           .map((x)=>`${x.setCode}: ${x.error}`)
@@ -174,7 +174,7 @@ setJob(id, {
       });
 
       setJob(id, {
-        progress: 100, status: 'completed', phase: 'completed',
+        progress: 100, status: partial ? 'completed_partial' : 'completed', phase: partial ? 'completed_partial' : 'completed',
         message:partial?`${successfulSetCodes.length} expansión(es) completadas; ${syncResult.errors.length} con error de proveedor.`:brandText('Las expansiones ya están disponibles en Shiny.'),
         etaSeconds: 0,
         result: {
