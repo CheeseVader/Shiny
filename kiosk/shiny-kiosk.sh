@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 set -u
-URL="${SHINY_KIOSK_URL:-http://127.0.0.1/}"
+URL="${SHINY_KIOSK_URL:-http://127.0.0.1/login?kiosk=1}"
 PROFILE="${HOME}/.config/shiny-kiosk-profile"
 mkdir -p "$PROFILE"
 

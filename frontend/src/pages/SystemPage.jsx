@@ -15,8 +15,22 @@ export default function SystemPage() {
     'public.payment.transfer.instructions': 'Usa tu número de comprobante como referencia.'
   });
   const [message, setMessage] = useState('');
-  const currentAdmin = (() => {try {return JSON.parse(localStorage.getItem('Shiny_AUTH_USER') || '{}');} catch {return {};}})();
-  const isSuperadmin = String(currentAdmin.rol || '').toUpperCase() === 'SUPERADMIN';
+  const currentAdmin = (() => {
+    try { return JSON.parse(localStorage.getItem('SHINY_AUTH_USER') || '{}'); }
+    catch { return {}; }
+  })();
+
+  const currentAccess = (() => {
+    try { return JSON.parse(localStorage.getItem('SHINY_AUTH_ACCESS') || '{}'); }
+    catch { return {}; }
+  })();
+
+  const isSuperadmin = String(
+    currentAccess.role ||
+    currentAdmin.role ||
+    currentAdmin.rol ||
+    ''
+  ).toUpperCase() === 'SUPERADMIN';
   const [technical, setTechnical] = useState(null);
   const [technicalBusy, setTechnicalBusy] = useState(false);
   const [technicalTab, setTechnicalTab] = useState('overview');
