@@ -1,0 +1,5 @@
+/* SHINY_SYSTEM_UPDATE_PANEL_R1 */
+.shiny-system-update{display:grid;gap:14px}.shiny-update-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.shiny-update-grid article{border:1px solid #e2e8f0;border-radius:12px;padding:13px;background:#f8fafc}.shiny-update-grid span{display:block;color:#64748b;font-size:12px}.shiny-update-grid strong{display:block;margin-top:4px;font-size:18px;color:#0f172a}
+.shiny-update-actions{display:flex;justify-content:flex-end}.shiny-update-actions button{min-width:190px}
+@media(max-width:900px){.shiny-update-grid{grid-template-columns:repeat(2,1fr)}}@media(max-width:520px){.shiny-update-grid{grid-template-columns:1fr}}

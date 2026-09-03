@@ -10,7 +10,7 @@ import { execFile } from 'node:child_process';
  * redirects, compresión, timeouts y reintentos.
  */
 
-function curlExec(args, { timeout = 180000, maxBuffer = 128 * 1024 * 1024 } = {}) {
+function curlExec(args, { timeout = 240000, maxBuffer = 128 * 1024 * 1024 } = {}) {
   return new Promise((resolve, reject) => {
     execFile(
       'curl',
@@ -50,11 +50,11 @@ export async function tcgFetchBuffer(
   url,
   {
     headers = {},
-    timeout = 180000,
+    timeout = 240000,
     userAgent = 'SHINY-TCG-RPI/2.0'
   } = {}
 ) {
-  const seconds = Math.max(5, Math.ceil(Number(timeout || 45000) / 1000));
+  const seconds = Math.max(5, Math.ceil(Number(timeout || 240000) / 1000));
   const args = [
     '-4',
     '--http1.1',
@@ -63,10 +63,10 @@ export async function tcgFetchBuffer(
     '--silent',
     '--show-error',
     '--compressed',
-    '--connect-timeout', '20',
+    '--connect-timeout', '60',
     '--max-time', String(seconds),
-    '--retry', '3',
-    '--retry-delay', '1',
+    '--retry', '4',
+    '--retry-delay', '2',
     '--retry-all-errors',
     '-A', userAgent,
     ...headerArgs(headers),
@@ -85,7 +85,7 @@ export async function tcgFetchJson(
   url,
   {
     headers = {},
-    timeout = 180000,
+    timeout = 240000,
     delayMs = 0,
     userAgent = 'SHINY-TCG-RPI/2.0'
   } = {}

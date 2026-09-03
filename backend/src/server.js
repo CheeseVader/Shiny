@@ -46,6 +46,7 @@ import { publicApiRateLimit, authRateLimit } from './middleware/publicRateLimit.
 import trafficHealthRouter from './routes/trafficHealth.js';
 import dashboardRouter from './routes/dashboard.js';
 import productImagesRouter from './routes/productImages.js';
+import systemUpdateRouter from './routes/systemUpdate.js';
 import { startProductImageEnrichmentScheduler } from './productImageEnrichmentService.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -127,6 +128,7 @@ app.use('/api/v1', enforceBranchScope);
 app.use('/api/v1', applyDefaultBranchScope);
 app.use('/api/v1', filterResponseByBranchScope);
 app.use('/api/v1/admin', adminRouter);
+app.use('/api/v1/system-update', systemUpdateRouter);
 app.use('/api/v1/system/traffic', requireModule('REPORTES'), trafficHealthRouter);
 app.use('/api/v1/dashboard', requireModule('DASHBOARD'), dashboardRouter);
 app.use('/api/v1/meta', requireModule('DASHBOARD'), metaRouter);

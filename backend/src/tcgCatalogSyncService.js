@@ -340,7 +340,7 @@ function tcgdexPrices(card) {
 async function mapTcgdexSetId(setCode) {
   // First try the exact ID because most modern IDs are directly compatible.
   try {
-    const exact = await fetchJson(`https://api.tcgdex.net/v2/en/sets/${encodeURIComponent(setCode)}`, { timeout: 30000 });
+    const exact = await fetchJson(`https://api.tcgdex.net/v2/en/sets/${encodeURIComponent(setCode)}`, { timeout: 120000 });
     if (exact?.id) return exact.id;
   } catch {}
 
@@ -351,14 +351,14 @@ async function mapTcgdexSetId(setCode) {
   const wanted = String(master.rows[0]?.nombre || '').trim().toLowerCase();
   if (!wanted) return setCode;
 
-  const sets = await fetchJson('https://api.tcgdex.net/v2/en/sets', { timeout: 30000 });
+  const sets = await fetchJson('https://api.tcgdex.net/v2/en/sets', { timeout: 120000 });
   const hit = (Array.isArray(sets) ? sets : []).find((x) => String(x.name || '').trim().toLowerCase() === wanted);
   return hit?.id || setCode;
 }
 
 async function tcgdexPokemonCards(setCode, { downloadImages = false, syncPrices = true } = {}) {
   const tcgdexSetId = await mapTcgdexSetId(setCode);
-  const set = await fetchJson(`https://api.tcgdex.net/v2/en/sets/${encodeURIComponent(tcgdexSetId)}`, { timeout: 180000 });
+  const set = await fetchJson(`https://api.tcgdex.net/v2/en/sets/${encodeURIComponent(tcgdexSetId)}`, { timeout: 240000 });
   const briefs = Array.isArray(set?.cards) ? set.cards : [];
   if (!briefs.length) throw new Error(`TCGDEX_SET_HAS_NO_CARDS:${tcgdexSetId}`);
 
@@ -367,7 +367,7 @@ async function tcgdexPokemonCards(setCode, { downloadImages = false, syncPrices 
   for (let start = 0; start < briefs.length; start += concurrency) {
     const batch = briefs.slice(start, start + concurrency);
     const full = await Promise.all(batch.map(async (brief) => {
-      const x = await fetchJson(`https://api.tcgdex.net/v2/en/cards/${encodeURIComponent(brief.id)}`, { timeout: 30000 });
+      const x = await fetchJson(`https://api.tcgdex.net/v2/en/cards/${encodeURIComponent(brief.id)}`, { timeout: 120000 });
       const base = String(x.image || brief.image || '').replace(/\/$/, '');
       const imageSmall = base ? `${base}/low.webp` : '';
       const imageLarge = base ? `${base}/high.webp` : '';
@@ -452,7 +452,7 @@ async function pokemonSets() {
 
       const j = await fetchJson(url, {
         headers,
-        timeout: 180000
+        timeout: 240000
       });
 
       const batch = Array.isArray(j?.data) ? j.data : [];
@@ -482,7 +482,7 @@ async function pokemonSets() {
   } catch (primaryError) {
     try {
       const all = await fetchJson('https://api.tcgdex.net/v2/en/sets', {
-        timeout: 15000
+        timeout: 60000
       });
 
       const sets = (Array.isArray(all) ? all : []).map((x) => ({
@@ -516,7 +516,7 @@ async function pokemonCards(setCode, { downloadImages = false, syncPrices = true
     let page = 1,all = [];
     while (true) {
       const q = encodeURIComponent(`set.id:${setCode}`);
-      const j = await fetchJson(`https://api.pokemontcg.io/v2/cards?q=${q}&page=${page}&pageSize=250`, { headers, timeout: 180000 });
+      const j = await fetchJson(`https://api.pokemontcg.io/v2/cards?q=${q}&page=${page}&pageSize=250`, { headers, timeout: 240000 });
       all.push(...(j.data || []));
       if (all.length >= Number(j.totalCount || all.length) || !(j.data || []).length) break;
       page++;
@@ -569,7 +569,7 @@ async function magicCards(setCode, { downloadImages = false, syncPrices = true }
   let url = `https://api.scryfall.com/cards/search?q=${encodeURIComponent(`set:${setCode}`)}&unique=prints&order=set&dir=asc&include_extras=true`;
   const all = [];
   while (url) {
-    const j = await fetchJson(url, { timeout: 180000 });
+    const j = await fetchJson(url, { timeout: 240000 });
     all.push(...(j.data || []));
     url = j.has_more ? j.next_page : null;
     if (url) await new Promise((r) => setTimeout(r, 120));
@@ -598,7 +598,7 @@ async function magicCards(setCode, { downloadImages = false, syncPrices = true }
 }
 
 async function yugiohSets() {
-  const j = await fetchJson('https://db.ygoprodeck.com/api/v7/cardsets.php', { timeout: 180000 });
+  const j = await fetchJson('https://db.ygoprodeck.com/api/v7/cardsets.php', { timeout: 240000 });
   const rows = Array.isArray(j) ? j : [];
   const counts = new Map();
   for (const x of rows) {
@@ -623,7 +623,7 @@ async function yugiohCards(setCode, { downloadImages = false, syncPrices = true 
   const master = await query(`SELECT * FROM shiny.tcg_master_sets WHERE id_juego='YUGIOH' AND codigo=$1 LIMIT 1`, [setCode]);
   if (!master.rowCount) throw new Error('SET_NOT_FOUND_IN_MASTER');
   const setName = master.rows[0].nombre;
-  const j = await fetchJson(`https://db.ygoprodeck.com/api/v7/cardinfo.php?cardset=${encodeURIComponent(setName)}`, { timeout: 180000 });
+  const j = await fetchJson(`https://db.ygoprodeck.com/api/v7/cardinfo.php?cardset=${encodeURIComponent(setName)}`, { timeout: 240000 });
   const all = j.data || [];
   const cards = [];
   for (const x of all) {
@@ -738,7 +738,7 @@ function filterPricesByPreference(prices, prefs) {
 
 async function pokemonSetsByPreference(prefs) {
   if (prefs.catalogSource === 'TCGDEX') {
-    const all = await fetchJson('https://api.tcgdex.net/v2/en/sets', { timeout: 30000 });
+    const all = await fetchJson('https://api.tcgdex.net/v2/en/sets', { timeout: 120000 });
     const sets = (Array.isArray(all) ? all : []).map((x) => ({
       code: txt(x.id), name: txt(x.name), releaseDate: '',
       total: Number(x.cardCount?.total || x.cardCount?.official || 0),
@@ -779,7 +779,7 @@ async function pokemonCardsByPreference(setCode, opts, prefs) {
     let page = 1,all = [];
     while (true) {
       const q = encodeURIComponent(`set.id:${setCode}`);
-      const j = await fetchJson(`https://api.pokemontcg.io/v2/cards?q=${q}&page=${page}&pageSize=250`, { headers, timeout: 180000 });
+      const j = await fetchJson(`https://api.pokemontcg.io/v2/cards?q=${q}&page=${page}&pageSize=250`, { headers, timeout: 240000 });
       all.push(...(j.data || []));
       if (all.length >= Number(j.totalCount || all.length) || !(j.data || []).length) break;
       page++;
@@ -939,7 +939,7 @@ export async function syncGameSets(gameCode) {
   }
 }
 
-export async function syncSelectedCards(gameCode, { setCodes = [], downloadImages = false, syncPrices = true, onProgress = null, incremental = true } = {}) {
+export async function syncSelectedCards(gameCode, { setCodes = [], downloadImages = false, syncPrices = true, onProgress = null, incremental = true, shouldCancel = null } = {}) {
   const provider = await providerRow(gameCode);
   const remote = REMOTE_PROVIDERS[gameCode];
   if (!remote?.cards) throw new Error('PROVIDER_CARDS_NOT_AVAILABLE');
@@ -977,7 +977,9 @@ export async function syncSelectedCards(gameCode, { setCodes = [], downloadImage
     gameCode, provider: provider.provider_name, sets: [], cards: 0, prices: 0, errors: [],
     insertedCards: 0, updatedCards: 0, unchangedCards: 0, updatedPrices: 0, unchangedPrices: 0
   };
+  const cancelled = () => typeof shouldCancel === 'function' && shouldCancel() === true;
   for (const setCode of selected) {
+    if (cancelled()) throw new Error('SYNC_CANCELLED');
     try {
       await notify({
         phase: 'fetching_set',
@@ -1011,6 +1013,7 @@ export async function syncSelectedCards(gameCode, { setCodes = [], downloadImage
       try {
         await client.query('BEGIN');
         for (const card of cards) {
+          if (cancelled()) throw new Error('SYNC_CANCELLED');
           await ensureMasterRarity(client, gameCode, card.rarity);
           const cardResult = await upsertMasterCard(client, card, { incremental });
           const id = cardResult.rowId;
@@ -1049,6 +1052,7 @@ export async function syncSelectedCards(gameCode, { setCodes = [], downloadImage
         message: `${setCode} completada: ${setCards} cartas`
       });
     } catch (e) {
+      if (String(e?.message || e) === 'SYNC_CANCELLED') throw e;
       processedSets++;
       result.errors.push({ setCode, error: String(e.message || e).slice(0, 500) });
       await notify({
