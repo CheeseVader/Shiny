@@ -282,6 +282,18 @@ export default function SystemUpdatePanel(){
   }
 
   const progress=Number(activity?.progress||0);
+  const bridgeRequired=state?.bridgeRequired!==false;
+  const latestKnown=!!state?.latest&&!state?.remoteError;
+  const statusLabel=!latestKnown
+    ?'Sin verificar'
+    :state?.updateAvailable
+      ?'Actualización disponible'
+      :'Actualizado';
+  const bridgeLabel=!bridgeRequired
+    ?'No requerido'
+    :state?.bridgeReady
+      ?'Activo'
+      :'Pendiente';
 
   return <section className="content-card shiny-system-update">
     <div className="section-head">
@@ -316,13 +328,13 @@ export default function SystemUpdatePanel(){
       <article>
         <span>Estado</span>
         <strong>
-          {state?.updateAvailable?'Actualización disponible':'Actualizado'}
+          {statusLabel}
         </strong>
       </article>
 
       <article>
         <span>Puente seguro</span>
-        <strong>{state?.bridgeReady?'Activo':'Pendiente'}</strong>
+        <strong>{bridgeLabel}</strong>
       </article>
     </div>
 
@@ -357,7 +369,7 @@ export default function SystemUpdatePanel(){
       <div className="system-settings-note">{message}</div>
     :null}
 
-    {!state?.bridgeReady?
+    {bridgeRequired&&!state?.bridgeReady?
       <div className="architecture-note">
         <b>Puente privilegiado pendiente</b>
         <p>
@@ -373,6 +385,7 @@ export default function SystemUpdatePanel(){
         type="button"
         disabled={
           busy==='install'||
+          !bridgeRequired||
           !state?.bridgeReady||
           !state?.updateAvailable
         }
