@@ -10,6 +10,7 @@
   "dependencies": {
     "cors": "latest",
     "dotenv": "latest",
+    "exceljs": "^4.4.0",
     "express": "latest",
     "helmet": "latest",
     "mercadopago": "^3.4.0",

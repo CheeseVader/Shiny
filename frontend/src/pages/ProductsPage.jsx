@@ -349,7 +349,7 @@ export default function ProductsPage() {
   async function downloadDynamicTemplate() {
     try {
       const token = localStorage.getItem('Shiny_AUTH_TOKEN') || '';
-      const response = await fetch('/api/v1/tcg/template.xlsx', {
+      const response = await fetch('/api/public/products/template.xlsx', {
         headers: { Authorization: `Bearer ${token}` },
         cache: 'no-store'
       });

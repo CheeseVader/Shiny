@@ -2,6 +2,7 @@ import { brandText } from "../config/brand.js";import fs from 'node:fs/promises'
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { Router } from 'express';
+import * as XLSX from 'xlsx';
 import {
   listProducts,
   getProduct,
@@ -16,6 +17,96 @@ import { importProductsWorkbook, buildProductsTemplate } from '../excelImportSer
 import { requirePermission } from '../middleware/auth.js';
 
 const router = Router();
+
+// SHINY_PRODUCTS_TEMPLATE_R3
+// Plantilla exclusiva de Productos.
+// No consulta TCG y funciona aunque el catalogo tenga 0 registros.
+router.get('/template.xlsx', async (_req, res) => {
+  try {
+    const wb = XLSX.utils.book_new();
+
+    const instructions = [
+      ['PLANTILLA DE IMPORTACION DE PRODUCTOS - SHINY'],
+      [''],
+      ['Uso'],
+      ['1. Captura un producto por fila en la hoja Productos.'],
+      ['2. No cambies los nombres de las columnas.'],
+      ['3. SKU y nombre son necesarios para crear/importar productos.'],
+      ['4. Precio, costo, stock y stock_minimo deben ser valores numericos.'],
+      ['5. Estado recomendado: Activo, Inactivo o Agotado.'],
+      ['6. imagen_url es opcional.'],
+      ['7. Guarda el archivo como .xlsx y usa el boton Importar Excel.'],
+      [''],
+      ['La plantilla puede descargarse aunque el catalogo este vacio.']
+    ];
+
+    const wi = XLSX.utils.aoa_to_sheet(instructions);
+    wi['!cols'] = [{ wch: 95 }];
+    XLSX.utils.book_append_sheet(wb, wi, 'Instrucciones');
+
+    // Columnas compatibles con el importador actual de Shiny.
+    // La hoja se deja SIN registros de ejemplo para evitar importarlos por accidente.
+    const headers = [
+      'id',
+      'sku',
+      'codigo_barras',
+      'nombre',
+      'descripcion',
+      'categoria',
+      'precio',
+      'costo',
+      'stock',
+      'stock_minimo',
+      'estado',
+      'imagen_url'
+    ];
+
+    const wp = XLSX.utils.aoa_to_sheet([headers]);
+    wp['!cols'] = [
+      { wch: 18 }, // id
+      { wch: 20 }, // sku
+      { wch: 22 }, // codigo_barras
+      { wch: 34 }, // nombre
+      { wch: 45 }, // descripcion
+      { wch: 24 }, // categoria
+      { wch: 14 }, // precio
+      { wch: 14 }, // costo
+      { wch: 12 }, // stock
+      { wch: 14 }, // stock_minimo
+      { wch: 14 }, // estado
+      { wch: 55 }  // imagen_url
+    ];
+    XLSX.utils.book_append_sheet(wb, wp, 'Productos');
+
+    const buffer = XLSX.write(wb, {
+      type: 'buffer',
+      bookType: 'xlsx',
+      compression: true
+    });
+
+    res.setHeader(
+      'Content-Type',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    );
+    res.setHeader(
+      'Content-Disposition',
+      'attachment; filename="Shiny_Plantilla_Productos.xlsx"'
+    );
+    res.setHeader('Content-Length', String(buffer.length));
+    res.setHeader('Cache-Control', 'no-store');
+    res.setHeader('X-Shiny-Products-Template', 'R3');
+
+    return res.status(200).send(buffer);
+  } catch (error) {
+    console.error('[SHINY][PRODUCTS_TEMPLATE_R3]', error);
+    return res.status(500).json({
+      success: false,
+      error: 'PRODUCTS_TEMPLATE_FAILED',
+      message: error?.message || 'No fue posible generar la plantilla de productos.'
+    });
+  }
+});
+
 
 const isSuperadmin = (req) => String(req.access?.role || req.user?.rol || '').toUpperCase() === 'SUPERADMIN';
 const withoutCost = (value) => {

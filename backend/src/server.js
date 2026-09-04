@@ -7,6 +7,8 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { query, pool } from './db.js';
 import authRouter from './routes/auth.js';
+// SHINY_PUBLIC_PRODUCT_TEMPLATE_R4_IMPORT
+import publicProductTemplateRouter from './routes/publicProductTemplate.js';
 import adminRouter from './routes/admin.js';
 import productsRouter from './routes/products.js';
 import externalCardBetaRouter from './routes/externalCardBeta.js';
@@ -116,6 +118,8 @@ app.get('/api/health', async (_req, res) => {
 
 app.use('/api/auth', authRateLimit, authRouter);
 app.use('/api/public', publicApiRateLimit);
+// SHINY_PUBLIC_PRODUCT_TEMPLATE_R4_MOUNT
+app.use('/api/public/products', publicProductTemplateRouter);
 app.use('/api/public/live-sync', storefrontLiveRouter);
 app.use('/api/public', publicStoreRouter);
 app.use('/api/client', clientAccountRouter);
@@ -188,3 +192,5 @@ async function shutdown(signal) {
 }
 process.on('SIGINT', () => shutdown('SIGINT'));
 process.on('SIGTERM', () => shutdown('SIGTERM'));
+
+
