@@ -1,12 +1,11 @@
 import { brandText, applyDocumentBrand } from "./config/brand.js";import { registerSW } from 'virtual:pwa-register';
 
-const updateSW = registerSW({
+registerSW({
   immediate: true,
   onNeedRefresh() {
-    const acceptUpdate = window.confirm(brandText("Hay una nueva version de Shiny disponible. ¿Deseas actualizar ahora?")
-
-    );
-    if (acceptUpdate) updateSW(true);
+    // La version oficial la controla el updater administrado de la Raspberry.
+    // La PWA solamente activa silenciosamente el frontend nuevo.
+    updateSW(true);
   }
 });
 import React from 'react';
