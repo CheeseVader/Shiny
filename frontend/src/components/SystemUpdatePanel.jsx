@@ -35,6 +35,60 @@ export default function SystemUpdatePanel(){
     return()=>{mountedRef.current=false;};
   },[]);
 
+  async function checkForUpdates(){
+    if(busy)return;
+
+    setBusy('check');
+    setMessage('');
+
+    try{
+      await api('/api/v1/system-update/check',{
+        method:'POST',
+        body:'{}',
+        headers:{
+          'Content-Type':'application/json',
+          'X-TCG-Store-Template-Progress':'manual'
+        }
+      });
+
+      const r=await api('/api/v1/system-update/status',{
+        cache:'no-store'
+      });
+
+      const next=r.data||null;
+
+      if(mountedRef.current){
+        setState(next);
+
+        if(next?.remoteError){
+          setMessage(`No fue posible consultar GitHub: ${next.remoteError}`);
+        }else if(next?.updateAvailable){
+          setMessage(
+            `Nueva versión disponible: ${next.current} → ${next.latest}.`
+          );
+        }else{
+          setMessage(
+            `Shiny ${next?.current||''} está actualizado.`
+          );
+        }
+      }
+
+      return next;
+
+    }catch(e){
+      if(mountedRef.current){
+        setMessage(
+          e?.message||
+          'No fue posible buscar actualizaciones.'
+        );
+      }
+
+      throw e;
+
+    }finally{
+      if(mountedRef.current)setBusy('');
+    }
+  }
   function progressOperation(id,progress,detail){
     const value=Math.max(0,Math.min(100,Number(progress||0)));
     if(mountedRef.current)setActivity({progress:value,detail});
@@ -242,9 +296,9 @@ export default function SystemUpdatePanel(){
       <button
         type="button"
         disabled={!!busy}
-        onClick={()=>refresh().catch(()=>{})}
+        onClick={()=>checkForUpdates().catch(()=>{})}
       >
-        {busy==='status'?'Consultando…':'Buscar actualización'}
+        {busy==='check'?'Buscando…':'Buscar actualización'}
       </button>
     </div>
 
@@ -324,7 +378,7 @@ export default function SystemUpdatePanel(){
         }
         onClick={forceUpdate}
       >
-        {busy==='install'?'Actualizando…':'Forzar actualización'}
+        {busy==='install'?'Actualizando…':'Instalar actualización'}
       </button>
     </div>
   </section>;
