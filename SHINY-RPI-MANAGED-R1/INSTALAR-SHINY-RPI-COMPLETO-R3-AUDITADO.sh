@@ -725,7 +725,7 @@ ExecStart=$RUNNER
 Restart=on-failure
 RestartSec=5
 TimeoutStartSec=90
-NoNewPrivileges=true
+NoNewPrivileges=false
 
 [Install]
 WantedBy=multi-user.target
