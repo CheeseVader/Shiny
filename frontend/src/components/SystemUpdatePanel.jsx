@@ -301,17 +301,9 @@ export default function SystemUpdatePanel(){
         <div className="eyebrow">SUPERADMIN · SERVIDOR</div>
         <h2>Actualizaciones de Shiny</h2>
         <p className="section-copy">
-          Consulta la versión instalada y actualiza Shiny de forma segura desde GitHub.
+          Las actualizaciones se administran automáticamente al iniciar la Raspberry Pi. No se requiere intervención manual.
         </p>
       </div>
-
-      <button
-        type="button"
-        disabled={!!busy}
-        onClick={()=>checkForUpdates().catch(()=>{})}
-      >
-        {busy==='check'?'Buscando…':'Buscar actualización'}
-      </button>
     </div>
 
     <div className="shiny-update-grid">
@@ -379,20 +371,11 @@ export default function SystemUpdatePanel(){
         </p>
       </div>
     :null}
-
-    <div className="shiny-update-actions">
-      <button
-        type="button"
-        disabled={
-          busy==='install'||
-          !bridgeRequired||
-          !state?.bridgeReady||
-          !state?.updateAvailable
-        }
-        onClick={forceUpdate}
-      >
-        {busy==='install'?'Actualizando…':'Instalar actualización'}
-      </button>
-    </div>
-  </section>;
+      <div className="architecture-note">
+      <b>Actualización automática al iniciar</b>
+      <p>
+        En Raspberry Pi, Shiny comprobará nuevas versiones durante el arranque y de forma periódica.
+        Si no hay Internet, la versión instalada seguirá funcionando normalmente.
+      </p>
+    </div></section>;
 }

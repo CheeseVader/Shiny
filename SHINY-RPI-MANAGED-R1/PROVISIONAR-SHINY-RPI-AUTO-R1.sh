@@ -1,0 +1,282 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+
+# SHINY_RPI_AUTO_R1_4
+# Provision autocontenido para una RPi existente:
+# - AUTO_INSTALL=1
+# - updater ~20 s despues del arranque y cada 6 h
+# - LAN/mDNS shyny-panel.local
+# - Cloudflare Quick Tunnel STAFF -> 8788
+# - STORE -> 8789 solo si SHINY_CF_ENABLE_STORE=1
+#
+# Debe ejecutarse como root desde npm postinstall/updater.
+
+log(){ echo "[SHINY-RPI-AUTO] $*"; }
+warn(){ echo "[SHINY-RPI-AUTO][AVISO] $*" >&2; }
+
+if [[ "$(id -u)" -ne 0 ]]; then
+  warn "Sin privilegios root; omitiendo provision del sistema."
+  exit 0
+fi
+
+[[ "$(uname -s)" == "Linux" ]] || exit 0
+
+APP_DIR="${APP_DIR:-/opt/shiny/app}"
+CONFIG="${SHINY_UPDATER_CONFIG:-/etc/shiny-updater/updater.env}"
+STATE_DIR="/var/lib/shiny-cloudflare"
+BIN_DIR="/usr/local/lib/shiny-cloudflare"
+LOCAL_HOSTNAME="${SHINY_LOCAL_HOSTNAME:-shyny-panel}"
+STAFF_PORT="${SHINY_INTERNAL_ENTRY_PORT:-8788}"
+STORE_PORT="${SHINY_STORE_ENTRY_PORT:-8789}"
+ENABLE_STORE="${SHINY_CF_ENABLE_STORE:-0}"
+SERVICE_NAME="${SERVICE_NAME:-shiny-app.service}"
+
+mkdir -p "$STATE_DIR" "$BIN_DIR"
+chmod 0755 "$STATE_DIR" "$BIN_DIR"
+
+# Cargar configuracion existente sin imprimir secretos.
+if [[ -f "$CONFIG" ]]; then
+  set +u
+  # shellcheck disable=SC1090
+  source "$CONFIG"
+  set -u
+  SERVICE_NAME="${SERVICE_NAME:-shiny-app.service}"
+fi
+
+# ------------------------------------------------------------
+# 1. AUTO_INSTALL=1 preservando el resto de updater.env
+# ------------------------------------------------------------
+if [[ -f "$CONFIG" ]]; then
+  python3 - "$CONFIG" <<'PY'
+from pathlib import Path
+import sys
+p=Path(sys.argv[1])
+raw=p.read_text(encoding="utf-8-sig", errors="replace").replace("\r\n","\n")
+out=[]
+seen=False
+for line in raw.splitlines():
+    if line.startswith("AUTO_INSTALL="):
+        out.append("AUTO_INSTALL=1")
+        seen=True
+    else:
+        out.append(line)
+if not seen:
+    out.append("AUTO_INSTALL=1")
+p.write_text("\n".join(out).rstrip()+"\n", encoding="utf-8")
+PY
+  chmod 0600 "$CONFIG"
+  log "AUTO_INSTALL=1 configurado."
+else
+  warn "No existe $CONFIG; no se pudo persistir AUTO_INSTALL."
+fi
+
+# ------------------------------------------------------------
+# 2. Updater automatico al boot y periodico
+# ------------------------------------------------------------
+cat > /etc/systemd/system/shiny-updater.timer <<'EOF'
+[Unit]
+Description=Shiny - comprobacion automatica de actualizaciones
+
+[Timer]
+OnBootSec=20s
+OnUnitActiveSec=6h
+AccuracySec=5s
+Persistent=true
+
+[Install]
+WantedBy=timers.target
+EOF
+
+# ------------------------------------------------------------
+# 3. LAN/mDNS AUTOCONTENIDO
+#    No depende de que SHINY-RPI-MANAGED-R1 llegue en el delta.
+# ------------------------------------------------------------
+configure_lan(){
+  export DEBIAN_FRONTEND=noninteractive
+
+  if ! command -v avahi-daemon >/dev/null 2>&1 || ! command -v nginx >/dev/null 2>&1; then
+    log "Instalando soporte LAN/mDNS..."
+    if ! apt-get update -y; then
+      warn "apt-get update fallo; se omite LAN/mDNS por ahora."
+      return 0
+    fi
+    if ! apt-get install -y avahi-daemon avahi-utils nginx curl; then
+      warn "No se pudieron instalar dependencias LAN/mDNS."
+      return 0
+    fi
+  fi
+
+  if [[ "$(hostname)" != "$LOCAL_HOSTNAME" ]]; then
+    hostnamectl set-hostname "$LOCAL_HOSTNAME" || warn "No se pudo cambiar hostname."
+    if [[ -f /etc/hosts ]] && ! grep -qE "^[[:space:]]*127\.0\.1\.1[[:space:]]+$LOCAL_HOSTNAME([[:space:]]|$)" /etc/hosts; then
+      if grep -qE "^[[:space:]]*127\.0\.1\.1[[:space:]]+" /etc/hosts; then
+        sed -i -E "s|^[[:space:]]*127\.0\.1\.1[[:space:]].*$|127.0.1.1\t$LOCAL_HOSTNAME|" /etc/hosts
+      else
+        printf '127.0.1.1\t%s\n' "$LOCAL_HOSTNAME" >> /etc/hosts
+      fi
+    fi
+  fi
+
+  systemctl enable --now avahi-daemon >/dev/null 2>&1 || warn "Avahi no pudo activarse."
+
+  cat > /etc/nginx/sites-available/shiny-local <<EOF
+server {
+    listen 80 default_server;
+    listen [::]:80 default_server;
+    server_name ${LOCAL_HOSTNAME}.local _;
+
+    location / {
+        proxy_pass http://127.0.0.1:${STAFF_PORT};
+        proxy_http_version 1.1;
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto \$scheme;
+        proxy_set_header Upgrade \$http_upgrade;
+        proxy_set_header Connection "upgrade";
+    }
+}
+EOF
+
+  rm -f /etc/nginx/sites-enabled/default
+  ln -sfn /etc/nginx/sites-available/shiny-local /etc/nginx/sites-enabled/shiny-local
+
+  if nginx -t; then
+    systemctl enable nginx >/dev/null 2>&1 || true
+    systemctl restart nginx || warn "nginx no pudo reiniciarse."
+    log "LAN: http://${LOCAL_HOSTNAME}.local"
+  else
+    warn "nginx -t fallo; no se reinicio nginx."
+  fi
+}
+
+configure_lan || warn "Provision LAN/mDNS incompleto; Shiny continuara."
+
+# ------------------------------------------------------------
+# 4. cloudflared
+# ------------------------------------------------------------
+install_cloudflared(){
+  command -v cloudflared >/dev/null 2>&1 && return 0
+
+  log "Instalando cloudflared..."
+  local arch deb_arch url tmp
+  arch="$(uname -m)"
+  case "$arch" in
+    aarch64|arm64) deb_arch="arm64" ;;
+    armv7l|armhf)  deb_arch="armhf" ;;
+    x86_64|amd64) deb_arch="amd64" ;;
+    *)
+      warn "Arquitectura no soportada para cloudflared: $arch"
+      return 1
+      ;;
+  esac
+
+  tmp="/var/tmp/cloudflared-${deb_arch}.deb"
+  url="https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-${deb_arch}.deb"
+
+  if ! curl -fL --connect-timeout 10 --max-time 120 "$url" -o "$tmp"; then
+    warn "No se pudo descargar cloudflared; Shiny seguira local."
+    rm -f "$tmp"
+    return 1
+  fi
+
+  if ! dpkg -i "$tmp"; then
+    apt-get -f install -y || true
+    dpkg -i "$tmp" || {
+      rm -f "$tmp"
+      return 1
+    }
+  fi
+  rm -f "$tmp"
+  command -v cloudflared >/dev/null 2>&1
+}
+
+cat > "$BIN_DIR/run-quick-tunnel.sh" <<'EOF'
+#!/usr/bin/env bash
+set -Eeuo pipefail
+
+NAME="${1:?nombre requerido}"
+PORT="${2:?puerto requerido}"
+STATE_DIR="/var/lib/shiny-cloudflare"
+URL_FILE="$STATE_DIR/${NAME}.url"
+LOG_FILE="$STATE_DIR/${NAME}.log"
+
+mkdir -p "$STATE_DIR"
+rm -f "$URL_FILE"
+: > "$LOG_FILE"
+
+# Esperar al listener de Shiny sin bloquear el servicio principal.
+while ! curl -fsS --max-time 2 "http://127.0.0.1:${PORT}/" >/dev/null 2>&1; do
+  sleep 2
+done
+
+cloudflared tunnel --url "http://127.0.0.1:${PORT}" --no-autoupdate 2>&1 |
+while IFS= read -r line; do
+  printf '%s\n' "$line" >> "$LOG_FILE"
+  if [[ "$line" =~ https://[a-z0-9-]+\.trycloudflare\.com ]]; then
+    printf '%s\n' "${BASH_REMATCH[0]}" > "$URL_FILE"
+    chmod 0644 "$URL_FILE"
+  fi
+done
+EOF
+chmod 0755 "$BIN_DIR/run-quick-tunnel.sh"
+
+write_cf_service(){
+  local name="$1" port="$2" label="$3"
+  cat > "/etc/systemd/system/shiny-cloudflared-${name}.service" <<EOF
+[Unit]
+Description=Shiny Cloudflare Quick Tunnel - ${label}
+After=network-online.target ${SERVICE_NAME}
+Wants=network-online.target
+Requires=${SERVICE_NAME}
+
+[Service]
+Type=simple
+ExecStart=${BIN_DIR}/run-quick-tunnel.sh ${name} ${port}
+Restart=always
+RestartSec=5
+User=root
+Group=root
+
+[Install]
+WantedBy=multi-user.target
+EOF
+}
+
+if install_cloudflared; then
+  write_cf_service "staff" "$STAFF_PORT" "Admin y Cajero"
+
+  systemctl daemon-reload
+  systemctl enable shiny-cloudflared-staff.service >/dev/null 2>&1 || true
+  systemctl restart shiny-cloudflared-staff.service || true
+  log "Cloudflared STAFF -> ${STAFF_PORT} configurado."
+
+  if [[ "$ENABLE_STORE" == "1" ]]; then
+    write_cf_service "store" "$STORE_PORT" "Tienda"
+    systemctl daemon-reload
+    systemctl enable shiny-cloudflared-store.service >/dev/null 2>&1 || true
+    systemctl restart shiny-cloudflared-store.service || true
+    log "Cloudflared STORE -> ${STORE_PORT} configurado."
+  else
+    systemctl disable --now shiny-cloudflared-store.service >/dev/null 2>&1 || true
+    rm -f /etc/systemd/system/shiny-cloudflared-store.service
+    rm -f "$STATE_DIR/store.url"
+    systemctl daemon-reload
+    log "STORE Cloudflare desactivado por defecto (SHINY_CF_ENABLE_STORE=0)."
+  fi
+fi
+
+# ------------------------------------------------------------
+# 5. Activar nuevo timer
+# ------------------------------------------------------------
+systemctl daemon-reload
+systemctl enable shiny-updater.timer >/dev/null 2>&1 || true
+systemctl restart shiny-updater.timer || true
+
+log "Provision RPi automatico completado."
+log "STAFF URL: $STATE_DIR/staff.url"
+if [[ "$ENABLE_STORE" == "1" ]]; then
+  log "STORE URL: $STATE_DIR/store.url"
+fi
+
+exit 0

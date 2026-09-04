@@ -24,7 +24,7 @@ set -Eeuo pipefail
 #   GITHUB_TOKEN=...
 #   DEVICE_ID=SHINY-MX-000001
 #   CHANNEL=stable
-#   AUTO_INSTALL=0
+#   AUTO_INSTALL=1
 # ============================================================
 
 APP_ROOT="${APP_ROOT:-/opt/shiny}"
@@ -204,7 +204,7 @@ GITHUB_TOKEN="${GITHUB_TOKEN//$'\r'/}"
 DEVICE_ID="${DEVICE_ID//$'\r'/}"
 CHANNEL="${CHANNEL:-stable}"
 CHANNEL="${CHANNEL//$'\r'/}"
-AUTO_INSTALL="${AUTO_INSTALL:-0}"
+AUTO_INSTALL="${AUTO_INSTALL:-1}"
 AUTO_INSTALL="${AUTO_INSTALL//$'\r'/}"
 
 # Validaciones tempranas para evitar errores de curl difíciles de interpretar.
@@ -1100,7 +1100,17 @@ EOF
 
 systemctl daemon-reload
 systemctl enable --now shiny-updater.timer
-ok "Updater instalado. AUTO_INSTALL=${AUTO_INSTALL}"
+
+# SHINY_RPI_AUTO_R1_BEGIN
+# Provision de sistema final: updater inmediato, LAN/mDNS y dos Quick Tunnels.
+RPI_AUTO_PROVISION="$APP_DIR/SHINY-RPI-MANAGED-R1/PROVISIONAR-SHINY-RPI-AUTO-R1.sh"
+if [[ -f "$RPI_AUTO_PROVISION" ]]; then
+  chmod 0755 "$RPI_AUTO_PROVISION"
+  APP_DIR="$APP_DIR" "$RPI_AUTO_PROVISION" || warn "Provision RPi automatico no pudo completarse."
+else
+  warn "No existe $RPI_AUTO_PROVISION"
+fi
+# SHINY_RPI_AUTO_R1_ENDok "Updater instalado. AUTO_INSTALL=${AUTO_INSTALL}"
 
 # ------------------------------------------------------------
 # 16. Cloudflared opcional
