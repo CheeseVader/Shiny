@@ -1,14 +1,6 @@
 import { brandText, applyDocumentBrand } from "./config/brand.js";import { registerSW } from 'virtual:pwa-register';
 
-const updateSW = registerSW({
-  immediate: true,
-  onNeedRefresh() {
-    const acceptUpdate = window.confirm(brandText("Hay una nueva version de Shiny disponible. ¿Deseas actualizar ahora?")
-
-    );
-    if (acceptUpdate) updateSW(true);
-  }
-});
+registerSW({ immediate: true });
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { BrowserRouter } from 'react-router';
