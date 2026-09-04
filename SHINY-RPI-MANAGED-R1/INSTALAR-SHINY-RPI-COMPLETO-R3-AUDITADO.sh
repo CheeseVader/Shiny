@@ -1116,6 +1116,18 @@ if [[ "$INSTALL_CLOUDFLARED" == "1" ]]; then
   warn "cloudflared instalado, pero NO se configuró un túnel/token."
 fi
 
+
+# SHINY_LAN_MDNS_R1_BEGIN
+# Acceso LAN local independiente de Internet.
+# Mantiene DHCP y publica http://shyny-panel.local mediante mDNS + Nginx.
+LAN_INSTALLER="$SCRIPT_DIR/INSTALAR-SHINY-LAN-MDNS-R1.sh"
+if [[ -f "$LAN_INSTALLER" ]]; then
+  chmod 0755 "$LAN_INSTALLER"
+  bash "$LAN_INSTALLER"
+else
+  warn "No encontre $LAN_INSTALLER; se omite configuracion LAN/mDNS."
+fi
+# SHINY_LAN_MDNS_R1_END
 # ------------------------------------------------------------
 # 17. Validaciones
 # ------------------------------------------------------------

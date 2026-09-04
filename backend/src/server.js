@@ -62,6 +62,43 @@ const frontendDist = path.resolve(__dirname, '../../frontend/dist');
 const app = express();
 const PORT = Number(process.env.PORT || 8787);
 
+/* SHINY_DUAL_CLOUDFLARE_ENTRY_R1_CONFIG
+ * Un solo backend Shiny, tres listeners:
+ *   PORT (8787)          = entrada normal/local existente
+ *   INTERNAL_ENTRY_PORT  = portal de personal; "/" -> "/login"
+ *   STORE_ENTRY_PORT     = tienda publica; "/" -> "/tienda"
+ *
+ * Los Quick Tunnels de Cloudflare pueden apuntar a 8788 y 8789.
+ * No duplica DB, procesos de negocio, schedulers ni autenticacion.
+ */
+const INTERNAL_ENTRY_PORT = Number(process.env.SHINY_INTERNAL_ENTRY_PORT || 8788);
+const STORE_ENTRY_PORT = Number(process.env.SHINY_STORE_ENTRY_PORT || 8789);
+
+function shinyEntryMode(req) {
+  const localPort = Number(req.socket?.localPort || 0);
+  if (localPort === INTERNAL_ENTRY_PORT) return 'internal';
+  if (localPort === STORE_ENTRY_PORT) return 'store';
+  return 'default';
+}
+
+app.use((req, res, next) => {
+  const mode = shinyEntryMode(req);
+  res.setHeader('X-Shiny-Entry-Mode', mode);
+
+  if (req.method === 'GET' && req.path === '/') {
+    if (mode === 'internal') return res.redirect(302, '/login');
+    if (mode === 'store') return res.redirect(302, '/tienda');
+  }
+  next();
+});
+
+app.get('/api/shiny-entry-mode', (req, res) => {
+  res.json({
+    success: true,
+    mode: shinyEntryMode(req),
+    localPort: Number(req.socket?.localPort || 0)
+  });
+});
 app.disable('x-powered-by');
 app.use(helmet({ contentSecurityPolicy: false }));
 app.use(cors({ origin: [
@@ -177,6 +214,34 @@ const server = app.listen(PORT, '127.0.0.1', () => {
   initStorefrontLiveSync().catch((e) => console.error(brandText("[Shiny] Storefront live sync:"), e.message));
 });
 
+/* SHINY_DUAL_CLOUDFLARE_ENTRY_R1_LISTENERS */
+const shinyEntryServers = [];
+
+function startShinyEntryListener(port, label) {
+  if (!Number.isFinite(port) || port <= 0 || port > 65535) {
+    console.error(`[Shiny] Puerto ${label} invalido: ${port}`);
+    return;
+  }
+  if (port === PORT) {
+    console.log(`[Shiny] ${label}: reutiliza puerto principal ${PORT}`);
+    return;
+  }
+  if (shinyEntryServers.some((item) => item.port === port)) {
+    console.error(`[Shiny] ${label}: puerto duplicado ${port}`);
+    return;
+  }
+
+  const entryServer = app.listen(port, '127.0.0.1', () => {
+    console.log(`[Shiny] ${label}: http://127.0.0.1:${port}`);
+  });
+  entryServer.on('error', (error) => {
+    console.error(`[Shiny] ${label} no pudo escuchar en ${port}:`, error.message);
+  });
+  shinyEntryServers.push({ port, label, server: entryServer });
+}
+
+startShinyEntryListener(INTERNAL_ENTRY_PORT, 'PORTAL PERSONAL');
+startShinyEntryListener(STORE_ENTRY_PORT, 'TIENDA PUBLICA');
 /* SHINY_TCG_LONG_REQUEST_TIMEOUT_R3 */
 server.requestTimeout = 10 * 60 * 1000;
 server.headersTimeout = 10 * 60 * 1000 + 5000;
