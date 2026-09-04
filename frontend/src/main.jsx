@@ -1,13 +1,6 @@
 import { brandText, applyDocumentBrand } from "./config/brand.js";import { registerSW } from 'virtual:pwa-register';
 
-registerSW({
-  immediate: true,
-  onNeedRefresh() {
-    // La version oficial la controla el updater administrado de la Raspberry.
-    // La PWA solamente activa silenciosamente el frontend nuevo.
-    updateSW(true);
-  }
-});
+registerSW({ immediate: true });
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { BrowserRouter } from 'react-router';

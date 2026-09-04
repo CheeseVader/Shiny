@@ -25,7 +25,7 @@ export default defineConfig(({ mode }) => {
     },
     react(),
     VitePWA({
-      registerType: 'prompt',
+      registerType: 'autoUpdate',
       injectRegister: false,
       includeAssets: ['shiny-apple-touch-180x180.png'],
       manifest: {
