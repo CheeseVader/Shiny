@@ -1,6 +1,7 @@
 import { brandText } from "../config/brand.js";import { useEffect, useState } from 'react';
 import { useOutletContext } from 'react-router';
 import { api } from '../services/api.js';
+import SystemUpdatePanel from '../components/SystemUpdatePanel.jsx';
 import '../phase_shiny_exact_views_r23.css';
 import '../system_sys_h_r2.css';
 
@@ -14,8 +15,22 @@ export default function SystemPage() {
     'public.payment.transfer.instructions': 'Usa tu número de comprobante como referencia.'
   });
   const [message, setMessage] = useState('');
-  const currentAdmin = (() => {try {return JSON.parse(localStorage.getItem('Shiny_AUTH_USER') || '{}');} catch {return {};}})();
-  const isSuperadmin = String(currentAdmin.rol || '').toUpperCase() === 'SUPERADMIN';
+  const currentAdmin = (() => {
+    try { return JSON.parse(localStorage.getItem('SHINY_AUTH_USER') || '{}'); }
+    catch { return {}; }
+  })();
+
+  const currentAccess = (() => {
+    try { return JSON.parse(localStorage.getItem('SHINY_AUTH_ACCESS') || '{}'); }
+    catch { return {}; }
+  })();
+
+  const isSuperadmin = String(
+    currentAccess.role ||
+    currentAdmin.role ||
+    currentAdmin.rol ||
+    ''
+  ).toUpperCase() === 'SUPERADMIN';
   const [technical, setTechnical] = useState(null);
   const [technicalBusy, setTechnicalBusy] = useState(false);
   const [technicalTab, setTechnicalTab] = useState('overview');
@@ -306,6 +321,7 @@ export default function SystemPage() {
       <button className={systemSection === 'email' ? 'active' : ''} onClick={() => setSystemSection('email')}>Correo</button>
       <button className={systemSection === 'fx' ? 'active' : ''} onClick={() => setSystemSection('fx')}>Tipo de cambio</button>
       {isSuperadmin ? <button className={systemSection === 'diagnostic' ? 'active' : ''} onClick={() => setSystemSection('diagnostic')}>Diagnóstico técnico</button> : null}
+      {isSuperadmin ? <button className={systemSection === 'updates' ? 'active' : ''} onClick={() => setSystemSection('updates')}>Actualizaciones</button> : null}
     </nav>
 
     {systemSection === 'general' ? <section className="content-card system-business-settings">
@@ -387,6 +403,8 @@ export default function SystemPage() {
         </table></div> : null}
       </>}
     </section> : null}
+
+    {isSuperadmin && systemSection === 'updates' ? <SystemUpdatePanel /> : null}
 
     {systemSection === 'payments' ? <section className="content-card payment-admin-config">
       <div className="section-head"><div><div className="eyebrow">PORTAL CLIENTE · PAGOS</div><h2>Transferencia bancaria</h2><p className="section-copy">Estos datos son los que verá el cliente después de seleccionar Transferencia.</p></div><button onClick={savePayments}>Guardar</button></div>

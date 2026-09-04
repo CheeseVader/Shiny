@@ -1,0 +1,10 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=Shiny Kiosk
+Comment=Shiny pantalla completa
+Exec=/opt/shiny/app/kiosk/shiny-kiosk.sh
+Icon=web-browser
+Terminal=false
+StartupNotify=false
+X-GNOME-Autostart-enabled=true

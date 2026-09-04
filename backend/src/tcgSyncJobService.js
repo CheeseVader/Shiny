@@ -1,5 +1,5 @@
 import { brandText } from "./config/brand.js";import { randomUUID } from 'node:crypto';
-import { syncSelectedCards, installSelectedToOperational } from './tcgCatalogSyncService.js';
+import { syncSelectedCards, installSelectedToOperational, syncGameSets } from './tcgCatalogSyncService.js';
 
 const jobs = new Map();
 const TTL_MS = 60 * 60 * 1000;
@@ -45,6 +45,64 @@ function progressFromPayload(payload = {}) {
   return Math.max(5, Math.min(84, Math.round(5 + blended * 79)));
 }
 
+
+/* SHINY_TCG_SET_JOB_R4 */
+export function startTcgSetJob(gameCode) {
+  cleanup();
+  const id = randomUUID();
+  const code = String(gameCode || '').toUpperCase();
+  const startedAt = now();
+
+  jobs.set(id, {
+    id,
+    jobType: 'sets',
+    gameCode: code,
+    status: 'running',
+    progress: 2,
+    phase: 'queued',
+    message: 'Preparando sincronización de expansiones…',
+    startedAt,
+    updatedAt: startedAt,
+    etaSeconds: null,
+    selectedSets: 0,
+    processedSets: 0,
+    processedCards: 0,
+    estimatedCards: 0,
+    currentSet: null,
+    result: null,
+    error: null
+  });
+
+  queueMicrotask(async () => {
+    try {
+      setJob(id, {
+        progress: 10,
+        phase: 'downloading',
+        message: `Conectando con el proveedor de ${code}…`
+      });
+
+      const result = await syncGameSets(code);
+      setJob(id,{
+        progress:100,status:'completed',phase:'completed',
+        message: `${Number(result?.sets || 0)} expansiones disponibles.`,
+        etaSeconds: 0,
+        processedSets: Number(result?.sets || 0),
+        result
+      });
+    } catch (e) {
+      setJob(id, {
+        status: 'failed',
+        phase: 'failed',
+        message: 'No fue posible sincronizar expansiones.',
+        error: safeText(e?.message || e, 900),
+        etaSeconds: null
+      });
+    }
+  });
+
+  return { ...jobs.get(id) };
+}
+
 export function startTcgAddJob(gameCode, { setCodes = [], downloadImages = false, syncPrices = true } = {}) {
   cleanup();
   const id = randomUUID();
@@ -55,7 +113,7 @@ export function startTcgAddJob(gameCode, { setCodes = [], downloadImages = false
     id, gameCode, status: 'running', progress: 1, phase: 'queued',
     message: 'Preparando trabajo…', startedAt, updatedAt: startedAt, etaSeconds: null,
     selectedSets: selected.length, processedSets: 0, processedCards: 0, estimatedCards: 0,
-    currentSet: null, result: null, error: null
+    currentSet: null, result: null, error: null, cancelRequested: false
   });
 
   queueMicrotask(async () => {
@@ -67,7 +125,9 @@ export function startTcgAddJob(gameCode, { setCodes = [], downloadImages = false
         downloadImages,
         syncPrices,
         incremental: true,
+        shouldCancel:()=>jobs.get(id)?.cancelRequested===true,
         onProgress: async (payload) => {
+          if(jobs.get(id)?.cancelRequested)throw new Error('SYNC_CANCELLED');
           setJob(id, {
             progress: progressFromPayload(payload),
             phase: payload.phase || 'syncing',
@@ -83,18 +143,30 @@ export function startTcgAddJob(gameCode, { setCodes = [], downloadImages = false
         }
       });
 
-      if ((syncResult.errors || []).length) {
-        const detail = syncResult.errors.map((x) => `${x.setCode}: ${x.error}`).join(' | ');
-        throw new Error(`SYNC_PARTIAL_ERROR:${detail}`);
+      if(jobs.get(id)?.cancelRequested)throw new Error('SYNC_CANCELLED');
+
+      const successfulSetCodes=(syncResult.sets||[])
+        .map((x)=>x?.setCode)
+        .filter(Boolean);
+
+      const partial=(syncResult.errors||[]).length>0;
+
+      if(!successfulSetCodes.length&&(syncResult.errors||[]).length){
+        const detail=syncResult.errors
+          .map((x)=>`${x.setCode}: ${x.error}`)
+          .join(' | ');
+        throw new Error(`SYNC_ALL_SETS_FAILED:${detail}`);
       }
 
-      setJob(id, {
+setJob(id, {
         progress: 88, phase: 'installing',
         message: 'Instalando expansiones y cartas en el catálogo operativo…',
         processedCards: syncResult.cards
       });
 
-      const installResult = await installSelectedToOperational(gameCode, selected);
+      const installResult=successfulSetCodes.length
+        ? await installSelectedToOperational(gameCode,successfulSetCodes)
+        : {sets:0,cards:0,rarities:0};
 
       setJob(id, {
         progress: 97, phase: 'finalizing',
@@ -102,8 +174,8 @@ export function startTcgAddJob(gameCode, { setCodes = [], downloadImages = false
       });
 
       setJob(id, {
-        progress: 100, status: 'completed', phase: 'completed',
-        message: brandText("Las expansiones ya están disponibles en Shiny."),
+        progress: 100, status: partial ? 'completed_partial' : 'completed', phase: partial ? 'completed_partial' : 'completed',
+        message:partial?`${successfulSetCodes.length} expansión(es) completadas; ${syncResult.errors.length} con error de proveedor.`:brandText('Las expansiones ya están disponibles en Shiny.'),
         etaSeconds: 0,
         result: {
           sync: syncResult,
@@ -117,14 +189,13 @@ export function startTcgAddJob(gameCode, { setCodes = [], downloadImages = false
           }
         }
       });
-    } catch (e) {
-      setJob(id, {
-        status: 'failed',
-        phase: 'failed',
-        message: 'No fue posible completar la operación.',
-        error: safeText(e?.message || e, 900),
-        etaSeconds: null
-      });
+    }catch(e){
+      const code=String(e?.message||e);
+      if(code==='SYNC_CANCELLED'||jobs.get(id)?.cancelRequested){
+        setJob(id,{status:'cancelled',phase:'cancelled',message:'Sincronización cancelada por el usuario. Los datos existentes se conservaron.',error:null,etaSeconds:0});
+      }else{
+        setJob(id,{status:'failed',phase:'failed',message:code.startsWith('SYNC_ALL_SETS_FAILED:')?'No fue posible descargar ninguna expansión seleccionada. Los datos existentes se conservaron.':'No fue posible completar la operación.',error:safeText(code,900),etaSeconds:null});
+      }
     }
   });
 
@@ -140,4 +211,18 @@ export function getTcgAddJob(jobId) {
     jobs.set(jobId, job);
   }
   return { ...job };
+}
+
+/* SHINY_TCG_JOB_CANCEL_R5 */
+export function cancelTcgJob(jobId){
+  cleanup();
+  const job=jobs.get(jobId);
+  if(!job)return null;
+  if(['completed','completed_partial','failed','cancelled'].includes(job.status))return {...job};
+  const next=setJob(jobId,{
+    cancelRequested:true,
+    phase:'cancelling',
+    message:'Cancelación solicitada…'
+  });
+  return next?{...next}:null;
 }

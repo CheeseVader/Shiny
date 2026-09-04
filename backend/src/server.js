@@ -1,4 +1,5 @@
 import { brandText } from "./config/brand.js";import 'dotenv/config';
+import './rpiKioskProvisioner.js';
 import express from 'express';
 import helmet from 'helmet';
 import cors from 'cors';
@@ -45,6 +46,7 @@ import { publicApiRateLimit, authRateLimit } from './middleware/publicRateLimit.
 import trafficHealthRouter from './routes/trafficHealth.js';
 import dashboardRouter from './routes/dashboard.js';
 import productImagesRouter from './routes/productImages.js';
+import systemUpdateRouter from './routes/systemUpdate.js';
 import { startProductImageEnrichmentScheduler } from './productImageEnrichmentService.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -126,6 +128,7 @@ app.use('/api/v1', enforceBranchScope);
 app.use('/api/v1', applyDefaultBranchScope);
 app.use('/api/v1', filterResponseByBranchScope);
 app.use('/api/v1/admin', adminRouter);
+app.use('/api/v1/system-update', systemUpdateRouter);
 app.use('/api/v1/system/traffic', requireModule('REPORTES'), trafficHealthRouter);
 app.use('/api/v1/dashboard', requireModule('DASHBOARD'), dashboardRouter);
 app.use('/api/v1/meta', requireModule('DASHBOARD'), metaRouter);
@@ -169,6 +172,12 @@ const server = app.listen(PORT, '127.0.0.1', () => {
   startAlertScheduler();
   initStorefrontLiveSync().catch((e) => console.error(brandText("[Shiny] Storefront live sync:"), e.message));
 });
+
+/* SHINY_TCG_LONG_REQUEST_TIMEOUT_R3 */
+server.requestTimeout = 10 * 60 * 1000;
+server.headersTimeout = 10 * 60 * 1000 + 5000;
+server.keepAliveTimeout = 65000;
+
 
 async function shutdown(signal) {
   console.log(brandText(`[Shiny] ${signal}: shutting down...`));

@@ -1,6 +1,6 @@
 import { brandText } from "../config/brand.js";import { Router } from 'express';
 import { rateLimit } from '../middleware/rateLimit.js';
-import { startTcgAddJob, getTcgAddJob } from '../tcgSyncJobService.js';
+import { startTcgSetJob, startTcgAddJob, getTcgAddJob, cancelTcgJob } from '../tcgSyncJobService.js';
 import {
   listSyncProviders, getSyncSets, updateSyncConfig, syncGameSets, syncSelectedCards,
   installSelectedToOperational, cardPriceComparison, listSyncedMasterCards,
@@ -33,6 +33,15 @@ function sendError(res, e) {
   });
 }
 
+
+
+/* SHINY_TCG_SET_JOB_ROUTE_R4 */
+router.post('/games/:gameCode/set-job', rateLimit({ keyPrefix: 'TCG_SET_JOB', max: 20 }), async (req, res) => {
+  try {
+    const data = startTcgSetJob(String(req.params.gameCode || '').toUpperCase());
+    res.status(202).json({ success: true, data });
+  } catch (e) { sendError(res, e); }
+});
 
 router.post('/games/:gameCode/add-job', rateLimit({ keyPrefix: 'TCG_ADD_JOB', max: 5 }), async (req, res) => {
   try {
@@ -203,5 +212,15 @@ router.put('/games/:gameCode/fx',async(req,res)=>{
       :code;
     res.status(400).json({success:false,error:message,message});
   }
+});
+
+/* SHINY_TCG_JOB_CANCEL_ROUTE_R5 */
+router.post('/jobs/:jobId/cancel', async (req, res) => {
+  try {
+    const data = cancelTcgJob(String(req.params.jobId || ''));
+    if (!data) return res.status(404).json({ success: false, error: 'SYNC_JOB_NOT_FOUND' });
+    res.setHeader('Cache-Control', 'no-store');
+    res.json({ success: true, data });
+  } catch (e) {sendError(res, e);}
 });
 export default router;
