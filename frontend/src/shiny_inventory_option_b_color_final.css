@@ -695,3 +695,97 @@
 }
 
 /* SHINY_INVENTORY_PEDIDOS_STYLE_R53_END */
+
+/* SHINY_INVENTORY_FILTER_LAYOUT_R128
+   Corrige textos cortados, alineacion y responsive de filtros.
+*/
+.shiny-inv-final-filters{
+  grid-template-columns:
+    minmax(210px,1.05fr)
+    minmax(210px,1.05fr)
+    minmax(260px,1.35fr)
+    minmax(210px,1.05fr)
+    minmax(260px,1.25fr)!important;
+  gap:12px!important;
+  align-items:end!important;
+}
+.shiny-inv-final-filters>label,
+.shiny-inv-final-filters .search-field{min-width:0!important}
+.shiny-inv-final-filters label>span{
+  display:block!important;
+  margin:0 0 6px!important;
+  font-size:12px!important;
+  line-height:1.2!important;
+  white-space:nowrap!important;
+}
+.shiny-inv-final-filters .select-wrap,
+.shiny-inv-final-filters .search-field>div{
+  width:100%!important;
+  min-width:0!important;
+}
+.shiny-inv-final-filters select{
+  width:100%!important;
+  min-width:0!important;
+  min-height:48px!important;
+  height:48px!important;
+  padding:0 38px 0 52px!important;
+  font-size:14px!important;
+  line-height:48px!important;
+  text-overflow:ellipsis!important;
+}
+.shiny-inv-final-filters .field-icon{
+  left:9px!important;
+  top:7px!important;
+  width:34px!important;
+  height:34px!important;
+  border-radius:9px!important;
+}
+.shiny-inv-final-filters .field-icon svg{width:18px!important;height:18px!important}
+.shiny-inv-final-filters .search-field input{
+  width:100%!important;
+  min-width:0!important;
+  min-height:48px!important;
+  height:48px!important;
+  padding:0 42px 0 14px!important;
+  font-size:14px!important;
+}
+.shiny-inv-final-filters .search-field svg{
+  right:14px!important;
+  top:15px!important;
+  width:18px!important;
+  height:18px!important;
+}
+.shiny-inv-final-filters .clear-filters{
+  grid-column:1!important;
+  justify-self:start!important;
+  min-width:180px!important;
+  min-height:44px!important;
+  height:44px!important;
+  padding:0 16px!important;
+  font-size:13px!important;
+}
+@media (min-width:1101px){
+  .shiny-inv-final-filters .clear-filters{grid-row:2!important}
+}
+@media (max-width:1400px) and (min-width:1101px){
+  .shiny-inv-final-filters{
+    grid-template-columns:
+      minmax(190px,1fr)
+      minmax(190px,1fr)
+      minmax(230px,1.2fr)
+      minmax(190px,1fr)
+      minmax(240px,1.15fr)!important;
+  }
+}
+@media (max-width:1100px){
+  .shiny-inv-final-filters{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+  .shiny-inv-final-filters .search-field{grid-column:1/-1!important}
+  .shiny-inv-final-filters .clear-filters{grid-column:1!important;width:auto!important}
+}
+@media (max-width:700px){
+  .shiny-inv-final-filters{grid-template-columns:1fr!important;gap:10px!important}
+  .shiny-inv-final-filters .search-field,
+  .shiny-inv-final-filters .clear-filters{grid-column:auto!important}
+  .shiny-inv-final-filters .clear-filters{width:100%!important;min-width:0!important}
+}
+/* SHINY_INVENTORY_FILTER_LAYOUT_R128_END */

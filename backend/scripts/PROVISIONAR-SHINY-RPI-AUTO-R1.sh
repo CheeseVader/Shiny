@@ -417,4 +417,14 @@ if [[ "$ENABLE_STORE" == "1" ]]; then
   log "STORE URL: $STATE_DIR/store.url"
 fi
 
+
+# SHINY_GEO_CATALOG_R128_BEGIN
+GEO_RESTORE="$APP_DIR/backend/scripts/ensure-geo-catalog-rpi.sh"
+if [[ -f "$GEO_RESTORE" ]]; then
+  chmod 0755 "$GEO_RESTORE" || true
+  APP_DIR="$APP_DIR" bash "$GEO_RESTORE" || warn "Restauracion geografica pendiente; Shiny continuara."
+else
+  warn "No encontre $GEO_RESTORE"
+fi
+# SHINY_GEO_CATALOG_R128_END
 exit 0

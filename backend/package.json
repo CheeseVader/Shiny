@@ -22,5 +22,6 @@
     "stripe": "latest",
     "xlsx": "latest"
   },
-  "shinyRpiProvisionRevision": "1.0.25"
+  "shinyRpiProvisionRevision": "1.0.25",
+  "shinyGeoCatalogR128": "1.0.28-r1.4"
 }
