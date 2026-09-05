@@ -53,12 +53,12 @@ export default function RpiWifiManager({ open, onClose }) {
     if (!selectedNetwork) return;
 
     if (selectedNetwork.secure && !password) {
-      setMessage('Escribe la contraseÃ±a de la red.');
+      setMessage('Escribe la contraseña de la red.');
       return;
     }
 
     setConnecting(true);
-    setMessage('Conectandoâ€¦');
+    setMessage('Conectando…');
 
     try {
       const response = await fetch('/api/rpi-wifi/connect', {
@@ -75,7 +75,7 @@ export default function RpiWifiManager({ open, onClose }) {
 
       if (!response.ok) {
         if (data?.error === 'bad_password') {
-          setMessage('No fue posible conectarse. Verifica la contraseÃ±a.');
+          setMessage('No fue posible conectarse. Verifica la contraseña.');
         } else {
           setMessage('No fue posible conectarse a esta red.');
         }
@@ -87,8 +87,8 @@ export default function RpiWifiManager({ open, onClose }) {
       setMessage(`Conectado a ${selectedNetwork.ssid}.`);
       setTimeout(refreshNetworks, 1200);
     } catch {
-      // El cambio de red puede interrumpir brevemente la peticiÃ³n.
-      setMessage('Verificando la nueva conexiÃ³nâ€¦');
+      // El cambio de red puede interrumpir brevemente la petición.
+      setMessage('Verificando la nueva conexión…');
       setTimeout(refreshNetworks, 1800);
     } finally {
       setConnecting(false);
@@ -114,7 +114,7 @@ export default function RpiWifiManager({ open, onClose }) {
 
         <div className="rpiwifi-list">
           {loading && networks.length === 0 && (
-            <div className="rpiwifi-empty">Buscando redesâ€¦</div>
+            <div className="rpiwifi-empty">Buscando redes…</div>
           )}
 
           {!loading && networks.length === 0 && (
@@ -132,13 +132,13 @@ export default function RpiWifiManager({ open, onClose }) {
                 setMessage('');
               }}
             >
-              <span className="rpiwifi-signal">ðŸ“¶</span>
+              <span className="rpiwifi-signal">📶</span>
               <span className="rpiwifi-name">
                 <strong>{network.ssid}</strong>
-                <small>{network.connected ? 'Conectada' : `${network.signal}% de seÃ±al`}</small>
+                <small>{network.connected ? 'Conectada' : `${network.signal}% de señal`}</small>
               </span>
               <span className="rpiwifi-security">
-                {network.secure ? 'ðŸ”’' : 'Abierta'}
+                {network.secure ? '🔒' : 'Abierta'}
               </span>
             </button>
           ))}
@@ -152,7 +152,7 @@ export default function RpiWifiManager({ open, onClose }) {
 
             {selectedNetwork.secure && (
               <label className="rpiwifi-label">
-                <span>ContraseÃ±a Wi-Fi</span>
+                <span>Contraseña Wi-Fi</span>
                 <div className="rpiwifi-password">
                   <input
                     type={showPassword ? 'text' : 'password'}
@@ -163,7 +163,7 @@ export default function RpiWifiManager({ open, onClose }) {
                     }}
                     autoComplete="off"
                     autoFocus
-                    placeholder="Escribe la contraseÃ±a"
+                    placeholder="Escribe la contraseña"
                   />
                   <button type="button" onClick={() => setShowPassword((value) => !value)}>
                     {showPassword ? 'Ocultar' : 'Mostrar'}
@@ -183,7 +183,7 @@ export default function RpiWifiManager({ open, onClose }) {
             onClick={refreshNetworks}
             disabled={loading || connecting}
           >
-            {loading ? 'Buscandoâ€¦' : 'Actualizar redes'}
+            {loading ? 'Buscando…' : 'Actualizar redes'}
           </button>
 
           <button
@@ -192,7 +192,7 @@ export default function RpiWifiManager({ open, onClose }) {
             onClick={connect}
             disabled={!selectedNetwork || connecting}
           >
-            {connecting ? 'Conectandoâ€¦' : 'Conectar'}
+            {connecting ? 'Conectando…' : 'Conectar'}
           </button>
         </footer>
       </section>
