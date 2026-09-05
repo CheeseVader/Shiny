@@ -30,6 +30,7 @@ STAFF_PORT="${SHINY_INTERNAL_ENTRY_PORT:-8788}"
 STORE_PORT="${SHINY_STORE_ENTRY_PORT:-8789}"
 ENABLE_STORE="${SHINY_CF_ENABLE_STORE:-0}"
 SERVICE_NAME="${SERVICE_NAME:-shiny-app.service}"
+APP_USER="${SHINY_APP_USER:-shiny}"
 
 mkdir -p "$STATE_DIR" "$BIN_DIR"
 chmod 0755 "$STATE_DIR" "$BIN_DIR"
@@ -41,6 +42,7 @@ if [[ -f "$CONFIG" ]]; then
   source "$CONFIG"
   set -u
   SERVICE_NAME="${SERVICE_NAME:-shiny-app.service}"
+APP_USER="${SHINY_APP_USER:-shiny}"
 fi
 
 # ------------------------------------------------------------
@@ -93,64 +95,88 @@ EOF
 # ------------------------------------------------------------
 configure_lan(){
   export DEBIAN_FRONTEND=noninteractive
-
-  if ! command -v avahi-daemon >/dev/null 2>&1 || ! command -v nginx >/dev/null 2>&1; then
-    log "Instalando soporte LAN/mDNS..."
-    if ! apt-get update -y; then
-      warn "apt-get update fallo; se omite LAN/mDNS por ahora."
-      return 0
-    fi
-    if ! apt-get install -y avahi-daemon avahi-utils nginx curl; then
-      warn "No se pudieron instalar dependencias LAN/mDNS."
-      return 0
-    fi
+  if ! command -v avahi-daemon >/dev/null 2>&1 || ! command -v nginx >/dev/null 2>&1 || ! command -v nmcli >/dev/null 2>&1; then
+    apt-get update -y || { warn "Sin Internet para instalar dependencias; Shiny continuara."; return 0; }
+    apt-get install -y avahi-daemon avahi-utils nginx curl network-manager xterm || warn "Dependencias de red incompletas."
   fi
 
-  if [[ "$(hostname)" != "$LOCAL_HOSTNAME" ]]; then
-    hostnamectl set-hostname "$LOCAL_HOSTNAME" || warn "No se pudo cambiar hostname."
-    if [[ -f /etc/hosts ]] && ! grep -qE "^[[:space:]]*127\.0\.1\.1[[:space:]]+$LOCAL_HOSTNAME([[:space:]]|$)" /etc/hosts; then
-      if grep -qE "^[[:space:]]*127\.0\.1\.1[[:space:]]+" /etc/hosts; then
-        sed -i -E "s|^[[:space:]]*127\.0\.1\.1[[:space:]].*$|127.0.1.1\t$LOCAL_HOSTNAME|" /etc/hosts
-      else
-        printf '127.0.1.1\t%s\n' "$LOCAL_HOSTNAME" >> /etc/hosts
-      fi
-    fi
+  systemctl enable NetworkManager >/dev/null 2>&1 || true
+  systemctl start NetworkManager >/dev/null 2>&1 || true
+  nmcli networking on >/dev/null 2>&1 || true
+  nmcli radio wifi on >/dev/null 2>&1 || true
+
+  hostnamectl set-hostname "$LOCAL_HOSTNAME" >/dev/null 2>&1 || true
+  if grep -qE '^[[:space:]]*127\.0\.1\.1[[:space:]]+' /etc/hosts; then
+    sed -i -E "s|^[[:space:]]*127\.0\.1\.1[[:space:]].*$|127.0.1.1\t$LOCAL_HOSTNAME|" /etc/hosts
+  else
+    printf '127.0.1.1\t%s\n' "$LOCAL_HOSTNAME" >> /etc/hosts
   fi
 
-  systemctl enable --now avahi-daemon >/dev/null 2>&1 || warn "Avahi no pudo activarse."
+  if grep -qE '^[#[:space:]]*host-name=' /etc/avahi/avahi-daemon.conf; then
+    sed -i -E "s|^[#[:space:]]*host-name=.*$|host-name=$LOCAL_HOSTNAME|" /etc/avahi/avahi-daemon.conf
+  else
+    sed -i "/^\[server\]/a host-name=$LOCAL_HOSTNAME" /etc/avahi/avahi-daemon.conf
+  fi
+  systemctl enable avahi-daemon >/dev/null 2>&1 || true
+  systemctl restart avahi-daemon >/dev/null 2>&1 || true
 
-  cat > /etc/nginx/sites-available/shiny-local <<EOF
-server {
-    listen 80 default_server;
-    listen [::]:80 default_server;
-    server_name ${LOCAL_HOSTNAME}.local _;
-
-    location / {
-        proxy_pass http://127.0.0.1:${STAFF_PORT};
-        proxy_http_version 1.1;
-        proxy_set_header Host \$host;
-        proxy_set_header X-Real-IP \$remote_addr;
-        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto \$scheme;
-        proxy_set_header Upgrade \$http_upgrade;
-        proxy_set_header Connection "upgrade";
-    }
-}
-EOF
-
-  rm -f /etc/nginx/sites-enabled/default
-  ln -sfn /etc/nginx/sites-available/shiny-local /etc/nginx/sites-enabled/shiny-local
-
+  # 1.0.17: NO habilitar shiny-local; evita duplicate default_server.
+  rm -f /etc/nginx/sites-enabled/shiny-local
   if nginx -t; then
     systemctl enable nginx >/dev/null 2>&1 || true
-    systemctl restart nginx || warn "nginx no pudo reiniciarse."
-    log "LAN: http://${LOCAL_HOSTNAME}.local"
+    systemctl restart nginx >/dev/null 2>&1 || true
+    log "LAN: http://${LOCAL_HOSTNAME}.local/login"
   else
-    warn "nginx -t fallo; no se reinicio nginx."
+    warn "nginx -t fallo; no se reinicia."
   fi
 }
-
 configure_lan || warn "Provision LAN/mDNS incompleto; Shiny continuara."
+
+
+# ------------------------------------------------------------
+# SHINY_RPI_WIFI_UI_R117
+# Administrador Wi-Fi disponible desde /login sin autenticar.
+# Solo abre NetworkManager; Shiny nunca recibe la password.
+# ------------------------------------------------------------
+configure_wifi_ui(){
+  local kiosk_user kiosk_uid kiosk_home
+  kiosk_user="$(ps -eo user=,comm= | awk '$2 ~ /^chromium/ {print $1; exit}')"
+  if [[ -z "$kiosk_user" ]]; then
+    kiosk_user="$(awk -F: '$3>=1000 && $3<60000 && $7 !~ /(nologin|false)$/ {print $1; exit}' /etc/passwd)"
+  fi
+  [[ -n "$kiosk_user" ]] || { warn "Sin usuario grafico para Wi-Fi UI."; return 0; }
+  kiosk_uid="$(id -u "$kiosk_user")"
+  kiosk_home="$(getent passwd "$kiosk_user" | cut -d: -f6)"
+
+  cat > /usr/local/bin/shiny-open-wifi-ui <<EOF
+#!/usr/bin/env bash
+set -e
+U="$kiosk_user"; UIDX="$kiosk_uid"; H="$kiosk_home"
+export HOME="\$H" XDG_RUNTIME_DIR="/run/user/\$UIDX" DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/\$UIDX/bus"
+export DISPLAY="\${DISPLAY:-:0}" WAYLAND_DISPLAY="\${WAYLAND_DISPLAY:-wayland-0}"
+exec runuser -u "\$U" -- env HOME="\$HOME" XDG_RUNTIME_DIR="\$XDG_RUNTIME_DIR" DBUS_SESSION_BUS_ADDRESS="\$DBUS_SESSION_BUS_ADDRESS" DISPLAY="\$DISPLAY" WAYLAND_DISPLAY="\$WAYLAND_DISPLAY" xterm -title "Shiny - Configurar Wi-Fi" -geometry 92x28 -e nmtui-connect
+EOF
+  chmod 0755 /usr/local/bin/shiny-open-wifi-ui
+
+  cat > /etc/systemd/system/shiny-wifi-ui.service <<'EOF'
+[Unit]
+Description=Shiny - abrir administrador Wi-Fi
+After=graphical.target NetworkManager.service
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/shiny-open-wifi-ui
+TimeoutStartSec=120
+EOF
+
+  cat > /etc/sudoers.d/shiny-wifi-ui <<EOF
+${APP_USER:-shiny} ALL=(root) NOPASSWD: /bin/systemctl --no-block start shiny-wifi-ui.service
+${APP_USER:-shiny} ALL=(root) NOPASSWD: /usr/bin/systemctl --no-block start shiny-wifi-ui.service
+EOF
+  chmod 0440 /etc/sudoers.d/shiny-wifi-ui
+  visudo -cf /etc/sudoers.d/shiny-wifi-ui >/dev/null || rm -f /etc/sudoers.d/shiny-wifi-ui
+  systemctl daemon-reload
+}
+configure_wifi_ui || warn "Wi-Fi UI incompleta; Shiny continuara."
 
 # ------------------------------------------------------------
 # 4. cloudflared

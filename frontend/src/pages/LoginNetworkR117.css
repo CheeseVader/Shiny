@@ -1,0 +1,10 @@
+/* SHINY_RPI_WIFI_LOGIN_R117 */
+.shiny-login-wifi-r117{margin:12px 0 14px;padding:10px 12px;border:1px solid rgba(148,163,184,.28);border-radius:12px;background:rgba(248,250,252,.78);display:grid;gap:8px}
+.shiny-login-wifi-r117 .wifi-row{display:flex;justify-content:space-between;gap:10px;font-size:12px}
+.shiny-login-wifi-r117 .wifi-state{display:flex;align-items:center;gap:7px;min-width:0}
+.shiny-login-wifi-r117 .wifi-dot{width:9px;height:9px;border-radius:50%;background:#94a3b8}
+.shiny-login-wifi-r117.is-online .wifi-dot{background:#22c55e}.shiny-login-wifi-r117.is-offline .wifi-dot{background:#f59e0b}
+.shiny-login-wifi-r117 .wifi-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:700;color:#334155}
+.shiny-login-wifi-r117 .wifi-ip{color:#64748b;font-size:11px}
+.shiny-login-wifi-r117 .wifi-config-btn{width:100%;border:1px solid rgba(99,102,241,.35);border-radius:10px;padding:9px 11px;font-weight:800;cursor:pointer;background:rgba(99,102,241,.08);color:#4338ca}
+.shiny-login-wifi-r117 .wifi-message{font-size:11px;color:#64748b}

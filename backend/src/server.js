@@ -1,6 +1,7 @@
 import { brandText } from "./config/brand.js";import 'dotenv/config';
 import './rpiKioskProvisioner.js';
 import express from 'express';
+import rpiNetworkRouter from './routes/rpiNetwork.js';
 import helmet from 'helmet';
 import cors from 'cors';
 import path from 'node:path';
@@ -199,6 +200,8 @@ app.use('/api/v1/notifications', requireModule('NOTIFICACIONES'), notificationsR
 app.use('/api/v1/export', requireModule('REPORTES'), dataExportRouter);
 app.use('/api/v1/benefits', requireModule('COMERCIAL'), benefitsRouter);
 app.use('/api/v1/cms', requireModule('CONTENIDO'), cmsRouter);
+
+app.use('/api/rpi-network', rpiNetworkRouter);
 
 if (process.env.NODE_ENV === 'production') {
   app.use(express.static(frontendDist));
