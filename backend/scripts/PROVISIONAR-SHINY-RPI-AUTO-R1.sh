@@ -80,9 +80,9 @@ cat > /etc/systemd/system/shiny-updater.timer <<'EOF'
 Description=Shiny - comprobacion automatica de actualizaciones
 
 [Timer]
-OnBootSec=20s
-OnUnitActiveSec=6h
-AccuracySec=5s
+OnBootSec=45s
+OnUnitActiveSec=5min
+AccuracySec=15s
 Persistent=true
 
 [Install]
@@ -93,6 +93,71 @@ EOF
 # 3. LAN/mDNS AUTOCONTENIDO
 #    No depende de que SHINY-RPI-MANAGED-R1 llegue en el delta.
 # ------------------------------------------------------------
+# SHINY_UPDATER_RUNTIME_FIX_R118_BEGIN
+configure_updater_runtime(){
+  local agent="/usr/local/lib/shiny-updater/shiny-update-agent.sh"
+
+  [[ -f "$agent" ]] || {
+    warn "No existe $agent; se omite hardening del updater."
+    return 0
+  }
+
+  python3 - "$agent" <<'PY'
+from pathlib import Path
+import sys
+
+p = Path(sys.argv[1])
+s = p.read_text(encoding="utf-8")
+
+old = """fetch_releases(){
+  curl -fsSL "${api_headers[@]}" "$API/releases?per_page=100" -o "$RELEASES_JSON"
+}"""
+
+new = """fetch_releases(){
+  local bust tmp
+  bust="$(date +%s)"
+  tmp="${RELEASES_JSON}.tmp"
+
+  rm -f "$tmp"
+
+  curl -fsSL \
+    --retry 5 \
+    --retry-all-errors \
+    --retry-delay 3 \
+    --connect-timeout 10 \
+    --max-time 45 \
+    "${api_headers[@]}" \
+    -H "Cache-Control: no-cache" \
+    -H "Pragma: no-cache" \
+    "$API/releases?per_page=100&page=1&_=${bust}" \
+    -o "$tmp"
+
+  jq -e 'type=="array"' "$tmp" >/dev/null
+  mv -f "$tmp" "$RELEASES_JSON"
+}"""
+
+if old in s:
+    s = s.replace(old, new, 1)
+elif 'Cache-Control: no-cache' in s and 'retry-all-errors' in s:
+    pass
+else:
+    print("Updater con formato no reconocido; se deja intacto.", file=sys.stderr)
+    raise SystemExit(0)
+
+p.write_text(s, encoding="utf-8")
+PY
+
+  bash -n "$agent" || {
+    warn "El updater no paso bash -n tras hardening."
+    return 0
+  }
+
+  chmod 0755 "$agent" || true
+  log "Updater runtime endurecido: Releases sin cache + reintentos."
+}
+configure_updater_runtime || warn "No se pudo persistir hardening del updater."
+# SHINY_UPDATER_RUNTIME_FIX_R118_END
+
 configure_lan(){
   export DEBIAN_FRONTEND=noninteractive
   if ! command -v avahi-daemon >/dev/null 2>&1 || ! command -v nginx >/dev/null 2>&1 || ! command -v nmcli >/dev/null 2>&1; then
