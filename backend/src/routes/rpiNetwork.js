@@ -2,6 +2,7 @@ import { Router } from 'express';
 import os from 'node:os';
 import { execFile } from 'node:child_process';
 
+import fs from 'node:fs';
 const router=Router();
 
 function run(c,a=[],timeout=4000){
@@ -16,6 +17,14 @@ function run(c,a=[],timeout=4000){
   );
 }
 
+/* SHINY_ACCESS_URLS_R125 */
+function readTextFile(path){
+  try{return fs.readFileSync(path,'utf8').trim();}catch{return '';}
+}
+function normalizedPublicUrl(value){
+  const s=String(value||'').trim();
+  return /^https?:\/\//i.test(s)?s:'';
+}
 function ip(){
   for(const rows of Object.values(os.networkInterfaces())){
     for(const x of rows||[]){
@@ -60,21 +69,11 @@ function isLocalKiosk(req){
   return loopback && localHost;
 }
 
-router.get('/status',async(req,res)=>{
-  let ssid='';
-  let device='';
-
+router.get('/status',async(_q,res)=>{
+  let ssid='',device='';
   if(process.platform==='linux'){
-    const r=await run(
-      'nmcli',
-      ['-t','-f','ACTIVE,SSID,DEVICE','dev','wifi'],
-      3000
-    );
-
-    const line=r.out
-      .split(/\r?\n/)
-      .find(x=>x.startsWith('yes:'));
-
+    const r=await run('nmcli',['-t','-f','ACTIVE,SSID,DEVICE','dev','wifi'],3000);
+    const line=r.out.split(/\r?\n/).find(x=>x.startsWith('yes:'));
     if(line){
       const a=line.split(':');
       device=a.at(-1)||'';
@@ -82,21 +81,33 @@ router.get('/status',async(req,res)=>{
     }
   }
 
+  const hostname=os.hostname();
+  const localIp=ip();
+  const localUrl=hostname?`http://${hostname}.local`:(localIp?`http://${localIp}`:'');
+
+  const staffUrl=normalizedPublicUrl(
+    process.env.SHINY_STAFF_PUBLIC_URL ||
+    process.env.SHINY_PUBLIC_STAFF_URL ||
+    readTextFile('/var/lib/shiny-cloudflare/staff.url')
+  );
+
+  const storeUrl=normalizedPublicUrl(
+    process.env.SHINY_STORE_PUBLIC_URL ||
+    process.env.SHINY_PUBLIC_STORE_URL ||
+    readTextFile('/var/lib/shiny-cloudflare/store.url')
+  );
+
   res.json({
     success:true,
-    wifiUiAvailable:
-      process.platform==='linux' &&
-      isLocalKiosk(req),
+    wifiUiAvailable:process.platform==='linux',
     connected:Boolean(ssid),
     ssid,
     device,
-    localIp:ip(),
-    hostname:os.hostname()
+    localIp,
+    hostname,
+    access:{localUrl,staffUrl,storeUrl}
   });
 });
-
-let last=0;
-
 router.post('/open-wifi',async(req,res)=>{
 
   if(process.platform!=='linux'){

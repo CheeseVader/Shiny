@@ -1,0 +1,11 @@
+/* SHINY_ACCESS_PANEL_R125 */
+.shiny-access-r125{display:flex;flex-direction:column;gap:18px}
+.shiny-access-grid-r125{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+.shiny-access-grid-r125 article{min-width:0;padding:18px;border:1px solid rgba(148,163,184,.22);border-radius:16px;background:rgba(15,23,42,.035);display:flex;flex-direction:column;gap:8px}
+.shiny-access-label-r125{font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;opacity:.68}
+.shiny-access-grid-r125 strong{font-size:17px;line-height:1.35;overflow-wrap:anywhere}
+.shiny-access-grid-r125 small{line-height:1.45;opacity:.72}
+.shiny-access-grid-r125 a{width:max-content;max-width:100%;margin-top:4px;font-weight:700;text-decoration:none}
+.shiny-access-note-r125{margin:0;opacity:.72}
+.shiny-access-error-r125{padding:12px 14px;border-radius:12px;border:1px solid rgba(220,38,38,.28);background:rgba(220,38,38,.06)}
+@media(max-width:980px){.shiny-access-grid-r125{grid-template-columns:1fr}}

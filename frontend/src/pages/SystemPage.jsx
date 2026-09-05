@@ -5,6 +5,7 @@ import SystemUpdatePanel from '../components/SystemUpdatePanel.jsx';
 import '../phase_shiny_exact_views_r23.css';
 import '../system_sys_h_r2.css';
 
+import '../system_access_r125.css';
 export default function SystemPage() {
   const { health, refreshHealth } = useOutletContext();
   const [settings, setSettings] = useState({
@@ -57,6 +58,30 @@ export default function SystemPage() {
   const [smtpAction, setSmtpAction] = useState('');
   const [smtpProgress, setSmtpProgress] = useState(0);
   const [systemSection, setSystemSection] = useState('general');
+  // SHINY_ACCESS_PANEL_R125
+  const [accessInfo, setAccessInfo] = useState({loading:true,error:'',localUrl:'',staffUrl:'',storeUrl:'',hostname:'',localIp:''});
+
+  async function loadAccessInfo(){
+    setAccessInfo((x)=>({...x,loading:true,error:''}));
+    try{
+      const r=await api('/api/rpi-network/status');
+      const d=r?.data || r || {};
+      const a=d.access || {};
+      setAccessInfo({
+        loading:false,
+        error:'',
+        localUrl:a.localUrl || (d.hostname ? `http://${d.hostname}.local` : (d.localIp ? `http://${d.localIp}` : '')),
+        staffUrl:a.staffUrl || '',
+        storeUrl:a.storeUrl || '',
+        hostname:d.hostname || '',
+        localIp:d.localIp || ''
+      });
+    }catch(e){
+      setAccessInfo((x)=>({...x,loading:false,error:e?.message || 'No se pudieron consultar los accesos.'}));
+    }
+  }
+
+  useEffect(()=>{ loadAccessInfo(); },[]);
 
   useEffect(() => {
     api('/api/v1/content/settings').then((r) => {
@@ -317,6 +342,7 @@ export default function SystemPage() {
 
     <nav className="system-section-tabs" aria-label="Secciones de configuración">
       <button className={systemSection === 'general' ? 'active' : ''} onClick={() => setSystemSection('general')}>Operación general</button>
+      <button className={systemSection === 'access' ? 'active' : ''} onClick={() => setSystemSection('access')}>Accesos</button>
       <button className={systemSection === 'payments' ? 'active' : ''} onClick={() => setSystemSection('payments')}>Pagos</button>
       <button className={systemSection === 'email' ? 'active' : ''} onClick={() => setSystemSection('email')}>Correo</button>
       <button className={systemSection === 'fx' ? 'active' : ''} onClick={() => setSystemSection('fx')}>Tipo de cambio</button>
@@ -406,7 +432,45 @@ export default function SystemPage() {
 
     {isSuperadmin && systemSection === 'updates' ? <SystemUpdatePanel /> : null}
 
-    {systemSection === 'payments' ? <section className="content-card payment-admin-config">
+        {/* SHINY_ACCESS_PANEL_R125 */}
+    {systemSection === 'access' ? <section className="content-card shiny-access-r125">
+      <div className="section-head">
+        <div>
+          <div className="eyebrow">ACCESO A SHINY</div>
+          <h2>Direcciones para entrar al sistema</h2>
+          <p className="section-copy">Estas son las direcciones que puede usar el propietario y su personal. Se detectan desde esta Raspberry y la configuracion remota activa.</p>
+        </div>
+        <button className="secondary" onClick={loadAccessInfo} disabled={accessInfo.loading}>{accessInfo.loading ? 'Consultando...' : 'Actualizar'}</button>
+      </div>
+
+      {accessInfo.error ? <div className="shiny-access-error-r125">{accessInfo.error}</div> : null}
+
+      <div className="shiny-access-grid-r125">
+        <article>
+          <span className="shiny-access-label-r125">En esta tienda / misma red</span>
+          <strong>{accessInfo.localUrl || 'No disponible'}</strong>
+          <small>{accessInfo.hostname ? `Equipo: ${accessInfo.hostname}` : ''}{accessInfo.localIp ? ` | IP: ${accessInfo.localIp}` : ''}</small>
+          {accessInfo.localUrl ? <a href={accessInfo.localUrl} target="_blank" rel="noreferrer">Abrir acceso local</a> : null}
+        </article>
+
+        <article>
+          <span className="shiny-access-label-r125">Panel del personal / acceso remoto</span>
+          <strong>{accessInfo.staffUrl || 'No configurado'}</strong>
+          <small>{accessInfo.staffUrl ? 'Disponible desde Internet mientras el tunel remoto este activo.' : 'Se mostrara automaticamente cuando exista un dominio o tunel configurado.'}</small>
+          {accessInfo.staffUrl ? <a href={accessInfo.staffUrl} target="_blank" rel="noreferrer">Abrir panel remoto</a> : null}
+        </article>
+
+        <article>
+          <span className="shiny-access-label-r125">Tienda publica</span>
+          <strong>{accessInfo.storeUrl || 'No configurada'}</strong>
+          <small>{accessInfo.storeUrl ? 'Direccion publica para clientes.' : 'Se mostrara cuando la tienda publica tenga dominio o tunel habilitado.'}</small>
+          {accessInfo.storeUrl ? <a href={accessInfo.storeUrl} target="_blank" rel="noreferrer">Abrir tienda</a> : null}
+        </article>
+      </div>
+
+      <p className="shiny-access-note-r125">No es necesario memorizar IPs ni puertos. Para otro cliente/clon, estas direcciones cambian automaticamente segun su hostname y configuracion remota.</p>
+    </section> : null}
+{systemSection === 'payments' ? <section className="content-card payment-admin-config">
       <div className="section-head"><div><div className="eyebrow">PORTAL CLIENTE · PAGOS</div><h2>Transferencia bancaria</h2><p className="section-copy">Estos datos son los que verá el cliente después de seleccionar Transferencia.</p></div><button onClick={savePayments}>Guardar</button></div>
       <div className="form-grid">
         <label>Banco<input value={settings['public.payment.transfer.bank_name'] || ''} onChange={(e) => setSettings((x) => ({ ...x, 'public.payment.transfer.bank_name': e.target.value }))} /></label>

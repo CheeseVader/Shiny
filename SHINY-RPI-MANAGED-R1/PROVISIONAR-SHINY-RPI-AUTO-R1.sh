@@ -256,6 +256,155 @@ EOF
 configure_kiosk_release_refresh || warn "Recarga automatica kiosk incompleta; Shiny continuara."
 
 # ------------------------------------------------------------
+# SHINY_FRONTEND_GUARD_R125
+# Endurece el updater instalado:
+# - si files[] o delete[] toca frontend/, SIEMPRE reconstruye frontend
+# - npm frontend solo si lo pide el manifest o falta Vite local
+# - build en directorio temporal y swap solo despues de build valido
+# El manifest sigue siendo la autoridad para QUE archivos se copian.
+# ------------------------------------------------------------
+configure_updater_frontend_guard(){
+  local agent="/usr/local/lib/shiny-updater/shiny-update-agent.sh"
+
+  if [[ ! -f "$agent" ]]; then
+    warn "Updater agent no existe todavia; guardia frontend se aplicara en un provision posterior."
+    return 0
+  fi
+
+  if grep -q 'SHINY_FRONTEND_GUARD_R125' "$agent"; then
+    return 0
+  fi
+
+  if ! command -v python3 >/dev/null 2>&1; then
+    warn "python3 no disponible; no se pudo endurecer updater frontend."
+    return 0
+  fi
+
+  python3 - "$agent" <<'PY'
+from pathlib import Path
+import sys
+
+p = Path(sys.argv[1])
+text = p.read_text(encoding="utf-8")
+
+if "SHINY_FRONTEND_GUARD_R125" in text:
+    raise SystemExit(0)
+
+old = r'''  if [[ "$(jq -r '.npm_frontend // false' "$work/$manifest")" == "true" ]]; then
+    if [[ -f "$APP_DIR/frontend/package-lock.json" ]]; then
+      (cd "$APP_DIR/frontend" && npm ci)
+    elif [[ -f "$APP_DIR/frontend/package.json" ]]; then
+      (cd "$APP_DIR/frontend" && npm install)
+    fi
+  fi
+
+  if [[ "$(jq -r '.build_frontend // false' "$work/$manifest")" == "true" ]]; then
+    (cd "$APP_DIR/frontend" && npm run build)
+  fi'''
+
+new = r'''  # SHINY_FRONTEND_GUARD_R125
+  local frontend_changed="false"
+  local need_npm_frontend
+  local need_build_frontend
+  local frontend_tmp
+  local frontend_old
+
+  if jq -e '
+      [(.files // [])[], ((.delete // [])[])] |
+      any(.[]; startswith("frontend/"))
+    ' "$work/$manifest" >/dev/null 2>&1; then
+    frontend_changed="true"
+  fi
+
+  need_npm_frontend="$(jq -r '.npm_frontend // false' "$work/$manifest")"
+  need_build_frontend="$(jq -r '.build_frontend // false' "$work/$manifest")"
+
+  if [[ "$frontend_changed" == "true" ]]; then
+    need_build_frontend="true"
+  fi
+
+  if [[ "$need_build_frontend" == "true" && ! -x "$APP_DIR/frontend/node_modules/.bin/vite" ]]; then
+    need_npm_frontend="true"
+  fi
+
+  if [[ "$need_npm_frontend" == "true" ]]; then
+    if [[ -f "$APP_DIR/frontend/package-lock.json" ]]; then
+      (cd "$APP_DIR/frontend" && npm ci)
+    elif [[ -f "$APP_DIR/frontend/package.json" ]]; then
+      (cd "$APP_DIR/frontend" && npm install)
+    else
+      echo "ERROR: frontend requiere npm pero no existe package.json"
+      return 9
+    fi
+  fi
+
+  if [[ "$need_build_frontend" == "true" ]]; then
+    frontend_tmp="$APP_DIR/frontend/.dist-r125-${ver}-$$"
+    frontend_old="$APP_DIR/frontend/.dist-old-r125-${ver}-$$"
+    rm -rf -- "$frontend_tmp" "$frontend_old"
+
+    echo "FRONTEND: rebuild obligatorio para v$ver"
+    if ! (cd "$APP_DIR/frontend" && npm run build -- --outDir "$frontend_tmp"); then
+      rm -rf -- "$frontend_tmp"
+      echo "ERROR: build frontend fallo; dist anterior permanece intacto."
+      return 9
+    fi
+
+    if [[ ! -f "$frontend_tmp/index.html" ]]; then
+      rm -rf -- "$frontend_tmp"
+      echo "ERROR: build frontend no genero index.html; dist anterior permanece intacto."
+      return 9
+    fi
+
+    if [[ -d "$APP_DIR/frontend/dist" ]]; then
+      mv "$APP_DIR/frontend/dist" "$frontend_old"
+    fi
+
+    if mv "$frontend_tmp" "$APP_DIR/frontend/dist"; then
+      rm -rf -- "$frontend_old"
+      echo "FRONTEND: dist nuevo activado correctamente."
+    else
+      rm -rf -- "$APP_DIR/frontend/dist" "$frontend_tmp"
+      if [[ -d "$frontend_old" ]]; then
+        mv "$frontend_old" "$APP_DIR/frontend/dist"
+      fi
+      echo "ERROR: no se pudo activar dist nuevo; se restauro dist anterior."
+      return 9
+    fi
+  fi'''
+
+if old not in text:
+    print("No se encontro el bloque R4 esperado para npm/build frontend.", file=sys.stderr)
+    raise SystemExit(2)
+
+text = text.replace(old, new, 1)
+p.write_text(text, encoding="utf-8", newline="\n")
+PY
+
+  local rc=$?
+  if [[ "$rc" -ne 0 ]]; then
+    warn "No se pudo instalar guardia frontend R125 en updater runtime."
+    return 0
+  fi
+
+  chmod 0755 "$agent"
+  chown root:root "$agent"
+
+  if ! bash -n "$agent"; then
+    warn "Updater endurecido no paso bash -n."
+    return 0
+  fi
+
+  if ! grep -q 'SHINY_FRONTEND_GUARD_R125' "$agent"; then
+    warn "Updater runtime no contiene marcador R125."
+    return 0
+  fi
+
+  echo "[SHINY] Updater frontend guard R125 instalado."
+}
+configure_updater_frontend_guard || warn "Guardia frontend R125 incompleta; Shiny continuara."
+
+# ------------------------------------------------------------
 # 5. Activar nuevo timer
 # ------------------------------------------------------------
 systemctl daemon-reload
