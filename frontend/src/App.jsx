@@ -52,6 +52,16 @@ import StoreRecoverAccountPage from './pages/public/StoreRecoverAccountPage.jsx'
 
 
 import SalesHistoryPage from './pages/SalesHistoryPage.jsx';
+
+/* SHINY_PANEL_LOCAL_ROOT_R127
+ * El nombre mDNS local pertenece al panel administrativo.
+ * La tienda publica conserva /tienda y los demas hostnames siguen entrando a tienda.
+ */
+function ShinyRootEntry(){
+  const host=String(window.location.hostname||'').trim().toLowerCase();
+  const localPanelHost=host==='shyny-panel.local'||host==='shyny-panel';
+  return <Navigate to={localPanelHost?'/login':'/tienda'} replace/>;
+}
 export default function App(){
   const location=useLocation();
   let currentUser={};
@@ -59,7 +69,7 @@ export default function App(){
   const operatorAdmin=String(currentUser?.rol||'').toUpperCase()==='OPERADOR'&&location.pathname.startsWith('/admin');
   return <><GlobalTheme/>{operatorAdmin?null:<GlobalFeedback/>}<GlobalInputGuard/>{operatorAdmin?null:<GlobalOperationProgress/>}<Routes>
     {/* Public storefront */}
-    <Route path="/" element={<Navigate to="/tienda" replace/>}/>
+    <Route path="/" element={<ShinyRootEntry/>}/>
     <Route element={<PublicStoreProvider><ClientAuthProvider><CartProvider><PublicStoreLayout/></CartProvider></ClientAuthProvider></PublicStoreProvider>}>
       <Route path="/tienda" element={<StoreHomePage/>}/>
       <Route path="/tienda/catalogo" element={<StoreCatalogPage/>}/>
