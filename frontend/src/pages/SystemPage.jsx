@@ -433,6 +433,7 @@ export default function SystemPage() {
     {isSuperadmin && systemSection === 'updates' ? <SystemUpdatePanel /> : null}
 
         {/* SHINY_ACCESS_PANEL_R125 */}
+    {/* SHINY_HIDE_TEMP_URLS_R126 */}
     {systemSection === 'access' ? <section className="content-card shiny-access-r125">
       <div className="section-head">
         <div>
@@ -463,7 +464,7 @@ export default function SystemPage() {
         <article>
           <span className="shiny-access-label-r125">Tienda publica</span>
           <strong>{accessInfo.storeUrl || 'No configurada'}</strong>
-          <small>{accessInfo.storeUrl ? 'Direccion publica para clientes.' : 'Se mostrara cuando la tienda publica tenga dominio o tunel habilitado.'}</small>
+          <small>{accessInfo.storeUrl ? 'Direccion publica para clientes.' : 'No configurada. Solo se mostrara cuando exista un dominio permanente para la tienda.'}</small>
           {accessInfo.storeUrl ? <a href={accessInfo.storeUrl} target="_blank" rel="noreferrer">Abrir tienda</a> : null}
         </article>
       </div>

@@ -112,7 +112,28 @@ export default function BranchesPage() {
     }
   }, []);
 
-  const isSuperadmin = String(currentUser.rol || '').toUpperCase() === 'SUPERADMIN';
+/* SHINY_BRANCH_CREATE_R126 */
+  const currentAccess = useMemo(() => {
+    try {
+      return JSON.parse(
+        localStorage.getItem('SHINY_AUTH_ACCESS') ||
+        localStorage.getItem('Shiny_AUTH_ACCESS') ||
+        '{}'
+      );
+    } catch {
+      return {};
+    }
+  }, []);
+  const currentRole = String(
+    currentAccess?.role ||
+    currentUser?.rol ||
+    currentUser?.role ||
+    ''
+  ).toUpperCase();
+  const isSuperadmin = currentRole === 'SUPERADMIN';
+  const canCreateBranch =
+    isSuperadmin ||
+    currentAccess?.permissions?.SUCURSALES?.create === true;
   const [branches, setBranches] = useState([]);
   const [selected, setSelected] = useState(null);
   const [open, setOpen] = useState(false);
@@ -289,7 +310,7 @@ export default function BranchesPage() {
             <option value="">Todas las ciudades</option>
             {cities.map((city) => <option key={city} value={city}>{city}</option>)}
           </select>
-          {isSuperadmin ? <button className="suc3-primary" type="button" onClick={newBranch}><span>＋</span>Nueva sucursal</button> : null}
+          {canCreateBranch ? <button className="suc3-primary" type="button" onClick={newBranch}><span>＋</span>Nueva sucursal</button> : null}
         </div>
       </header>
 

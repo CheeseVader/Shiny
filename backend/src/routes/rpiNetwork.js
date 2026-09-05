@@ -21,9 +21,22 @@ function run(c,a=[],timeout=4000){
 function readTextFile(path){
   try{return fs.readFileSync(path,'utf8').trim();}catch{return '';}
 }
+/* SHINY_HIDE_TEMP_URLS_R126 */
 function normalizedPublicUrl(value){
   const s=String(value||'').trim();
-  return /^https?:\/\//i.test(s)?s:'';
+  if(!/^https?:\/\//i.test(s)) return '';
+  try{
+    const u=new URL(s);
+    const h=String(u.hostname||'').toLowerCase();
+
+    // Quick Tunnel de Cloudflare: util para pruebas, nunca se presenta
+    // al propietario como URL oficial del sistema.
+    if(h==='trycloudflare.com' || h.endsWith('.trycloudflare.com')) return '';
+
+    return s;
+  }catch{
+    return '';
+  }
 }
 function ip(){
   for(const rows of Object.values(os.networkInterfaces())){
