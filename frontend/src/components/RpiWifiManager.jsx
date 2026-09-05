@@ -109,7 +109,7 @@ export default function RpiWifiManager({ open, onClose }) {
                 : 'Selecciona una red disponible'}
             </p>
           </div>
-          <button type="button" className="rpiwifi-close" onClick={onClose} aria-label="Cerrar">Ã—</button>
+          <button type="button" className="rpiwifi-close" onClick={onClose} aria-label="Cerrar">X</button>
         </header>
 
         <div className="rpiwifi-list">
