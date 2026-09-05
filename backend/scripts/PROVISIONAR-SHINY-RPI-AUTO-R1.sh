@@ -90,161 +90,17 @@ WantedBy=timers.target
 EOF
 
 # ------------------------------------------------------------
-# 3. LAN/mDNS AUTOCONTENIDO
-#    No depende de que SHINY-RPI-MANAGED-R1 llegue en el delta.
+# 3. Wi-Fi UI legacy: retirada en 1.0.21
+# El administrador Wi-Fi actual vive dentro de Shiny (/api/rpi-wifi).
 # ------------------------------------------------------------
-# SHINY_UPDATER_RUNTIME_FIX_R118_BEGIN
-configure_updater_runtime(){
-  local agent="/usr/local/lib/shiny-updater/shiny-update-agent.sh"
-
-  [[ -f "$agent" ]] || {
-    warn "No existe $agent; se omite hardening del updater."
-    return 0
-  }
-
-  python3 - "$agent" <<'PY'
-from pathlib import Path
-import sys
-
-p = Path(sys.argv[1])
-s = p.read_text(encoding="utf-8")
-
-old = """fetch_releases(){
-  curl -fsSL "${api_headers[@]}" "$API/releases?per_page=100" -o "$RELEASES_JSON"
-}"""
-
-new = """fetch_releases(){
-  local bust tmp
-  bust="$(date +%s)"
-  tmp="${RELEASES_JSON}.tmp"
-
-  rm -f "$tmp"
-
-  curl -fsSL \
-    --retry 5 \
-    --retry-all-errors \
-    --retry-delay 3 \
-    --connect-timeout 10 \
-    --max-time 45 \
-    "${api_headers[@]}" \
-    -H "Cache-Control: no-cache" \
-    -H "Pragma: no-cache" \
-    "$API/releases?per_page=100&page=1&_=${bust}" \
-    -o "$tmp"
-
-  jq -e 'type=="array"' "$tmp" >/dev/null
-  mv -f "$tmp" "$RELEASES_JSON"
-}"""
-
-if old in s:
-    s = s.replace(old, new, 1)
-elif 'Cache-Control: no-cache' in s and 'retry-all-errors' in s:
-    pass
-else:
-    print("Updater con formato no reconocido; se deja intacto.", file=sys.stderr)
-    raise SystemExit(0)
-
-p.write_text(s, encoding="utf-8")
-PY
-
-  bash -n "$agent" || {
-    warn "El updater no paso bash -n tras hardening."
-    return 0
-  }
-
-  chmod 0755 "$agent" || true
-  log "Updater runtime endurecido: Releases sin cache + reintentos."
-}
-configure_updater_runtime || warn "No se pudo persistir hardening del updater."
-# SHINY_UPDATER_RUNTIME_FIX_R118_END
-
-configure_lan(){
-  export DEBIAN_FRONTEND=noninteractive
-  if ! command -v avahi-daemon >/dev/null 2>&1 || ! command -v nginx >/dev/null 2>&1 || ! command -v nmcli >/dev/null 2>&1; then
-    apt-get update -y || { warn "Sin Internet para instalar dependencias; Shiny continuara."; return 0; }
-    apt-get install -y avahi-daemon avahi-utils nginx curl network-manager xterm || warn "Dependencias de red incompletas."
-  fi
-
-  systemctl enable NetworkManager >/dev/null 2>&1 || true
-  systemctl start NetworkManager >/dev/null 2>&1 || true
-  nmcli networking on >/dev/null 2>&1 || true
-  nmcli radio wifi on >/dev/null 2>&1 || true
-
-  hostnamectl set-hostname "$LOCAL_HOSTNAME" >/dev/null 2>&1 || true
-  if grep -qE '^[[:space:]]*127\.0\.1\.1[[:space:]]+' /etc/hosts; then
-    sed -i -E "s|^[[:space:]]*127\.0\.1\.1[[:space:]].*$|127.0.1.1\t$LOCAL_HOSTNAME|" /etc/hosts
-  else
-    printf '127.0.1.1\t%s\n' "$LOCAL_HOSTNAME" >> /etc/hosts
-  fi
-
-  if grep -qE '^[#[:space:]]*host-name=' /etc/avahi/avahi-daemon.conf; then
-    sed -i -E "s|^[#[:space:]]*host-name=.*$|host-name=$LOCAL_HOSTNAME|" /etc/avahi/avahi-daemon.conf
-  else
-    sed -i "/^\[server\]/a host-name=$LOCAL_HOSTNAME" /etc/avahi/avahi-daemon.conf
-  fi
-  systemctl enable avahi-daemon >/dev/null 2>&1 || true
-  systemctl restart avahi-daemon >/dev/null 2>&1 || true
-
-  # 1.0.17: NO habilitar shiny-local; evita duplicate default_server.
-  rm -f /etc/nginx/sites-enabled/shiny-local
-  if nginx -t; then
-    systemctl enable nginx >/dev/null 2>&1 || true
-    systemctl restart nginx >/dev/null 2>&1 || true
-    log "LAN: http://${LOCAL_HOSTNAME}.local/login"
-  else
-    warn "nginx -t fallo; no se reinicia."
-  fi
-}
-configure_lan || warn "Provision LAN/mDNS incompleto; Shiny continuara."
-
-
-# ------------------------------------------------------------
-# SHINY_RPI_WIFI_UI_R117
-# Administrador Wi-Fi disponible desde /login sin autenticar.
-# Solo abre NetworkManager; Shiny nunca recibe la password.
-# ------------------------------------------------------------
-configure_wifi_ui(){
-  local kiosk_user kiosk_uid kiosk_home
-  kiosk_user="$(ps -eo user=,comm= | awk '$2 ~ /^chromium/ {print $1; exit}')"
-  if [[ -z "$kiosk_user" ]]; then
-    kiosk_user="$(awk -F: '$3>=1000 && $3<60000 && $7 !~ /(nologin|false)$/ {print $1; exit}' /etc/passwd)"
-  fi
-  [[ -n "$kiosk_user" ]] || { warn "Sin usuario grafico para Wi-Fi UI."; return 0; }
-  kiosk_uid="$(id -u "$kiosk_user")"
-  kiosk_home="$(getent passwd "$kiosk_user" | cut -d: -f6)"
-
-  cat > /usr/local/bin/shiny-open-wifi-ui <<EOF
-#!/usr/bin/env bash
-set -e
-U="$kiosk_user"; UIDX="$kiosk_uid"; H="$kiosk_home"
-export HOME="\$H" XDG_RUNTIME_DIR="/run/user/\$UIDX" DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/\$UIDX/bus"
-export DISPLAY="\${DISPLAY:-:0}" WAYLAND_DISPLAY="\${WAYLAND_DISPLAY:-wayland-0}"
-# SHINY_WIFI_TERMINAL_FIX_R119_BEGIN
-# Raspberry Pi OS/labwc: usar lxterminal disponible en lugar de depender de xterm.
-# SHINY_WIFI_TERMINAL_FIX_R119_END
-exec runuser -u "\$U" -- env HOME="\$HOME" XDG_RUNTIME_DIR="\$XDG_RUNTIME_DIR" DBUS_SESSION_BUS_ADDRESS="\$DBUS_SESSION_BUS_ADDRESS" DISPLAY="\$DISPLAY" WAYLAND_DISPLAY="\$WAYLAND_DISPLAY" /usr/bin/lxterminal --title="Shiny - Configurar Wi-Fi" --geometry=92x28 --command="/usr/bin/nmtui-connect"
-EOF
-  chmod 0755 /usr/local/bin/shiny-open-wifi-ui
-
-  cat > /etc/systemd/system/shiny-wifi-ui.service <<'EOF'
-[Unit]
-Description=Shiny - abrir administrador Wi-Fi
-After=graphical.target NetworkManager.service
-[Service]
-Type=oneshot
-ExecStart=/usr/local/bin/shiny-open-wifi-ui
-TimeoutStartSec=120
-EOF
-
-  cat > /etc/sudoers.d/shiny-wifi-ui <<EOF
-${APP_USER:-shiny} ALL=(root) NOPASSWD: /bin/systemctl --no-block start shiny-wifi-ui.service
-${APP_USER:-shiny} ALL=(root) NOPASSWD: /usr/bin/systemctl --no-block start shiny-wifi-ui.service
-EOF
-  chmod 0440 /etc/sudoers.d/shiny-wifi-ui
-  visudo -cf /etc/sudoers.d/shiny-wifi-ui >/dev/null || rm -f /etc/sudoers.d/shiny-wifi-ui
+remove_legacy_wifi_ui(){
+  systemctl disable --now shiny-wifi-ui.service >/dev/null 2>&1 || true
+  rm -f /etc/systemd/system/shiny-wifi-ui.service
+  rm -f /usr/local/bin/shiny-open-wifi-ui
+  rm -f /etc/sudoers.d/shiny-wifi-ui
   systemctl daemon-reload
 }
-configure_wifi_ui || warn "Wi-Fi UI incompleta; Shiny continuara."
+remove_legacy_wifi_ui || warn "No se pudo limpiar completamente Wi-Fi UI legacy."
 
 # ------------------------------------------------------------
 # 4. cloudflared
@@ -359,6 +215,45 @@ if install_cloudflared; then
     log "STORE Cloudflare desactivado por defecto (SHINY_CF_ENABLE_STORE=0)."
   fi
 fi
+
+# ------------------------------------------------------------
+# 4A. Recarga automatica del kiosk despues de una release
+# El kiosk no es systemd: shiny-kiosk.sh es watchdog y relanza Chromium.
+# ------------------------------------------------------------
+configure_kiosk_release_refresh(){
+  cat > /usr/local/sbin/shiny-refresh-kiosk-after-update <<'EOF'
+#!/usr/bin/env bash
+set -euo pipefail
+sleep 4
+mapfile -t pids < <(pgrep -f 'chromium.*shiny-kiosk-profile|chromium-browser.*shiny-kiosk-profile' || true)
+if (( ${#pids[@]} > 0 )); then
+  kill -TERM "${pids[@]}" 2>/dev/null || true
+fi
+exit 0
+EOF
+  chmod 0755 /usr/local/sbin/shiny-refresh-kiosk-after-update
+  chown root:root /usr/local/sbin/shiny-refresh-kiosk-after-update
+  cat > /etc/systemd/system/shiny-kiosk-version-refresh.service <<'EOF'
+[Unit]
+Description=Shiny - recargar Chromium kiosk despues de actualizar
+After=graphical.target
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/shiny-refresh-kiosk-after-update
+EOF
+  cat > /etc/systemd/system/shiny-kiosk-version-refresh.path <<'EOF'
+[Unit]
+Description=Shiny - vigilar nueva VERSION instalada
+[Path]
+PathChanged=/opt/shiny/app/VERSION
+Unit=shiny-kiosk-version-refresh.service
+[Install]
+WantedBy=multi-user.target
+EOF
+  systemctl daemon-reload
+  systemctl enable --now shiny-kiosk-version-refresh.path >/dev/null 2>&1 || warn "No se pudo activar recarga automatica del kiosk."
+}
+configure_kiosk_release_refresh || warn "Recarga automatica kiosk incompleta; Shiny continuara."
 
 # ------------------------------------------------------------
 # 5. Activar nuevo timer
