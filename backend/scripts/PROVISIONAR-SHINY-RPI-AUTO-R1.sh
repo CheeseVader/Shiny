@@ -219,7 +219,10 @@ set -e
 U="$kiosk_user"; UIDX="$kiosk_uid"; H="$kiosk_home"
 export HOME="\$H" XDG_RUNTIME_DIR="/run/user/\$UIDX" DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/\$UIDX/bus"
 export DISPLAY="\${DISPLAY:-:0}" WAYLAND_DISPLAY="\${WAYLAND_DISPLAY:-wayland-0}"
-exec runuser -u "\$U" -- env HOME="\$HOME" XDG_RUNTIME_DIR="\$XDG_RUNTIME_DIR" DBUS_SESSION_BUS_ADDRESS="\$DBUS_SESSION_BUS_ADDRESS" DISPLAY="\$DISPLAY" WAYLAND_DISPLAY="\$WAYLAND_DISPLAY" xterm -title "Shiny - Configurar Wi-Fi" -geometry 92x28 -e nmtui-connect
+# SHINY_WIFI_TERMINAL_FIX_R119_BEGIN
+# Raspberry Pi OS/labwc: usar lxterminal disponible en lugar de depender de xterm.
+# SHINY_WIFI_TERMINAL_FIX_R119_END
+exec runuser -u "\$U" -- env HOME="\$HOME" XDG_RUNTIME_DIR="\$XDG_RUNTIME_DIR" DBUS_SESSION_BUS_ADDRESS="\$DBUS_SESSION_BUS_ADDRESS" DISPLAY="\$DISPLAY" WAYLAND_DISPLAY="\$WAYLAND_DISPLAY" /usr/bin/lxterminal --title="Shiny - Configurar Wi-Fi" --geometry=92x28 --command="/usr/bin/nmtui-connect"
 EOF
   chmod 0755 /usr/local/bin/shiny-open-wifi-ui
 
