@@ -52,6 +52,7 @@ import productImagesRouter from './routes/productImages.js';
 import systemUpdateRouter from './routes/systemUpdate.js';
 import { startProductImageEnrichmentScheduler } from './productImageEnrichmentService.js';
 
+import rpiWifiManager from './routes/rpiWifiManager.js';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
@@ -203,6 +204,7 @@ app.use('/api/v1/cms', requireModule('CONTENIDO'), cmsRouter);
 
 app.use('/api/rpi-network', rpiNetworkRouter);
 
+app.use('/api/rpi-wifi', rpiWifiManager);
 if (process.env.NODE_ENV === 'production') {
   app.use(express.static(frontendDist));
   app.use((_req, res) => res.sendFile(path.join(frontendDist, 'index.html')));

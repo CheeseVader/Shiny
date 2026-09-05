@@ -22,5 +22,5 @@
     "stripe": "latest",
     "xlsx": "latest"
   },
-  "shinyRpiProvisionRevision": "1.0.19"
+  "shinyRpiProvisionRevision": "1.0.20"
 }

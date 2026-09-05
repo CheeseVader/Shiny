@@ -5,6 +5,7 @@ import BrandLogo from '../components/BrandLogo.jsx';
 
 import './LoginPageR63.css';
 import './LoginNetworkR117.css';
+import RpiWifiManager from '../components/RpiWifiManager.jsx';
 export default function LoginPage() {
   const nav = useNavigate();
   const location = useLocation();
@@ -16,6 +17,7 @@ export default function LoginPage() {
   const [networkState,setNetworkState]=useState({loading:true,wifiUiAvailable:false,connected:false,ssid:'',localIp:''});
   const [wifiOpening,setWifiOpening]=useState(false);
   const [wifiMessage,setWifiMessage]=useState('');
+  const [wifiManagerOpen,setWifiManagerOpen]=useState(false);
   const [loginAppearance,setLoginAppearance] = useState(() => {
     try {
       const cached=JSON.parse(localStorage.getItem('SHINY_LOGIN_APPEARANCE_R55')||'{}');
@@ -60,7 +62,7 @@ export default function LoginPage() {
     async function refresh(){try{const r=await fetch('/api/rpi-network/status',{cache:'no-store'});const b=await r.json();if(alive)setNetworkState({loading:false,wifiUiAvailable:!!b.wifiUiAvailable,connected:!!b.connected,ssid:String(b.ssid||''),localIp:String(b.localIp||'')});}catch{if(alive)setNetworkState(x=>({...x,loading:false}));}}
     refresh();const t=setInterval(refresh,5000);return()=>{alive=false;clearInterval(t);};
   },[]);
-  async function openWifiSettings(){setWifiOpening(true);setWifiMessage('');try{const r=await fetch('/api/rpi-network/open-wifi',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'});const b=await r.json().catch(()=>({}));if(!r.ok||b.success===false)throw new Error(b.message||`HTTP ${r.status}`);setWifiMessage('Administrador de redes abierto. Selecciona Wi-Fi y escribe la contraseña.');}catch(e){setWifiMessage(e.message||'No se pudo abrir Wi-Fi.');}finally{setWifiOpening(false);}}
+  function openWifiSettings(){setWifiMessage('');setWifiManagerOpen(true);}
   async function submit(e) {
     e.preventDefault();setLoading(true);setError('');
     try {
@@ -93,6 +95,7 @@ export default function LoginPage() {
   }
 
   return <main className={`login-page shiny-login-r55 design-${loginAppearance.design}`} data-login-glow={loginAppearance.glow}>
+    <RpiWifiManager open={wifiManagerOpen} onClose={()=>setWifiManagerOpen(false)} />
       {loginAppearance.design==='custom' && loginAppearance.mediaId ?
         <img
           className="shiny-login-custom-background-r63m"
@@ -125,7 +128,7 @@ export default function LoginPage() {
       {/* SHINY_RPI_WIFI_LOGIN_R117_UI */}
       <div className={`shiny-login-wifi-r117 ${networkState.connected?'is-online':'is-offline'}`}>
         <div className="wifi-row"><div className="wifi-state"><span className="wifi-dot"/><span className="wifi-name">{networkState.loading?'Comprobando red...':networkState.connected?`Wi-Fi: ${networkState.ssid}`:'Sin Wi-Fi conectada'}</span></div>{networkState.localIp?<span className="wifi-ip">{networkState.localIp}</span>:null}</div>
-        {networkState.wifiUiAvailable?<button type="button" className="wifi-config-btn" disabled={wifiOpening} onClick={openWifiSettings}>{wifiOpening?'Abriendo Wi-Fi...':'Configurar Wi-Fi'}</button>:null}
+        {networkState.wifiUiAvailable?<button type="button" className="wifi-config-btn" onClick={openWifiSettings}>Configurar Wi-Fi</button>:null}
         {wifiMessage?<div className="wifi-message">{wifiMessage}</div>:null}
       </div>
       <label>Usuario o correo<input type="text" autoComplete="username" value={username} onChange={(e) => setUsername(e.target.value.toLowerCase())} autoCapitalize="none" spellCheck={false} required /></label>
