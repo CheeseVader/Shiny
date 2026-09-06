@@ -87,8 +87,6 @@ backend/uploads/products/*
 *.BACKUP
 *.BACKUP-*
 
-# Scripts PowerShell locales
-*.ps1
 
 # >>> SHINY FACTORY SAFE IGNORE R1.1 >>>
 # Dependencias / builds / runtime
@@ -256,4 +254,16 @@ Thumbs.db
 .vscode/
 .idea/
 # <<< SHINY FACTORY SAFE IGNORE R1.3 <<<
+
+# >>> SHINY OPERATIONAL POWERSHELL R1 >>>
+# Los scripts PowerShell forman parte del producto Shiny.
+# NO ignorar *.ps1 globalmente: StartDev, publicacion, bridge,
+# Cloudflare, RPi y herramientas de operacion deben poder versionarse.
+
+# Solo respaldos/temporales de scripts quedan fuera.
+*.ps1.bak
+*.ps1.tmp
+*.ps1.temp
+*.ps1.old
+# <<< SHINY OPERATIONAL POWERSHELL R1 <<<
 
