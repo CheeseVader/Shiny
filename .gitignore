@@ -1,4 +1,4 @@
-# Credenciales y configuración privada
+﻿# Credenciales y configuraciÃ³n privada
 .env
 .env.*
 !.env.example
@@ -89,3 +89,171 @@ backend/uploads/products/*
 
 # Scripts PowerShell locales
 *.ps1
+
+# >>> SHINY FACTORY SAFE IGNORE R1.1 >>>
+# Dependencias / builds / runtime
+node_modules/
+**/node_modules/
+runtime-logs/
+release-output/
+coverage/
+**/coverage/
+dist/
+**/dist/
+.vite/
+**/.vite/
+*.log
+*.pid
+*.tmp
+*.temp
+
+# Estado local
+.client-local-access/
+.shiny-fix/
+*.bak
+*.backup
+
+# Secretos y configuracion privada
+.env
+.env.*
+**/.env
+**/.env.*
+!.env.example
+!.env.brand.example
+!**/.env.example
+!**/.env.brand.example
+
+# Credenciales / llaves
+*.pem
+*.key
+*.pfx
+*.p12
+*.crt
+credentials.json
+secrets.json
+token.json
+tokens.json
+
+# Sistema / IDE
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+# <<< SHINY FACTORY SAFE IGNORE R1.1 <<<
+
+
+# >>> SHINY FACTORY SAFE IGNORE R1.2 >>>
+# Dependencias / builds / runtime
+node_modules/
+**/node_modules/
+runtime-logs/
+release-output/
+coverage/
+**/coverage/
+dist/
+**/dist/
+.vite/
+**/.vite/
+*.log
+*.pid
+*.tmp
+*.temp
+
+# Estado local
+.client-local-access/
+.shiny-fix/
+*.bak
+*.backup
+
+# Cloudflare Quick Tunnel: URLs generadas en runtime, no forman parte del producto
+.shiny-cloudflare-autostart/staff-url.txt
+.shiny-cloudflare-autostart/store-url.txt
+shiny-cloudflare-autostart/staff-url.txt
+shiny-cloudflare-autostart/store-url.txt
+
+# Secretos y configuracion privada
+.env
+.env.*
+**/.env
+**/.env.*
+!.env.example
+!.env.brand.example
+!**/.env.example
+!**/.env.brand.example
+
+# Credenciales / llaves
+*.pem
+*.key
+*.pfx
+*.p12
+*.crt
+credentials.json
+secrets.json
+token.json
+tokens.json
+
+# Sistema / IDE
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+# <<< SHINY FACTORY SAFE IGNORE R1.2 <<<
+
+
+# >>> SHINY FACTORY SAFE IGNORE R1.3 >>>
+# Dependencias / builds / runtime
+node_modules/
+**/node_modules/
+runtime-logs/
+release-output/
+coverage/
+**/coverage/
+dist/
+**/dist/
+.vite/
+**/.vite/
+*.log
+*.pid
+*.tmp
+*.temp
+
+# Estado local
+.client-local-access/
+.shiny-fix/
+*.bak
+*.backup
+
+# Cloudflare Quick Tunnel: URLs generadas en runtime, no forman parte del producto
+.shiny-cloudflare-autostart/staff-url.txt
+.shiny-cloudflare-autostart/store-url.txt
+shiny-cloudflare-autostart/staff-url.txt
+shiny-cloudflare-autostart/store-url.txt
+
+# Secretos y configuracion privada
+.env
+.env.*
+**/.env
+**/.env.*
+!.env.example
+!.env.brand.example
+!**/.env.example
+!**/.env.brand.example
+
+# Credenciales / llaves
+*.pem
+*.key
+*.pfx
+*.p12
+*.crt
+credentials.json
+secrets.json
+token.json
+tokens.json
+
+# Sistema / IDE
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+# <<< SHINY FACTORY SAFE IGNORE R1.3 <<<
+
