@@ -1,124 +1,62 @@
-/* SHINY_SYSTEM_BACKUP_PANEL_R130 */
+/* SHINY_BACKUP_ONE_CLICK_UI_R1 */
 import React,{useEffect,useState} from 'react';
 import {api} from '../services/api.js';
 import '../system_backup_r130.css';
 
 export default function SystemBackupPanel(){
-  const[st,setSt]=useState(null);
-  const[remote,setRemote]=useState([]);
-  const[token,setToken]=useState('');
-  const[passphrase,setPassphrase]=useState('');
-  const[owner,setOwner]=useState('');
-  const[repo,setRepo]=useState('');
-  const[busy,setBusy]=useState('');
-  const[msg,setMsg]=useState('');
+  const [st,setSt]=useState(null);
+  const [busy,setBusy]=useState(false);
+  const [msg,setMsg]=useState('');
 
   async function status(){
-    try{const r=await api('/api/v1/system-backup/status');setSt(r.data||null)}
-    catch(e){setMsg(e?.message||'No fue posible consultar el respaldo.')}
+    try{
+      const r=await api('/api/v1/system-backup/status');
+      setSt(r.data||null);
+    }catch(e){
+      setMsg(e?.message||'No fue posible consultar el estado del respaldo.');
+    }
   }
+
   useEffect(()=>{status()},[]);
 
-  async function configure(){
-    if(token.trim().length<20){setMsg('Captura el token de respaldo.');return}
-    if(passphrase.length<12){setMsg('La clave de cifrado debe tener al menos 12 caracteres.');return}
+  async function backup(){
     try{
-      setBusy('config');setMsg('');
-      await api('/api/v1/system-backup/configure',{method:'POST',body:{token:token.trim(),passphrase,owner:owner.trim(),repo:repo.trim()}});
-      setToken('');setPassphrase('');
-      setMsg('Configuración guardada correctamente.');
+      setBusy(true);
+      setMsg('Creando y subiendo respaldo...');
+      const r=await api('/api/v1/system-backup/backup',{method:'POST'});
+      setMsg(r.message||'Respaldo creado y subido correctamente.');
       await status();
-    }catch(e){setMsg(e?.message||'No fue posible guardar la configuración.')}
-    finally{setBusy('')}
-  }
-
-  async function action(name){
-    try{
-      setBusy(name);setMsg('');
-      const r=await api('/api/v1/system-backup/'+name,{method:'POST'});
-      setMsg(r.message||'Operación completada.');
-      await status();
-      if(name==='backup'||name==='upload') await history();
-    }catch(e){setMsg(e?.message||'La operación falló.')}
-    finally{setBusy('')}
-  }
-
-  async function history(){
-    try{
-      setBusy('history');
-      const r=await api('/api/v1/system-backup/remote');
-      setRemote(Array.isArray(r.data)?r.data:[]);
-    }catch(e){setMsg(e?.message||'No fue posible consultar GitHub.')}
-    finally{setBusy('')}
-  }
-
-  async function restore(){
-    const word=window.prompt('Se reemplazará la base actual. Escribe RESTAURAR para continuar.');
-    if(word!=='RESTAURAR') return;
-    if(!window.confirm('Antes de restaurar se creará un dump de seguridad de la base actual. ¿Continuar?')) return;
-    try{
-      setBusy('restore');setMsg('');
-      const r=await api('/api/v1/system-backup/restore-latest',{method:'POST',body:{confirmation:'RESTAURAR'}});
-      setMsg(r.message||'Restauración completada.');
-      await status();
-    }catch(e){setMsg(e?.message||'La restauración falló.')}
-    finally{setBusy('')}
+    }catch(e){
+      setMsg(e?.message||'No fue posible crear el respaldo.');
+    }finally{
+      setBusy(false);
+    }
   }
 
   return <section className="content-card bk130">
     <div className="section-head">
       <div>
-        <div className="eyebrow">SUPERADMIN · CONTINUIDAD</div>
-        <h2>Respaldo y migración</h2>
-        <p className="section-copy">Backup PostgreSQL portable entre Raspberry Pi/Linux y Windows.</p>
+        <div className="eyebrow">SUPERADMIN Â· CONTINUIDAD</div>
+        <h2>Respaldo y migraciÃ³n</h2>
+        <p className="section-copy">El respaldo usa automÃ¡ticamente la configuraciÃ³n instalada de este cliente.</p>
       </div>
-      <button onClick={status} disabled={!!busy}>Actualizar</button>
     </div>
 
     <div className="bk130-grid">
-      <article><span>Configuración</span><strong>{st?.configured?'Lista':'Pendiente'}</strong></article>
-      <article><span>Plataforma</span><strong>{st?.platform||'—'}</strong></article>
-      <article><span>Repositorio</span><strong>{st?.repo||'—'}</strong></article>
-      <article><span>Último respaldo</span><strong>{st?.latestLocal||'—'}</strong></article>
+      <article><span>Repositorio</span><strong>{st?.repo||'Detectando...'}</strong></article>
+      <article><span>Base de datos</span><strong>{st?.db||'Detectando...'}</strong></article>
+      <article><span>VersiÃ³n</span><strong>{st?.version||'â€”'}</strong></article>
+      <article><span>Ãšltimo respaldo</span><strong>{st?.latestBackup||'â€”'}</strong></article>
     </div>
 
     <div className="bk130-note">
-      El archivo generado es portable. La misma copia puede restaurarse en Linux/Raspberry Pi o Windows.
-      El token de respaldo es independiente del token read-only del updater y la clave de cifrado nunca se sube a GitHub.
-    </div>
-
-    <div className="form-grid">
-      <label>GitHub owner (opcional si puede detectarse)
-        <input value={owner} onChange={e=>setOwner(e.target.value)} />
-      </label>
-      <label>Repositorio Release (opcional si puede detectarse)
-        <input value={repo} onChange={e=>setRepo(e.target.value)} />
-      </label>
-      <label>Token GitHub de respaldo
-        <input type="password" autoComplete="new-password" value={token} onChange={e=>setToken(e.target.value)} />
-      </label>
-      <label>Clave privada de cifrado
-        <input type="password" autoComplete="new-password" value={passphrase} onChange={e=>setPassphrase(e.target.value)} />
-      </label>
+      No requiere capturar owner, repositorio, token ni claves. El respaldo se publica como backup-* en el mismo Shiny-Release configurado en el equipo.
     </div>
 
     <div className="bk130-actions">
-      <button disabled={!!busy} onClick={configure}>Guardar configuración</button>
-      <button disabled={!!busy||!st?.configured} onClick={()=>action('create')}>Crear respaldo local</button>
-      <button disabled={!!busy||!st?.configured} onClick={()=>action('upload')}>Subir último</button>
-      <button disabled={!!busy||!st?.configured} onClick={()=>action('backup')}>Crear + subir</button>
-      <button disabled={!!busy||!st?.configured} onClick={history}>Historial GitHub</button>
-      <button className="danger" disabled={!!busy||!st?.configured} onClick={restore}>Restaurar último</button>
+      <button disabled={busy||st?.configured===false} onClick={backup}>{busy?'Respaldando...':'Respaldar'}</button>
     </div>
 
     {msg?<div className="bk130-msg">{msg}</div>:null}
-
-    {remote.length?<div className="table-wrap"><table>
-      <thead><tr><th>Backup</th><th>Fecha</th><th>Archivos</th></tr></thead>
-      <tbody>{remote.map(x=><tr key={x.id}>
-        <td>{x.tag}</td><td>{x.published_at||'—'}</td>
-        <td>{(x.assets||[]).map(a=>a.name).join(', ')||'—'}</td>
-      </tr>)}</tbody>
-    </table></div>:null}
   </section>;
 }

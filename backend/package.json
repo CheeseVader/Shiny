@@ -24,5 +24,6 @@
   },
   "shinyRpiProvisionRevision": "1.0.25",
   "shinyGeoCatalogR128": "1.0.28-r1.4",
-  "shinyBackupProvisionVersion": "1.0.31"
+  "shinyBackupProvisionVersion": "1.0.31",
+  "shinyBackupOneClickVersion": "1.0.32"
 }
