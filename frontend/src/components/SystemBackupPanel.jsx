@@ -50,7 +50,7 @@ export default function SystemBackupPanel(){
     }
   }
 
-  return <section className="content-card bk130" data-backup-engine="clean-r1" data-backup-version="0.1.2">
+  return <section className="content-card bk130" data-backup-engine="clean-r1" data-backup-version="1.0.39">
     <div className="section-head">
       <div>
         <div className="eyebrow">{TXT.eyebrow}</div>
