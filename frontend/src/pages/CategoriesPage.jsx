@@ -192,8 +192,8 @@ export default function CategoriesPage() {
       </div>
     </section>
 
-    {editing ? <div className="modal-backdrop" role="dialog" aria-modal="true">
-      <form className="modal-card" onSubmit={save} style={{ maxWidth: 560 }}>
+    {editing ? <div className="modal-backdrop category-editor-backdrop" role="dialog" aria-modal="true">
+      <form className="modal-card category-editor-modal" onSubmit={save} onKeyDown={(e) => e.stopPropagation()} onKeyUp={(e) => e.stopPropagation()} style={{ maxWidth: 560 }}>
         <div className="modal-head">
           <div>
             <small>CATÁLOGO MAESTRO</small>
@@ -204,12 +204,7 @@ export default function CategoriesPage() {
 
         <div className="form-grid" style={{ gridTemplateColumns: '1fr' }}>
           <label>Nombre *
-            <input
-              autoFocus
-              value={form.nombre}
-              onChange={(e) => setForm((x) => ({ ...x, nombre: e.target.value }))}
-              placeholder="Ej. Deck Boxes"
-              maxLength="120" />
+            <input autoFocus name="category_name" autoComplete="off" value={form.nombre} onChange={(e) => setForm((x) => ({ ...x, nombre: e.target.value }))} onKeyDown={(e) => e.stopPropagation()} onKeyUp={(e) => e.stopPropagation()} placeholder="Ej. Deck Boxes" maxLength="120"/>
             
           </label>
 

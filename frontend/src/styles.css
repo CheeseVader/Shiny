@@ -1371,3 +1371,230 @@ body:has(.operator-pos-page .shiny-pos-exit-lock){
     padding-right: 8px !important;
   }
 }
+
+/* SHINY_CATEGORIES_MODAL_SOLID_R2_2 */
+.categories-page .category-editor-backdrop{
+  position:fixed !important;
+  inset:0 !important;
+  z-index:20000 !important;
+  display:flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+  padding:24px !important;
+  background:rgba(15,23,42,.62) !important;
+  backdrop-filter:none !important;
+  -webkit-backdrop-filter:none !important;
+}
+
+.categories-page .category-editor-modal{
+  position:relative !important;
+  z-index:20001 !important;
+  display:block !important;
+  width:min(560px,calc(100vw - 32px)) !important;
+  max-width:560px !important;
+  min-width:0 !important;
+  max-height:calc(100vh - 48px) !important;
+  overflow:auto !important;
+  margin:0 !important;
+  padding:0 !important;
+  border:1px solid #e2e8f0 !important;
+  border-radius:14px !important;
+  background:#ffffff !important;
+  background-image:none !important;
+  opacity:1 !important;
+  box-shadow:0 24px 70px rgba(15,23,42,.30) !important;
+  color:#0f172a !important;
+  transform:none !important;
+  filter:none !important;
+  isolation:isolate !important;
+}
+
+.categories-page .category-editor-modal::before,
+.categories-page .category-editor-modal::after{
+  content:none !important;
+  display:none !important;
+}
+
+.categories-page .category-editor-modal .modal-head{
+  display:flex !important;
+  align-items:flex-start !important;
+  justify-content:space-between !important;
+  gap:16px !important;
+  margin:0 !important;
+  padding:22px 22px 18px !important;
+  border-bottom:1px solid #e5e7eb !important;
+  background:#ffffff !important;
+}
+
+.categories-page .category-editor-modal .modal-head small{
+  display:block !important;
+  margin:0 0 5px !important;
+  color:#64748b !important;
+  font-size:11px !important;
+  line-height:1.2 !important;
+  font-weight:800 !important;
+  letter-spacing:.08em !important;
+}
+
+.categories-page .category-editor-modal .modal-head h2{
+  margin:0 !important;
+  color:#0f172a !important;
+  font-size:22px !important;
+  line-height:1.2 !important;
+  font-weight:800 !important;
+  letter-spacing:-.02em !important;
+}
+
+.categories-page .category-editor-modal .icon-button{
+  display:grid !important;
+  place-items:center !important;
+  width:34px !important;
+  height:34px !important;
+  min-width:34px !important;
+  margin:0 !important;
+  padding:0 !important;
+  border:0 !important;
+  border-radius:9px !important;
+  background:transparent !important;
+  color:#0f172a !important;
+  box-shadow:none !important;
+  font-size:24px !important;
+  line-height:1 !important;
+  cursor:pointer !important;
+}
+
+.categories-page .category-editor-modal .icon-button:hover{
+  background:#f1f5f9 !important;
+}
+
+.categories-page .category-editor-modal .form-grid{
+  display:grid !important;
+  grid-template-columns:1fr !important;
+  gap:16px !important;
+  margin:0 !important;
+  padding:20px 22px !important;
+  background:#ffffff !important;
+}
+
+.categories-page .category-editor-modal .form-grid > label{
+  display:grid !important;
+  grid-template-columns:1fr !important;
+  gap:7px !important;
+  margin:0 !important;
+  padding:0 !important;
+  color:#334155 !important;
+  font-size:13px !important;
+  line-height:1.25 !important;
+  font-weight:700 !important;
+}
+
+.categories-page .category-editor-modal input,
+.categories-page .category-editor-modal select{
+  display:block !important;
+  width:100% !important;
+  min-width:0 !important;
+  height:46px !important;
+  min-height:46px !important;
+  margin:0 !important;
+  padding:0 13px !important;
+  box-sizing:border-box !important;
+  border:1px solid #cbd5e1 !important;
+  border-radius:9px !important;
+  outline:none !important;
+  background:#ffffff !important;
+  background-image:none !important;
+  color:#0f172a !important;
+  box-shadow:none !important;
+  opacity:1 !important;
+  font:inherit !important;
+  font-size:14px !important;
+  font-weight:500 !important;
+  pointer-events:auto !important;
+  user-select:text !important;
+  -webkit-user-select:text !important;
+}
+
+.categories-page .category-editor-modal input::placeholder{
+  color:#94a3b8 !important;
+  opacity:1 !important;
+}
+
+.categories-page .category-editor-modal input:focus,
+.categories-page .category-editor-modal select:focus{
+  border-color:#64748b !important;
+  box-shadow:0 0 0 3px rgba(100,116,139,.12) !important;
+}
+
+.categories-page .category-editor-modal .muted{
+  margin:0 !important;
+  padding:10px 12px !important;
+  border-radius:8px !important;
+  background:#f8fafc !important;
+  color:#64748b !important;
+  font-size:12px !important;
+  line-height:1.5 !important;
+}
+
+.categories-page .category-editor-modal .modal-actions{
+  display:flex !important;
+  align-items:center !important;
+  justify-content:flex-end !important;
+  gap:10px !important;
+  margin:0 !important;
+  padding:16px 22px 22px !important;
+  border-top:1px solid #f1f5f9 !important;
+  background:#ffffff !important;
+}
+
+.categories-page .category-editor-modal .modal-actions button{
+  display:inline-flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+  min-height:42px !important;
+  margin:0 !important;
+  padding:0 17px !important;
+  border-radius:9px !important;
+  font-size:14px !important;
+  font-weight:750 !important;
+  line-height:1 !important;
+  cursor:pointer !important;
+  box-shadow:none !important;
+}
+
+.categories-page .category-editor-modal .modal-actions .secondary{
+  border:1px solid #e2e8f0 !important;
+  background:#f8fafc !important;
+  color:#0f172a !important;
+}
+
+.categories-page .category-editor-modal .modal-actions .primary,
+.categories-page .category-editor-modal .modal-actions button[type="submit"]{
+  border:1px solid #0f172a !important;
+  background:#0f172a !important;
+  color:#ffffff !important;
+}
+
+.categories-page .category-editor-modal .modal-actions button:disabled{
+  opacity:.55 !important;
+  cursor:not-allowed !important;
+}
+
+@media (max-width:640px){
+  .categories-page .category-editor-backdrop{
+    padding:14px !important;
+  }
+
+  .categories-page .category-editor-modal{
+    width:100% !important;
+    max-height:calc(100vh - 28px) !important;
+    border-radius:12px !important;
+  }
+
+  .categories-page .category-editor-modal .modal-head,
+  .categories-page .category-editor-modal .form-grid,
+  .categories-page .category-editor-modal .modal-actions{
+    padding-left:16px !important;
+    padding-right:16px !important;
+  }
+}
+/* SHINY_CATEGORIES_MODAL_SOLID_R2_2_END */
