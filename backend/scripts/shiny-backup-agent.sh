@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
-# SHINY_BACKUP_ENGINE_CLEAN_R1
+# SHINY_BACKUP_ENGINE_CLEAN_R140
 # Motor de respaldo autocontenido.
 # No imprime repositorio, owner, token ni secretos en status/respuestas.
 
@@ -44,20 +44,38 @@ need(){ command -v "$1" >/dev/null 2>&1 || fail "MISSING_${1^^}"; }
 [[ $EUID -eq 0 ]] || fail ROOT_REQUIRED
 [[ -f "$UPDATER_ENV" ]] || fail UPDATER_CONFIG_MISSING
 
-sed -i '1s/^\xEF\xBB\xBF//' "$UPDATER_ENV" 2>/dev/null || true
-sed -i 's/\r$//' "$UPDATER_ENV" 2>/dev/null || true
-# shellcheck disable=SC1090
-source "$UPDATER_ENV"
+# R1.40: NO ejecutar updater.env como shell. Solo leer claves conocidas.
+# Esto evita que una linea mal formada en el archivo de configuracion produzca
+# un error de parseo antes de que el agente pueda emitir BKP_STAGE/BKP_CODE.
+cfg_value(){
+  local key="$1" line value
+  line="$(grep -m1 -E "^${key}=" "$UPDATER_ENV" 2>/dev/null || true)"
+  [[ -n "$line" ]] || return 0
+  value="${line#*=}"
+  value="${value%$'\r'}"
+  if [[ ${#value} -ge 2 && "${value:0:1}" == '"' && "${value: -1}" == '"' ]]; then
+    value="${value:1:${#value}-2}"
+  elif [[ ${#value} -ge 2 && "${value:0:1}" == "'" && "${value: -1}" == "'" ]]; then
+    value="${value:1:${#value}-2}"
+  fi
+  printf '%s' "$value"
+}
 
-GITHUB_OWNER="${GITHUB_OWNER:-}"
-GITHUB_REPO="${GITHUB_REPO:-}"
-GITHUB_TOKEN="${GITHUB_TOKEN:-}"
+BKP_STAGE="CONFIG_LOAD"
+GITHUB_OWNER="$(cfg_value GITHUB_OWNER)"
+GITHUB_REPO="$(cfg_value GITHUB_REPO)"
+GITHUB_TOKEN="$(cfg_value GITHUB_TOKEN)"
+APP_DIR="$(cfg_value APP_DIR)"
+CLIENT_NAME="$(cfg_value CLIENT_NAME)"
+CLIENT_SLUG="$(cfg_value CLIENT_SLUG)"
+DB_NAME="$(cfg_value DB_NAME)"
+[[ -n "$DB_NAME" ]] || DB_NAME="$(cfg_value DB_DATABASE)"
+[[ -n "$DB_NAME" ]] || DB_NAME="$(cfg_value PGDATABASE)"
+DB_USER="$(cfg_value DB_USER)"
+[[ -n "$DB_USER" ]] || DB_USER="$(cfg_value DB_USERNAME)"
+[[ -n "$DB_USER" ]] || DB_USER="$(cfg_value PGUSER)"
+DB_SCHEMA="$(cfg_value DB_SCHEMA)"
 APP_DIR="${APP_DIR:-/opt/shiny/app}"
-CLIENT_NAME="${CLIENT_NAME:-}"
-CLIENT_SLUG="${CLIENT_SLUG:-}"
-DB_NAME="${DB_NAME:-${DB_DATABASE:-${PGDATABASE:-}}}"
-DB_USER="${DB_USER:-${DB_USERNAME:-${PGUSER:-}}}"
-DB_SCHEMA="${DB_SCHEMA:-}"
 
 env_value(){
   local file="$1"; shift
@@ -84,6 +102,7 @@ BACKEND_ENV="$APP_DIR/backend/.env"
 [[ -n "$DB_SCHEMA" ]] || DB_SCHEMA="$(env_value "$BACKEND_ENV" DB_SCHEMA)"
 DB_SCHEMA="${DB_SCHEMA:-shiny}"
 
+BKP_STAGE="CONFIG_VALIDATE"
 [[ -n "$GITHUB_OWNER" ]] || fail GITHUB_OWNER_NOT_CONFIGURED
 [[ -n "$GITHUB_REPO" ]] || fail GITHUB_REPO_NOT_CONFIGURED
 [[ -n "$GITHUB_TOKEN" ]] || fail GITHUB_TOKEN_NOT_CONFIGURED

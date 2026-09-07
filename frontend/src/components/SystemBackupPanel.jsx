@@ -1,4 +1,4 @@
-/* SHINY_BACKUP_UI_CLEAN_R1 */
+/* SHINY_BACKUP_UI_R140 */
 import React,{useEffect,useState} from 'react';
 import {api} from '../services/api.js';
 import '../system_backup_r130.css';
@@ -50,7 +50,7 @@ export default function SystemBackupPanel(){
     }
   }
 
-  return <section className="content-card bk130" data-backup-engine="clean-r1" data-backup-version="1.0.39">
+  return <section className="content-card bk130" data-backup-version="1.0.40" data-backup-runtime="r140">
     <div className="section-head">
       <div>
         <div className="eyebrow">{TXT.eyebrow}</div>
@@ -58,18 +58,15 @@ export default function SystemBackupPanel(){
         <p className="section-copy">{TXT.subtitle}</p>
       </div>
     </div>
-
     <div className="bk130-grid">
       <article><span>{TXT.status}</span><strong>{st?.configured===false?TXT.unavailable:TXT.ready}</strong></article>
       <article><span>{TXT.db}</span><strong>{st?.db||'Detectando...'}</strong></article>
       <article><span>{TXT.version}</span><strong>{st?.version||'-'}</strong></article>
       <article><span>{TXT.latest}</span><strong>{st?.latestBackup||TXT.none}</strong></article>
     </div>
-
     <div className="bk130-actions">
       <button disabled={busy||st?.configured===false} onClick={backup}>{busy?'Respaldando...':'Respaldar'}</button>
     </div>
-
     {msg?<div className="bk130-msg">{msg}</div>:null}
   </section>;
 }
