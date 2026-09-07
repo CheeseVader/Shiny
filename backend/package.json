@@ -34,5 +34,7 @@
   "shinyRuntimeR138Version": "1.0.38",
   "shinyBackupEngineRuntimeVersion": "1.0.41",
   "shinyBackupRuntimeRepairVersion": "1.0.41",
-  "shinyBackupExitCleanupVersion": "1.0.41"
+  "shinyBackupExitCleanupVersion": "1.0.41",
+  "shinyBackupWeeklyScheduleVersion": "1.0.42",
+  "shinyBackupWeeklySchedule": "Sun 03:00 local"
 }

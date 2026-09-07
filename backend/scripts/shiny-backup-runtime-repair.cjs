@@ -1,4 +1,7 @@
 #!/usr/bin/env node
+/* SHINY_BACKUP_WEEKLY_TIMER_R142
+ * Programa respaldo DBA semanal mediante systemd.
+ */
 /* SHINY_BACKUP_RUNTIME_REPAIR_R140
  * Se ejecuta como postinstall en Linux/RPi.
  * Instala y CERTIFICA el agente privilegiado que usa la API de Shiny.
@@ -98,6 +101,71 @@ try{ status=JSON.parse(String(self.stdout||'').trim()); }
 catch{ die('RUNTIME_SELFTEST_JSON_INVALID'); }
 
 if(status?.configured!==true) die('RUNTIME_SELFTEST_NOT_CONFIGURED');
+
+/* SHINY_BACKUP_WEEKLY_SYSTEMD_R142 */
+const weeklyService='/etc/systemd/system/shiny-backup-weekly.service';
+const weeklyTimer='/etc/systemd/system/shiny-backup-weekly.timer';
+
+const weeklyServiceText=`[Unit]
+Description=Shiny - respaldo semanal de continuidad
+After=network-online.target postgresql.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=${dst} backup
+User=root
+Group=root
+Nice=10
+`;
+
+const weeklyTimerText=`[Unit]
+Description=Shiny - respaldo automatico semanal
+
+[Timer]
+OnCalendar=Sun *-*-* 03:00:00
+Persistent=true
+RandomizedDelaySec=15min
+AccuracySec=1min
+Unit=shiny-backup-weekly.service
+
+[Install]
+WantedBy=timers.target
+`;
+
+fs.writeFileSync(weeklyService,weeklyServiceText,{encoding:'utf8',mode:0o644});
+fs.writeFileSync(weeklyTimer,weeklyTimerText,{encoding:'utf8',mode:0o644});
+fs.chmodSync(weeklyService,0o644);
+fs.chmodSync(weeklyTimer,0o644);
+
+const daemonReload=run('/bin/systemctl',['daemon-reload']);
+if((daemonReload.status??1)!==0){
+  die(`WEEKLY_SYSTEMD_DAEMON_RELOAD_FAILED ${(daemonReload.stderr||daemonReload.stdout||'').trim()}`);
+}
+
+const enableTimer=run('/bin/systemctl',['enable','--now','shiny-backup-weekly.timer']);
+if((enableTimer.status??1)!==0){
+  die(`WEEKLY_TIMER_ENABLE_FAILED ${(enableTimer.stderr||enableTimer.stdout||'').trim()}`);
+}
+
+const enabled=run('/bin/systemctl',['is-enabled','shiny-backup-weekly.timer']);
+if((enabled.status??1)!==0 || String(enabled.stdout||'').trim()!=='enabled'){
+  die(`WEEKLY_TIMER_NOT_ENABLED ${(enabled.stderr||enabled.stdout||'').trim()}`);
+}
+
+const timerState=run('/bin/systemctl',['show','shiny-backup-weekly.timer','-p','Persistent','-p','TimersCalendar','--no-pager']);
+if((timerState.status??1)!==0){
+  die(`WEEKLY_TIMER_SELFTEST_FAILED ${(timerState.stderr||timerState.stdout||'').trim()}`);
+}
+const timerText=String(timerState.stdout||'');
+if(!timerText.includes('Persistent=yes')){
+  die('WEEKLY_TIMER_PERSISTENT_NOT_ACTIVE');
+}
+if(!timerText.includes('Sun') || !timerText.includes('03:00:00')){
+  die('WEEKLY_TIMER_CALENDAR_MISMATCH');
+}
+
+out('Respaldo semanal habilitado: domingo 03:00 hora local.');
 
 out(`Agente certificado para usuario ${appUser}.`);
 out(`SHA256 ${sha256(dst)}`);
