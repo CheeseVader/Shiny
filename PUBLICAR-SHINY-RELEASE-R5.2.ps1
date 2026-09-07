@@ -58,8 +58,8 @@ $DeltaExcludePrefixes = @(
     'BACKUP-PWA-20260902-125029',
     'SHINY-RPI-MANAGED-R1',
     '.git'
+    'PUBLICAR-SHINY-RELEASE-R5.2.ps1'
 )
-
 function Test-PathUnder([string]$RelativePath, [string[]]$Prefixes) {
     $p = Normalize-RelPath $RelativePath
     foreach ($root in $Prefixes) {
@@ -304,11 +304,26 @@ try {
     $SkippedProtected = @($SkippedProtected | Sort-Object -Unique)
 
     if (($ChangedFiles.Count + $DeleteFiles.Count) -eq 0) {
-        if ($SkippedProtected.Count -gt 0) {
-            Write-Warn 'Solo cambiaron archivos locales protegidos; no se publicara una actualizacion.'
-            foreach ($p in $SkippedProtected) { Write-Host "  = PRESERVADO: $p" -ForegroundColor Yellow }
+        # R5.2.3: permitir una Release de paquete completo cuando el cambio real
+        # esta dentro de SHINY-RPI-MANAGED-R1, que deliberadamente NO viaja
+        # por el updater incremental.
+        $ManagedFullOnlyTouched = @(
+            $diffLines | Where-Object {
+                $_ -match '(^|[\t])SHINY-RPI-MANAGED-R1/'
+            }
+        ).Count -gt 0
+
+        if ($ManagedFullOnlyTouched) {
+            Write-Warn 'Release FULL-ONLY: hay cambios RPi administrados, pero el delta incremental queda vacio por proteccion.'
+            Write-Warn 'Se generara y publicara el TAR completo; manifest.files[] y manifest.delete[] quedaran vacios.'
         }
-        Fail "No hay cambios desplegables entre $BaseVersion y $Version."
+        else {
+            if ($SkippedProtected.Count -gt 0) {
+                Write-Warn 'Solo cambiaron archivos locales protegidos; no se publicara una actualizacion.'
+                foreach ($p in $SkippedProtected) { Write-Host "  = PRESERVADO: $p" -ForegroundColor Yellow }
+            }
+            Fail "No hay cambios desplegables entre $BaseVersion y $Version."
+        }
     }
 
     if ($SkippedProtected.Count -gt 0) {
