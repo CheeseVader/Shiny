@@ -27,5 +27,6 @@
   "shinyBackupProvisionVersion": "1.0.31",
   "shinyBackupOneClickVersion": "1.0.32",
   "shinyRuntimeR133Version": "1.0.33",
-  "shinyRuntimeR134Version": "1.0.34"
+  "shinyRuntimeR134Version": "1.0.34",
+  "shinyRuntimeR135Version": "1.0.35"
 }

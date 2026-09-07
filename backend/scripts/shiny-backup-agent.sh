@@ -102,7 +102,11 @@ VERSION="$(tr -d '\r\n ' < "$APP_DIR/VERSION")"
 [[ "$GITHUB_REPO" == *-Release ]] || fail "Repo inesperado: $GITHUB_REPO. Debe ser <Cliente>-Release."
 
 mkdir -p "$BACKUPS" "$TMP"
-chmod 700 "$ROOT" "$BACKUPS" "$TMP"
+# El dump corre como postgres. ROOT/TMP permiten solo traversal al grupo postgres.
+chown root:postgres "$ROOT" "$TMP" 2>/dev/null || true
+chmod 0710 "$ROOT" "$TMP"
+chown root:root "$BACKUPS" 2>/dev/null || true
+chmod 0700 "$BACKUPS"
 
 API="https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}"
 api(){
@@ -117,11 +121,10 @@ status(){
   local last=''
   if [[ -f "$LAST_JSON" ]]; then last="$(jq -r '.tag // empty' "$LAST_JSON" 2>/dev/null || true)"; fi
   jq -cn \
-    --arg repo "$GITHUB_OWNER/$GITHUB_REPO" \
     --arg db "$DB_NAME" \
     --arg version "$VERSION" \
     --arg latest "$last" \
-    '{configured:true,platform:"linux",repo:$repo,db:$db,version:$version,latestBackup:$latest}'
+    '{configured:true,platform:"linux",db:$db,version:$version,latestBackup:$latest}'
 }
 
 upload_asset(){
@@ -249,7 +252,7 @@ backup(){
   chmod 600 "$LAST_JSON"
 
   echo "[OK] BACKUP=$tag"
-  echo "[OK] REPO=$GITHUB_OWNER/$GITHUB_REPO"
+
   echo "[OK] DATABASE=$DB_NAME"
 }
 

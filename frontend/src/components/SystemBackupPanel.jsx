@@ -1,4 +1,4 @@
-/* SHINY_BACKUP_ONE_CLICK_UI_R134_ASCII_SAFE */
+/* SHINY_BACKUP_ONE_CLICK_UI_R135_PRIVATE */
 import React,{useEffect,useState} from 'react';
 import {api} from '../services/api.js';
 import '../system_backup_r130.css';
@@ -7,11 +7,15 @@ const ch=(n)=>String.fromCharCode(n);
 const TXT={
   eyebrow:`SUPERADMIN ${ch(183)} CONTINUIDAD`,
   title:`Respaldo y migraci${ch(243)}n`,
-  subtitle:`El respaldo usa autom${ch(225)}ticamente la configuraci${ch(243)}n instalada de este cliente.`,
+  subtitle:`Crea un respaldo de recuperaci${ch(243)}n del sistema.`,
+  status:`Estado`,
+  ready:`Listo`,
+  unavailable:`No disponible`,
+  db:`Base de datos`,
   version:`Versi${ch(243)}n`,
   latest:`${ch(218)}ltimo respaldo`,
-  dash:ch(8212),
-  backupOk:`Respaldo creado y subido correctamente.`,
+  none:`A${ch(250)}n no hay respaldo`,
+  backupOk:`Respaldo creado correctamente.`,
   statusFail:`No fue posible consultar el estado del respaldo.`,
   backupFail:`No fue posible crear el respaldo.`
 };
@@ -35,7 +39,7 @@ export default function SystemBackupPanel(){
   async function backup(){
     try{
       setBusy(true);
-      setMsg('Creando y subiendo respaldo...');
+      setMsg('Creando respaldo...');
       const r=await api('/api/v1/system-backup/backup',{method:'POST'});
       setMsg(r.message||TXT.backupOk);
       await status();
@@ -56,14 +60,10 @@ export default function SystemBackupPanel(){
     </div>
 
     <div className="bk130-grid">
-      <article><span>Repositorio</span><strong>{st?.repo||'Detectando...'}</strong></article>
-      <article><span>Base de datos</span><strong>{st?.db||'Detectando...'}</strong></article>
-      <article><span>{TXT.version}</span><strong>{st?.version||TXT.dash}</strong></article>
-      <article><span>{TXT.latest}</span><strong>{st?.latestBackup||TXT.dash}</strong></article>
-    </div>
-
-    <div className="bk130-note">
-      No requiere capturar owner, repositorio, token ni claves. El respaldo se publica como backup-* en el mismo Shiny-Release configurado en el equipo.
+      <article><span>{TXT.status}</span><strong>{st?.configured===false?TXT.unavailable:TXT.ready}</strong></article>
+      <article><span>{TXT.db}</span><strong>{st?.db||'Detectando...'}</strong></article>
+      <article><span>{TXT.version}</span><strong>{st?.version||'-'}</strong></article>
+      <article><span>{TXT.latest}</span><strong>{st?.latestBackup||TXT.none}</strong></article>
     </div>
 
     <div className="bk130-actions">

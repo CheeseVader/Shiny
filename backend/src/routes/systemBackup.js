@@ -1,4 +1,4 @@
-/* SHINY_SYSTEM_BACKUP_ONE_CLICK_R133 */
+/* SHINY_SYSTEM_BACKUP_ONE_CLICK_R135_PRIVATE */
 import { Router } from 'express';
 import { spawn } from 'node:child_process';
 
@@ -21,28 +21,60 @@ function runAgent(action,timeout=30*60*1000){
     child.on('error',e=>{clearTimeout(timer);reject(e)});
     child.on('close',code=>{
       clearTimeout(timer);
-      if(code!==0) return reject(new Error(String(err||out||`BACKUP_AGENT_EXIT_${code}`).trim()));
+      if(code!==0){
+        const e=new Error(String(err||out||`BACKUP_AGENT_EXIT_${code}`).trim());
+        e.exitCode=code;
+        return reject(e);
+      }
       resolve(String(out).trim());
     });
   });
 }
 
+function publicBackupError(raw){
+  const s=String(raw||'');
+  if(/PG_DUMP_FAILED|pg_dump/i.test(s)) return {
+    error:'PG_DUMP_FAILED',
+    message:'No fue posible generar el respaldo de la base de datos.'
+  };
+  if(/GITHUB|HTTP_4|HTTP_5|release|upload/i.test(s)) return {
+    error:'BACKUP_STORAGE_FAILED',
+    message:'No fue posible almacenar el respaldo.'
+  };
+  return {
+    error:'BACKUP_FAILED',
+    message:'No fue posible completar el respaldo.'
+  };
+}
+
 router.get('/status',async(_req,res)=>{
   try{
     const out=await runAgent('status',60000);
+    const data=JSON.parse(out||'{}');
+    delete data.repo;
     res.setHeader('Cache-Control','no-store');
-    res.json({success:true,data:JSON.parse(out||'{}')});
+    res.json({success:true,data});
   }catch(e){
-    res.status(500).json({success:false,error:'BACKUP_STATUS_FAILED',message:String(e.message||e)});
+    console.error('[system-backup/status]',String(e?.message||e));
+    res.status(500).json({
+      success:false,
+      error:'BACKUP_STATUS_FAILED',
+      message:'No fue posible consultar el estado del respaldo.'
+    });
   }
 });
 
 router.post('/backup',async(_req,res)=>{
   try{
-    const detail=await runAgent('backup');
-    res.json({success:true,message:'Respaldo creado y subido correctamente.',detail});
+    await runAgent('backup');
+    res.json({
+      success:true,
+      message:'Respaldo creado correctamente.'
+    });
   }catch(e){
-    res.status(500).json({success:false,error:'BACKUP_FAILED',message:String(e.message||e)});
+    console.error('[system-backup/backup]',String(e?.message||e));
+    const pub=publicBackupError(e?.message||e);
+    res.status(500).json({success:false,...pub});
   }
 });
 
