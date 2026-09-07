@@ -146,8 +146,53 @@ if [[ -z "$SOURCE_CONFIG" ]]; then
   SOURCE_CONFIG="$(find /media /mnt -maxdepth 4 -type f -path '*/SHINY-CONFIG/updater.env' 2>/dev/null | head -n1 || true)"
 fi
 
-[[ -n "$SOURCE_CONFIG" && -f "$SOURCE_CONFIG" ]] || die \
-  "No encontré updater.env. Colócalo junto al instalador o dentro de SHINY-CONFIG."
+# SHINY_RPI_UPDATER_BOOTSTRAP_R48_BEGIN
+# updater.env externo es OPCIONAL. Si no existe, el instalador lo crea
+# interactivamente sin imprimir el token en pantalla ni en el log.
+if [[ -z "$SOURCE_CONFIG" || ! -f "$SOURCE_CONFIG" ]]; then
+  warn "No se encontró updater.env externo."
+  warn "Se creará la configuración del updater durante esta instalación."
+
+  [[ -r /dev/tty ]] || die \
+    "No hay updater.env y tampoco hay terminal interactiva para crear la configuración."
+
+  DEFAULT_GITHUB_OWNER="${GITHUB_OWNER:-CheeseVader}"
+  DEFAULT_GITHUB_REPO="${GITHUB_REPO:-Shiny-Release}"
+  DEFAULT_DEVICE_ID="${DEVICE_ID:-SHINY-$(hostname 2>/dev/null | tr -cd 'A-Za-z0-9_.-' | head -c 32)}"
+  DEFAULT_CHANNEL="${CHANNEL:-stable}"
+  DEFAULT_AUTO_INSTALL="${AUTO_INSTALL:-0}"
+
+  read -r -p "GitHub owner [$DEFAULT_GITHUB_OWNER]: " INPUT_GITHUB_OWNER </dev/tty || true
+  GITHUB_OWNER="${INPUT_GITHUB_OWNER:-$DEFAULT_GITHUB_OWNER}"
+
+  read -r -p "Repositorio de releases [$DEFAULT_GITHUB_REPO]: " INPUT_GITHUB_REPO </dev/tty || true
+  GITHUB_REPO="${INPUT_GITHUB_REPO:-$DEFAULT_GITHUB_REPO}"
+
+  read -r -p "Device ID [$DEFAULT_DEVICE_ID]: " INPUT_DEVICE_ID </dev/tty || true
+  DEVICE_ID="${INPUT_DEVICE_ID:-$DEFAULT_DEVICE_ID}"
+
+  read -r -p "Canal [$DEFAULT_CHANNEL]: " INPUT_CHANNEL </dev/tty || true
+  CHANNEL="${INPUT_CHANNEL:-$DEFAULT_CHANNEL}"
+
+  echo
+  read -r -s -p "Token GitHub de SOLO LECTURA (no se mostrará): " GITHUB_TOKEN </dev/tty || true
+  echo
+  [[ -n "$GITHUB_TOKEN" ]] || die "El token GitHub no puede quedar vacío."
+
+  BOOTSTRAP_CONFIG="$(mktemp /var/tmp/shiny-updater-bootstrap.XXXXXX)"
+  chmod 0600 "$BOOTSTRAP_CONFIG"
+  cat > "$BOOTSTRAP_CONFIG" <<EOF
+GITHUB_OWNER=$GITHUB_OWNER
+GITHUB_REPO=$GITHUB_REPO
+GITHUB_TOKEN=$GITHUB_TOKEN
+DEVICE_ID=$DEVICE_ID
+CHANNEL=$CHANNEL
+AUTO_INSTALL=$DEFAULT_AUTO_INSTALL
+EOF
+  SOURCE_CONFIG="$BOOTSTRAP_CONFIG"
+  ok "Configuración temporal del updater creada de forma segura."
+fi
+# SHINY_RPI_UPDATER_BOOTSTRAP_R48_END
 
 install -d -m 0700 "$CONFIG_DIR"
 
@@ -1111,7 +1156,8 @@ if [[ -f "$RPI_AUTO_PROVISION" ]]; then
 else
   warn "No existe $RPI_AUTO_PROVISION"
 fi
-# SHINY_RPI_AUTO_R1_ENDok "Updater instalado. AUTO_INSTALL=${AUTO_INSTALL}"
+# SHINY_RPI_AUTO_R1_END
+ok "Updater instalado. AUTO_INSTALL=${AUTO_INSTALL}"
 
 # ------------------------------------------------------------
 # 16. Cloudflared opcional
