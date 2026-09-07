@@ -1,4 +1,4 @@
-﻿param(
+param(
     [Parameter(Mandatory = $true)]
     [ValidatePattern('^\d+\.\d+\.\d+$')]
     [string]$Version,
@@ -18,7 +18,15 @@ function Write-Warn([string]$Text) { Write-Host "[AVISO] $Text" -ForegroundColor
 function Fail([string]$Text)       { throw $Text }
 
 function Normalize-RelPath([string]$Path) {
-    return ($Path -replace '\\','/').TrimStart('./')
+    # R5.2.1: quitar SOLO el prefijo literal "./".
+    # TrimStart('./') es incorrecto en .NET: interpreta '.' y '/' como
+    # caracteres individuales y convierte ".env" -> "env",
+    # ".gitignore" -> "gitignore", etc.
+    $p = ($Path -replace '\\','/')
+    while ($p.StartsWith('./', [System.StringComparison]::Ordinal)) {
+        $p = $p.Substring(2)
+    }
+    return $p
 }
 
 # Rutas que pueden existir en el paquete completo para una instalación NUEVA,
