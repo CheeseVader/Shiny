@@ -29,6 +29,56 @@ try {
   fs.chmodSync(script, 0o755);
 } catch {}
 
+/* SHINY_BACKUP_BOOTSTRAP_R131
+ * Instala el agente privilegiado de backup durante npm postinstall.
+ * El Updater R4 ejecuta npm backend como root cuando backend/package.json cambia.
+ */
+function provisionBackupAgentR131() {
+  const appDir = process.env.APP_DIR || '/opt/shiny/app';
+  const appUser = process.env.APP_USER || 'shiny';
+  const src = path.join(appDir, 'backend', 'scripts', 'shiny-backup-agent.sh');
+  const crypto = path.join(appDir, 'backend', 'scripts', 'shiny-backup-crypto.cjs');
+  const dstDir = '/usr/local/lib/shiny-backup';
+  const dst = path.join(dstDir, 'shiny-backup-agent.sh');
+  const sudoers = '/etc/sudoers.d/shiny-backup';
+
+  if (!fs.existsSync(src)) throw new Error(`Falta ${src}`);
+  if (!fs.existsSync(crypto)) throw new Error(`Falta ${crypto}`);
+
+  fs.mkdirSync(dstDir, { recursive: true, mode: 0o755 });
+  fs.mkdirSync('/etc/shiny-backup', { recursive: true, mode: 0o700 });
+  fs.mkdirSync('/var/lib/shiny-backup', { recursive: true, mode: 0o700 });
+  fs.mkdirSync('/var/lib/shiny-backup/backups', { recursive: true, mode: 0o700 });
+  fs.mkdirSync('/var/lib/shiny-backup/tmp', { recursive: true, mode: 0o700 });
+
+  fs.copyFileSync(src, dst);
+  fs.chmodSync(dst, 0o755);
+
+  fs.writeFileSync(
+    sudoers,
+    `${appUser} ALL=(root) NOPASSWD: ${dst}\n`,
+    { encoding: 'utf8', mode: 0o440 }
+  );
+  fs.chmodSync(sudoers, 0o440);
+
+  const check = spawnSync('/usr/sbin/visudo', ['-cf', sudoers], {
+    stdio: 'pipe',
+    encoding: 'utf8'
+  });
+  if ((check.status ?? 1) !== 0) {
+    try { fs.unlinkSync(sudoers); } catch {}
+    throw new Error(`sudoers invalido: ${(check.stderr || check.stdout || '').trim()}`);
+  }
+
+  out(`Backup R1.31 provisionado: ${dst}`);
+}
+
+try {
+  provisionBackupAgentR131();
+} catch (error) {
+  out(`ERROR provisionando backup R1.31: ${error.message}`);
+  process.exit(31);
+}
 const result = spawnSync('/bin/bash', [script], {
   stdio: 'inherit',
   env: {
