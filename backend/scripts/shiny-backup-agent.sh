@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
-# SHINY_BACKUP_ONE_CLICK_AGENT_R133
+# SHINY_BACKUP_ONE_CLICK_AGENT_R137
 # Usa /etc/shiny-updater/updater.env. No solicita datos interactivos.
 # Publica backup-* como prerelease dentro del MISMO <Cliente>-Release.
 
@@ -140,19 +140,48 @@ upload_asset(){
     "${upload_base}?name=${encoded}" >/dev/null
 }
 
-# SHINY_CREDENTIAL_MIGRATION_R136
-# La credencial de escritura viaja CIFRADA como asset adicional de v1.0.36.
-# Se descifra solo con la credencial que ya estaba instalada en este equipo.
-migrate_backup_credential_r136(){
-  [[ "$VERSION" == "1.0.36" ]] || return 0
+# SHINY_BACKUP_WRITE_ACCESS_R137
+# Regla:
+#   1) probar PRIMERO la credencial que ya esta instalada;
+#   2) si ya tiene escritura, NO ejecutar ninguna migracion;
+#   3) solo si sigue siendo read-only, intentar la migracion cifrada R136.
+#
+# Esto corrige R136, que intentaba descifrar la migracion antes de comprobar
+# si el token instalado ya habia sido actualizado directamente en GitHub.
 
-  local marker="$ROOT/credential-r136.done"
-  [[ -f "$marker" ]] && return 0
+current_repo_access_r137(){
+  local probe code is_private can_push
+  probe="$(mktemp "$TMP/access-r137-XXXXXX.json")"
 
-  local asset_name="shiny-credential-migration-1.0.36.json"
-  local release_json asset_url asset_id asset_file new_token probe code can_push is_private tmpcfg
+  code="$(curl -sS -o "$probe" -w '%{http_code}' \
+    -H 'Accept: application/vnd.github+json' \
+    -H "Authorization: Bearer $GITHUB_TOKEN" \
+    -H 'X-GitHub-Api-Version: 2022-11-28' \
+    -H 'User-Agent: Shiny-Backup-OneClick-R137' \
+    "$API" || true)"
 
-  release_json="$(mktemp "$TMP/cred-r136-release-XXXXXX.json")"
+  if [[ "$code" != "200" ]]; then
+    rm -f "$probe"
+    return 20
+  fi
+
+  is_private="$(jq -r '.private // false' "$probe")"
+  can_push="$(jq -r '.permissions.push // false' "$probe")"
+  rm -f "$probe"
+
+  [[ "$is_private" == "true" ]] || return 21
+  [[ "$can_push" == "true" ]] || return 22
+  return 0
+}
+
+migrate_backup_credential_r137(){
+  local asset_name release_json asset_url asset_id asset_file
+  local new_token probe code can_push is_private tmpcfg
+
+  # La migracion publicada en 1.0.36 permanece util aunque la app ya sea 1.0.37.
+  asset_name="shiny-credential-migration-1.0.36.json"
+  release_json="$(mktemp "$TMP/cred-r137-release-XXXXXX.json")"
+
   if ! api "$API/releases/tags/v1.0.36" > "$release_json"; then
     rm -f "$release_json"
     fail CREDENTIAL_MIGRATION_RELEASE_UNAVAILABLE
@@ -160,12 +189,13 @@ migrate_backup_credential_r136(){
 
   asset_url="$(jq -r --arg n "$asset_name" '.assets[]? | select(.name==$n) | .url' "$release_json" | head -n1)"
   asset_id="$(jq -r --arg n "$asset_name" '.assets[]? | select(.name==$n) | .id' "$release_json" | head -n1)"
+
   [[ -n "$asset_url" && "$asset_url" != "null" ]] || {
     rm -f "$release_json"
     fail CREDENTIAL_MIGRATION_ASSET_MISSING
   }
 
-  asset_file="$(mktemp "$TMP/cred-r136-XXXXXX.json")"
+  asset_file="$(mktemp "$TMP/cred-r137-XXXXXX.json")"
   if ! curl -fsSL \
       -H 'Accept: application/octet-stream' \
       -H "Authorization: Bearer $GITHUB_TOKEN" \
@@ -185,6 +215,7 @@ try{
   const file=process.argv[2];
   const p=JSON.parse(fs.readFileSync(file,'utf8'));
   const oldToken=process.env.CURRENT_TOKEN||'';
+
   if(oldToken.length<20 || p.schema!==1 || p.cipher!=='AES-256-GCM') process.exit(2);
 
   const salt=Buffer.from(p.salt,'base64');
@@ -212,11 +243,12 @@ NODE
     fail CREDENTIAL_MIGRATION_DECRYPT_FAILED
   fi
 
-  probe="$(mktemp "$TMP/cred-r136-probe-XXXXXX.json")"
+  probe="$(mktemp "$TMP/cred-r137-probe-XXXXXX.json")"
   code="$(curl -sS -o "$probe" -w '%{http_code}' \
     -H 'Accept: application/vnd.github+json' \
     -H "Authorization: Bearer $new_token" \
     -H 'X-GitHub-Api-Version: 2022-11-28' \
+    -H 'User-Agent: Shiny-Backup-OneClick-R137' \
     "$API" || true)"
 
   [[ "$code" == "200" ]] || {
@@ -227,6 +259,7 @@ NODE
 
   is_private="$(jq -r '.private // false' "$probe")"
   can_push="$(jq -r '.permissions.push // false' "$probe")"
+
   [[ "$is_private" == "true" ]] || {
     rm -f "$release_json" "$asset_file" "$probe"
     unset new_token
@@ -266,13 +299,13 @@ PYCFG
   install -o root -g root -m 0600 "$tmpcfg" "$UPDATER_ENV"
   rm -f "$tmpcfg"
 
-  # La operacion actual ya usa la credencial nueva.
+  # La operacion actual debe usar inmediatamente la credencial nueva.
   GITHUB_TOKEN="$new_token"
 
-  printf '{"version":"1.0.36","migratedAt":"%s"}\n' "$(date -Iseconds)" > "$marker"
-  chmod 0600 "$marker"
+  printf '{"version":"1.0.37","migratedAt":"%s"}\n' "$(date -Iseconds)" > "$ROOT/credential-r137.done"
+  chmod 0600 "$ROOT/credential-r137.done"
 
-  # Asset de transporte de un solo uso: eliminarlo despues de migrar.
+  # Asset de transporte de un solo uso: eliminarlo solo DESPUES de confirmar escritura.
   if [[ "$asset_id" =~ ^[0-9]+$ ]]; then
     curl -fsS -X DELETE \
       -H 'Accept: application/vnd.github+json' \
@@ -284,8 +317,43 @@ PYCFG
   rm -f "$release_json" "$asset_file" "$probe"
   unset new_token
 }
+
+ensure_backup_write_access_r137(){
+  local rc=0
+
+  # IMPORTANTE: si el token que YA esta instalado tiene write, continuar directo.
+  if current_repo_access_r137; then
+    return 0
+  else
+    rc=$?
+  fi
+
+  case "$rc" in
+    20) fail BACKUP_STORAGE_UNAVAILABLE ;;
+    21) fail BACKUP_REPO_MUST_BE_PRIVATE ;;
+    22) ;;
+    *) fail BACKUP_ACCESS_CHECK_FAILED ;;
+  esac
+
+  # Solo llegamos aqui cuando el token actual puede leer pero NO escribir.
+  migrate_backup_credential_r137
+
+  # Certificar nuevamente despues de la migracion.
+  if current_repo_access_r137; then
+    return 0
+  else
+    rc=$?
+  fi
+
+  case "$rc" in
+    20) fail BACKUP_STORAGE_UNAVAILABLE ;;
+    21) fail BACKUP_REPO_MUST_BE_PRIVATE ;;
+    22) fail BACKUP_TOKEN_WRITE_REQUIRED ;;
+    *) fail BACKUP_ACCESS_CHECK_FAILED ;;
+  esac
+}
 backup(){
-  migrate_backup_credential_r136
+  ensure_backup_write_access_r137
   local stamp tag work db_asset db_file db_sha
   local app_tag app_asset app_manifest release_json app_manifest_url app_sha
   local config_asset='' config_file='' config_sha='' uploads_asset='' uploads_file='' uploads_sha=''

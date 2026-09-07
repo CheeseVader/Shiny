@@ -1,4 +1,4 @@
-/* SHINY_SYSTEM_BACKUP_ONE_CLICK_R136_PRIVATE */
+/* SHINY_SYSTEM_BACKUP_ONE_CLICK_R137_PRIVATE */
 import { Router } from 'express';
 import { spawn } from 'node:child_process';
 
@@ -33,16 +33,76 @@ function runAgent(action,timeout=30*60*1000){
 
 function publicBackupError(raw){
   const s=String(raw||'');
+
   if(/PG_DUMP_FAILED|pg_dump/i.test(s)) return {
     error:'PG_DUMP_FAILED',
+    diagnosticCode:'BKP-DB',
     message:'No fue posible generar el respaldo de la base de datos.'
   };
-  if(/GITHUB|HTTP_4|HTTP_5|release|upload|TOKEN|CREDENTIAL|STORAGE/i.test(s)) return {
+
+  if(/BACKUP_REPO_MUST_BE_PRIVATE/i.test(s)) return {
     error:'BACKUP_STORAGE_FAILED',
+    diagnosticCode:'BKP-PRIVATE',
     message:'No fue posible almacenar el respaldo.'
   };
+
+  if(/CREDENTIAL_MIGRATION_DECRYPT_FAILED/i.test(s)) return {
+    error:'BACKUP_STORAGE_FAILED',
+    diagnosticCode:'BKP-CRED-KEY',
+    message:'No fue posible almacenar el respaldo.'
+  };
+
+  if(/CREDENTIAL_MIGRATION_(ASSET_MISSING|DOWNLOAD_FAILED|RELEASE_UNAVAILABLE)/i.test(s)) return {
+    error:'BACKUP_STORAGE_FAILED',
+    diagnosticCode:'BKP-CRED-ASSET',
+    message:'No fue posible almacenar el respaldo.'
+  };
+
+  if(/BACKUP_TOKEN_(WRITE_REQUIRED|VALIDATION_FAILED)|BACKUP_ACCESS_CHECK_FAILED/i.test(s)) return {
+    error:'BACKUP_STORAGE_FAILED',
+    diagnosticCode:'BKP-CRED-WRITE',
+    message:'No fue posible almacenar el respaldo.'
+  };
+
+  if(/BACKUP_RELEASE_CREATE_FAILED/i.test(s)) return {
+    error:'BACKUP_STORAGE_FAILED',
+    diagnosticCode:'BKP-RELEASE',
+    message:'No fue posible almacenar el respaldo.'
+  };
+
+  if(/BACKUP_UPLOAD_DATABASE_FAILED/i.test(s)) return {
+    error:'BACKUP_STORAGE_FAILED',
+    diagnosticCode:'BKP-UPLOAD-DB',
+    message:'No fue posible almacenar el respaldo.'
+  };
+
+  if(/BACKUP_UPLOAD_CONFIG_FAILED/i.test(s)) return {
+    error:'BACKUP_STORAGE_FAILED',
+    diagnosticCode:'BKP-UPLOAD-CONFIG',
+    message:'No fue posible almacenar el respaldo.'
+  };
+
+  if(/BACKUP_UPLOAD_FILES_FAILED/i.test(s)) return {
+    error:'BACKUP_STORAGE_FAILED',
+    diagnosticCode:'BKP-UPLOAD-FILES',
+    message:'No fue posible almacenar el respaldo.'
+  };
+
+  if(/BACKUP_UPLOAD_MANIFEST_FAILED/i.test(s)) return {
+    error:'BACKUP_STORAGE_FAILED',
+    diagnosticCode:'BKP-UPLOAD-MANIFEST',
+    message:'No fue posible almacenar el respaldo.'
+  };
+
+  if(/GITHUB|HTTP_4|HTTP_5|release|upload|TOKEN|CREDENTIAL|STORAGE/i.test(s)) return {
+    error:'BACKUP_STORAGE_FAILED',
+    diagnosticCode:'BKP-STORAGE',
+    message:'No fue posible almacenar el respaldo.'
+  };
+
   return {
     error:'BACKUP_FAILED',
+    diagnosticCode:'BKP-GENERAL',
     message:'No fue posible completar el respaldo.'
   };
 }
@@ -59,6 +119,7 @@ router.get('/status',async(_req,res)=>{
     res.status(500).json({
       success:false,
       error:'BACKUP_STATUS_FAILED',
+      diagnosticCode:'BKP-STATUS',
       message:'No fue posible consultar el estado del respaldo.'
     });
   }
