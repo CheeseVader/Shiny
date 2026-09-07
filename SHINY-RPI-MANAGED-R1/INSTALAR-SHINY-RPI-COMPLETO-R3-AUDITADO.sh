@@ -1140,7 +1140,55 @@ else
 fi
 # SHINY_LAN_MDNS_R1_END
 # ------------------------------------------------------------
-# 17. Validaciones
+# SHINY_RPI_RESTORE_R2_R31_BEGIN
+# Restauracion de desastre usando el formato one-click actual.
+#
+# IMPORTANTE:
+# - NO usa shiny-backup-agent.sh para restaurar.
+# - NO pide clave privada de cifrado.
+# - Copiamos el restaurador fuera de APP_DIR porque el propio proceso de
+#   restauracion reemplaza APP_DIR por la release exacta indicada en el manifest.
+RESTORE_SOURCE="$APP_DIR/SHINY-RPI-MANAGED-R1/RESTAURAR-CLIENTE-LINUX-DESDE-GITHUB-R2.sh"
+RESTORE_HOME="/usr/local/lib/shiny-restore"
+RESTORE_BIN="$RESTORE_HOME/shiny-restore-client-r2.sh"
+
+if [[ -f "$RESTORE_SOURCE" ]]; then
+  install -d -m 0755 "$RESTORE_HOME"
+  install -m 0755 "$RESTORE_SOURCE" "$RESTORE_BIN"
+  ok "Restaurador R2 instalado en $RESTORE_BIN"
+
+  RESTORE_BACKUP_NOW="${RESTORE_BACKUP_NOW:-}"
+  if [[ -z "$RESTORE_BACKUP_NOW" ]]; then
+    if [[ -r /dev/tty ]]; then
+      read -r -p "Restaurar el ultimo respaldo de este cliente desde GitHub ahora? [s/N]: " RESTORE_BACKUP_NOW </dev/tty || true
+    else
+      RESTORE_BACKUP_NOW="n"
+    fi
+  fi
+
+  case "${RESTORE_BACKUP_NOW,,}" in
+    s|si|sí|y|yes|1|true)
+      say "Preparando restauracion del respaldo"
+      UPDATER_ENV="$CONFIG_DIR/updater.env" \
+      APP_ROOT="$APP_ROOT" \
+      APP_DIR="$APP_DIR" \
+      BACKUPS_DIR="$APP_ROOT/disaster-backups" \
+      SERVICE_NAME="$SERVICE_NAME" \
+      APP_USER="$APP_USER" \
+      APP_GROUP="$APP_GROUP" \
+      bash "$RESTORE_BIN"
+      ok "Restauracion R2 completada."
+      ;;
+    *)
+      ok "Restauracion omitida; se conserva la instalacion nueva."
+      ;;
+  esac
+else
+  warn "No existe $RESTORE_SOURCE; se omite restauracion R2."
+fi
+# SHINY_RPI_RESTORE_R2_R31_END
+
+# ------------------------------------------------------------# 17. Validaciones
 # ------------------------------------------------------------
 say "Validando instalación"
 
@@ -1190,7 +1238,11 @@ echo
 echo "============================================================"
 echo " SHINY RPI INSTALADO"
 echo "============================================================"
-echo "Version      : $VERSION"
+FINAL_VERSION="$VERSION"
+if [[ -f "$APP_DIR/VERSION" ]]; then
+  FINAL_VERSION="$(tr -d '\r\n ' < "$APP_DIR/VERSION")"
+fi
+echo "Version      : $FINAL_VERSION"
 echo "Device ID    : $DEVICE_ID"
 echo "Aplicacion   : $APP_DIR"
 echo "Backend      : 127.0.0.1:$APP_PORT"
