@@ -51,7 +51,11 @@ function provisionBackupAgentR131() {
   fs.mkdirSync('/var/lib/shiny-backup/backups', { recursive: true, mode: 0o700 });
   fs.mkdirSync('/var/lib/shiny-backup/tmp', { recursive: true, mode: 0o700 });
 
-  fs.copyFileSync(src, dst);
+  /* SHINY_BACKUP_LF_NORMALIZE_R134 */
+  const normalizedAgentR134 = fs.readFileSync(src, 'utf8')
+    .replace(/^\uFEFF/, '')
+    .replace(/\r\n?/g, '\n');
+  fs.writeFileSync(dst, normalizedAgentR134, { encoding: 'utf8', mode: 0o755 });
   fs.chmodSync(dst, 0o755);
 
   fs.writeFileSync(
