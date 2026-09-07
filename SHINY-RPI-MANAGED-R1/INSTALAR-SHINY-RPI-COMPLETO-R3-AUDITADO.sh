@@ -832,7 +832,8 @@ server {
 }
 EOF
 
-rm -f /etc/nginx/sites-enabled/default
+# SHINY_NGINX_PURGE_ALL_R150
+find /etc/nginx/sites-enabled -mindepth 1 -maxdepth 1 -exec rm -rf -- {} +
 ln -sfn "$NGINX_SITE" /etc/nginx/sites-enabled/shiny
 nginx -t
 systemctl enable --now nginx

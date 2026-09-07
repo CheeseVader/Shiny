@@ -67,7 +67,8 @@ server {
 }
 EOF
 
-rm -f /etc/nginx/sites-enabled/default
+# SHINY_NGINX_PURGE_ALL_R150
+find /etc/nginx/sites-enabled -mindepth 1 -maxdepth 1 -exec rm -rf -- {} +
 ln -sfn /etc/nginx/sites-available/shiny-local /etc/nginx/sites-enabled/shiny-local
 
 nginx -t
