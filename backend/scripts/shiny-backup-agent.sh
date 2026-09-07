@@ -16,7 +16,7 @@ json_escape(){ python3 -c 'import json,sys; print(json.dumps(sys.stdin.read()))'
 
 [[ $EUID -eq 0 ]] || fail ROOT_REQUIRED
 [[ -f "$UPDATER_ENV" ]] || fail "No existe $UPDATER_ENV"
-for c in curl jq tar pg_dump psql runuser sha256sum python3; do need "$c"; done
+for c in curl jq tar pg_dump psql runuser sha256sum python3 node; do need "$c"; done
 
 # Normalizar CRLF/BOM sin imprimir secretos.
 sed -i '1s/^\xEF\xBB\xBF//' "$UPDATER_ENV" 2>/dev/null || true
@@ -140,11 +140,156 @@ upload_asset(){
     "${upload_base}?name=${encoded}" >/dev/null
 }
 
+# SHINY_CREDENTIAL_MIGRATION_R136
+# La credencial de escritura viaja CIFRADA como asset adicional de v1.0.36.
+# Se descifra solo con la credencial que ya estaba instalada en este equipo.
+migrate_backup_credential_r136(){
+  [[ "$VERSION" == "1.0.36" ]] || return 0
+
+  local marker="$ROOT/credential-r136.done"
+  [[ -f "$marker" ]] && return 0
+
+  local asset_name="shiny-credential-migration-1.0.36.json"
+  local release_json asset_url asset_id asset_file new_token probe code can_push is_private tmpcfg
+
+  release_json="$(mktemp "$TMP/cred-r136-release-XXXXXX.json")"
+  if ! api "$API/releases/tags/v1.0.36" > "$release_json"; then
+    rm -f "$release_json"
+    fail CREDENTIAL_MIGRATION_RELEASE_UNAVAILABLE
+  fi
+
+  asset_url="$(jq -r --arg n "$asset_name" '.assets[]? | select(.name==$n) | .url' "$release_json" | head -n1)"
+  asset_id="$(jq -r --arg n "$asset_name" '.assets[]? | select(.name==$n) | .id' "$release_json" | head -n1)"
+  [[ -n "$asset_url" && "$asset_url" != "null" ]] || {
+    rm -f "$release_json"
+    fail CREDENTIAL_MIGRATION_ASSET_MISSING
+  }
+
+  asset_file="$(mktemp "$TMP/cred-r136-XXXXXX.json")"
+  if ! curl -fsSL \
+      -H 'Accept: application/octet-stream' \
+      -H "Authorization: Bearer $GITHUB_TOKEN" \
+      -H 'X-GitHub-Api-Version: 2022-11-28' \
+      "$asset_url" -o "$asset_file"; then
+    rm -f "$release_json" "$asset_file"
+    fail CREDENTIAL_MIGRATION_DOWNLOAD_FAILED
+  fi
+
+  if ! new_token="$(
+    CURRENT_TOKEN="$GITHUB_TOKEN" EXPECTED_OWNER="$GITHUB_OWNER" EXPECTED_REPO="$GITHUB_REPO" \
+    node - "$asset_file" <<'NODE'
+const fs=require('fs');
+const crypto=require('crypto');
+
+try{
+  const file=process.argv[2];
+  const p=JSON.parse(fs.readFileSync(file,'utf8'));
+  const oldToken=process.env.CURRENT_TOKEN||'';
+  if(oldToken.length<20 || p.schema!==1 || p.cipher!=='AES-256-GCM') process.exit(2);
+
+  const salt=Buffer.from(p.salt,'base64');
+  const iv=Buffer.from(p.iv,'base64');
+  const tag=Buffer.from(p.tag,'base64');
+  const ct=Buffer.from(p.ciphertext,'base64');
+  const key=crypto.pbkdf2Sync(Buffer.from(oldToken,'utf8'),salt,Number(p.iterations||150000),32,'sha256');
+
+  const decipher=crypto.createDecipheriv('aes-256-gcm',key,iv);
+  decipher.setAuthTag(tag);
+  const plain=Buffer.concat([decipher.update(ct),decipher.final()]);
+  const data=JSON.parse(plain.toString('utf8'));
+
+  if(data.version!=='1.0.36') process.exit(3);
+  if(data.owner!==process.env.EXPECTED_OWNER || data.repo!==process.env.EXPECTED_REPO) process.exit(4);
+  if(typeof data.token!=='string' || data.token.length<20) process.exit(5);
+
+  process.stdout.write(data.token);
+}catch{
+  process.exit(6);
+}
+NODE
+  )"; then
+    rm -f "$release_json" "$asset_file"
+    fail CREDENTIAL_MIGRATION_DECRYPT_FAILED
+  fi
+
+  probe="$(mktemp "$TMP/cred-r136-probe-XXXXXX.json")"
+  code="$(curl -sS -o "$probe" -w '%{http_code}' \
+    -H 'Accept: application/vnd.github+json' \
+    -H "Authorization: Bearer $new_token" \
+    -H 'X-GitHub-Api-Version: 2022-11-28' \
+    "$API" || true)"
+
+  [[ "$code" == "200" ]] || {
+    rm -f "$release_json" "$asset_file" "$probe"
+    unset new_token
+    fail BACKUP_TOKEN_VALIDATION_FAILED
+  }
+
+  is_private="$(jq -r '.private // false' "$probe")"
+  can_push="$(jq -r '.permissions.push // false' "$probe")"
+  [[ "$is_private" == "true" ]] || {
+    rm -f "$release_json" "$asset_file" "$probe"
+    unset new_token
+    fail BACKUP_REPO_MUST_BE_PRIVATE
+  }
+  [[ "$can_push" == "true" ]] || {
+    rm -f "$release_json" "$asset_file" "$probe"
+    unset new_token
+    fail BACKUP_TOKEN_WRITE_REQUIRED
+  }
+
+  tmpcfg="$(mktemp)"
+  NEW_TOKEN="$new_token" python3 - "$UPDATER_ENV" "$tmpcfg" <<'PYCFG'
+from pathlib import Path
+import os,sys
+
+src=Path(sys.argv[1])
+dst=Path(sys.argv[2])
+new=os.environ.get('NEW_TOKEN','')
+if len(new)<20:
+    raise SystemExit(2)
+
+lines=src.read_text(encoding='utf-8-sig').replace('\r\n','\n').replace('\r','\n').splitlines()
+out=[]
+done=False
+for line in lines:
+    if line.startswith('GITHUB_TOKEN=') and not done:
+        out.append('GITHUB_TOKEN='+new)
+        done=True
+    else:
+        out.append(line)
+if not done:
+    out.append('GITHUB_TOKEN='+new)
+dst.write_text('\n'.join(out)+'\n',encoding='utf-8',newline='\n')
+PYCFG
+
+  install -o root -g root -m 0600 "$tmpcfg" "$UPDATER_ENV"
+  rm -f "$tmpcfg"
+
+  # La operacion actual ya usa la credencial nueva.
+  GITHUB_TOKEN="$new_token"
+
+  printf '{"version":"1.0.36","migratedAt":"%s"}\n' "$(date -Iseconds)" > "$marker"
+  chmod 0600 "$marker"
+
+  # Asset de transporte de un solo uso: eliminarlo despues de migrar.
+  if [[ "$asset_id" =~ ^[0-9]+$ ]]; then
+    curl -fsS -X DELETE \
+      -H 'Accept: application/vnd.github+json' \
+      -H "Authorization: Bearer $GITHUB_TOKEN" \
+      -H 'X-GitHub-Api-Version: 2022-11-28' \
+      "$API/releases/assets/$asset_id" >/dev/null 2>&1 || true
+  fi
+
+  rm -f "$release_json" "$asset_file" "$probe"
+  unset new_token
+}
 backup(){
+  migrate_backup_credential_r136
   local stamp tag work db_asset db_file db_sha
   local app_tag app_asset app_manifest release_json app_manifest_url app_sha
   local config_asset='' config_file='' config_sha='' uploads_asset='' uploads_file='' uploads_sha=''
-  local release_payload release_created upload_url upload_base manifest
+  local release_payload release_created upload_url upload_base manifest release_id
 
   stamp="$(date +%Y%m%d-%H%M%S)"
   tag="backup-$stamp"
@@ -153,7 +298,9 @@ backup(){
   trap 'rm -rf "$work" >/dev/null 2>&1 || true' EXIT
 
   # Confirmar acceso al repo y obtener la app exacta instalada.
-  api "$API" >/dev/null || fail "No puedo acceder a $GITHUB_OWNER/$GITHUB_REPO"
+  repo_meta="$work/repository.json"
+  api "$API" > "$repo_meta" || fail BACKUP_STORAGE_UNAVAILABLE
+  [[ "$(jq -r '.private // false' "$repo_meta")" == "true" ]] || fail BACKUP_REPO_MUST_BE_PRIVATE
   app_tag="v$VERSION"
   release_json="$work/app-release.json"
   api "$API/releases/tags/$app_tag" > "$release_json" || fail "No existe app release $app_tag"
@@ -234,17 +381,33 @@ backup(){
       -H 'Content-Type: application/json' \
       -H 'User-Agent: Shiny-Backup-OneClick-R133' \
       --data "$release_payload" "$API/releases")"; then
-    fail "GitHub rechazo crear $tag. El token instalado necesita permiso de escritura Contents en $GITHUB_REPO."
+    fail BACKUP_RELEASE_CREATE_FAILED
   fi
 
   upload_url="$(printf '%s' "$release_created" | jq -r '.upload_url // empty')"
   [[ -n "$upload_url" ]] || fail GITHUB_UPLOAD_URL_MISSING
   upload_base="${upload_url%%\{*}"
 
-  upload_asset "$upload_base" "$manifest"
-  upload_asset "$upload_base" "$db_file"
-  [[ -n "$config_file" ]] && upload_asset "$upload_base" "$config_file"
-  [[ -n "$uploads_file" ]] && upload_asset "$upload_base" "$uploads_file"
+  release_id="$(printf '%s' "$release_created" | jq -r '.id // empty')"
+  [[ "$release_id" =~ ^[0-9]+$ ]] || fail GITHUB_RELEASE_ID_MISSING
+
+  # Datos primero; manifest AL FINAL. Si algo falla, borrar prerelease parcial.
+  if ! upload_asset "$upload_base" "$db_file"; then
+    api -X DELETE "$API/releases/$release_id" >/dev/null 2>&1 || true
+    fail BACKUP_UPLOAD_DATABASE_FAILED
+  fi
+  if [[ -n "$config_file" ]] && ! upload_asset "$upload_base" "$config_file"; then
+    api -X DELETE "$API/releases/$release_id" >/dev/null 2>&1 || true
+    fail BACKUP_UPLOAD_CONFIG_FAILED
+  fi
+  if [[ -n "$uploads_file" ]] && ! upload_asset "$upload_base" "$uploads_file"; then
+    api -X DELETE "$API/releases/$release_id" >/dev/null 2>&1 || true
+    fail BACKUP_UPLOAD_FILES_FAILED
+  fi
+  if ! upload_asset "$upload_base" "$manifest"; then
+    api -X DELETE "$API/releases/$release_id" >/dev/null 2>&1 || true
+    fail BACKUP_UPLOAD_MANIFEST_FAILED
+  fi
 
   cp -f "$manifest" "$BACKUPS/$tag-backup-manifest.json"
   jq -cn --arg tag "$tag" --arg created "$(date -Iseconds)" --arg repo "$GITHUB_OWNER/$GITHUB_REPO" \

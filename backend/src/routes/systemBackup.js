@@ -1,4 +1,4 @@
-/* SHINY_SYSTEM_BACKUP_ONE_CLICK_R135_PRIVATE */
+/* SHINY_SYSTEM_BACKUP_ONE_CLICK_R136_PRIVATE */
 import { Router } from 'express';
 import { spawn } from 'node:child_process';
 
@@ -37,7 +37,7 @@ function publicBackupError(raw){
     error:'PG_DUMP_FAILED',
     message:'No fue posible generar el respaldo de la base de datos.'
   };
-  if(/GITHUB|HTTP_4|HTTP_5|release|upload/i.test(s)) return {
+  if(/GITHUB|HTTP_4|HTTP_5|release|upload|TOKEN|CREDENTIAL|STORAGE/i.test(s)) return {
     error:'BACKUP_STORAGE_FAILED',
     message:'No fue posible almacenar el respaldo.'
   };
