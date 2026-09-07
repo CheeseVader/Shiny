@@ -1,4 +1,4 @@
-/* SHINY_BACKUP_ONE_CLICK_UI_R1 */
+/* SHINY_BACKUP_ONE_CLICK_UI_R133 */
 import React,{useEffect,useState} from 'react';
 import {api} from '../services/api.js';
 import '../system_backup_r130.css';
@@ -36,17 +36,17 @@ export default function SystemBackupPanel(){
   return <section className="content-card bk130">
     <div className="section-head">
       <div>
-        <div className="eyebrow">SUPERADMIN Â· CONTINUIDAD</div>
-        <h2>Respaldo y migraciÃ³n</h2>
-        <p className="section-copy">El respaldo usa automÃ¡ticamente la configuraciÃ³n instalada de este cliente.</p>
+        <div className="eyebrow">SUPERADMIN · CONTINUIDAD</div>
+        <h2>Respaldo y migración</h2>
+        <p className="section-copy">El respaldo usa automáticamente la configuración instalada de este cliente.</p>
       </div>
     </div>
 
     <div className="bk130-grid">
       <article><span>Repositorio</span><strong>{st?.repo||'Detectando...'}</strong></article>
       <article><span>Base de datos</span><strong>{st?.db||'Detectando...'}</strong></article>
-      <article><span>VersiÃ³n</span><strong>{st?.version||'â€”'}</strong></article>
-      <article><span>Ãšltimo respaldo</span><strong>{st?.latestBackup||'â€”'}</strong></article>
+      <article><span>Versión</span><strong>{st?.version||'—'}</strong></article>
+      <article><span>Último respaldo</span><strong>{st?.latestBackup||'—'}</strong></article>
     </div>
 
     <div className="bk130-note">

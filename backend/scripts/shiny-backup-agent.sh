@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
-# SHINY_BACKUP_ONE_CLICK_AGENT_R1
+# SHINY_BACKUP_ONE_CLICK_AGENT_R133
 # Usa /etc/shiny-updater/updater.env. No solicita datos interactivos.
 # Publica backup-* como prerelease dentro del MISMO <Cliente>-Release.
 
@@ -16,7 +16,7 @@ json_escape(){ python3 -c 'import json,sys; print(json.dumps(sys.stdin.read()))'
 
 [[ $EUID -eq 0 ]] || fail ROOT_REQUIRED
 [[ -f "$UPDATER_ENV" ]] || fail "No existe $UPDATER_ENV"
-for c in curl jq tar pg_dump sha256sum python3; do need "$c"; done
+for c in curl jq tar pg_dump psql runuser sha256sum python3; do need "$c"; done
 
 # Normalizar CRLF/BOM sin imprimir secretos.
 sed -i '1s/^\xEF\xBB\xBF//' "$UPDATER_ENV" 2>/dev/null || true
@@ -30,9 +30,57 @@ GITHUB_TOKEN="${GITHUB_TOKEN:-}"
 APP_DIR="${APP_DIR:-/opt/shiny/app}"
 CLIENT_NAME="${CLIENT_NAME:-}"
 CLIENT_SLUG="${CLIENT_SLUG:-}"
-DB_NAME="${DB_NAME:-}"
-DB_USER="${DB_USER:-}"
+DB_NAME="${DB_NAME:-${DB_DATABASE:-${PGDATABASE:-}}}"
+DB_USER="${DB_USER:-${DB_USERNAME:-${PGUSER:-}}}"
+DB_SCHEMA="${DB_SCHEMA:-}"
+
+env_value(){
+  local file="$1"; shift
+  local key line value
+  [[ -f "$file" ]] || return 0
+  for key in "$@"; do
+    line="$(grep -E "^${key}=" "$file" 2>/dev/null | tail -n1 || true)"
+    [[ -n "$line" ]] || continue
+    value="${line#*=}"
+    value="${value%$'\r'}"
+    if [[ ${#value} -ge 2 && "${value:0:1}" == '"' && "${value: -1}" == '"' ]]; then
+      value="${value:1:${#value}-2}"
+    elif [[ ${#value} -ge 2 && "${value:0:1}" == "'" && "${value: -1}" == "'" ]]; then
+      value="${value:1:${#value}-2}"
+    fi
+    printf '%s' "$value"
+    return 0
+  done
+  return 0
+}
+
+BACKEND_ENV="$APP_DIR/backend/.env"
+[[ -n "$DB_NAME" ]] || DB_NAME="$(env_value "$BACKEND_ENV" DB_NAME DB_DATABASE PGDATABASE)"
+[[ -n "$DB_USER" ]] || DB_USER="$(env_value "$BACKEND_ENV" DB_USER DB_USERNAME PGUSER)"
+[[ -n "$DB_SCHEMA" ]] || DB_SCHEMA="$(env_value "$BACKEND_ENV" DB_SCHEMA)"
 DB_SCHEMA="${DB_SCHEMA:-shiny}"
+
+# Ultimo fallback: detectar la BD real en PostgreSQL sin inventar nombres.
+if [[ -z "$DB_NAME" ]] && command -v runuser >/dev/null 2>&1 && command -v psql >/dev/null 2>&1; then
+  if [[ -n "$DB_USER" ]]; then
+    DB_USER_SQL="${DB_USER//\'/\'\'}"
+    DB_NAME="$(runuser -u postgres -- psql -d postgres -Atqc \
+      "SELECT d.datname FROM pg_database d JOIN pg_roles r ON r.oid=d.datdba WHERE r.rolname='${DB_USER_SQL}' AND d.datistemplate=false ORDER BY CASE WHEN d.datname='shiny_db' THEN 0 ELSE 1 END,d.datname LIMIT 1" \
+      2>/dev/null || true)"
+  fi
+  if [[ -z "$DB_NAME" ]]; then
+    DB_NAME="$(runuser -u postgres -- psql -d postgres -Atqc \
+      "SELECT datname FROM pg_database WHERE datistemplate=false AND datname NOT IN ('postgres') ORDER BY CASE WHEN datname='shiny_db' THEN 0 ELSE 1 END,datname LIMIT 1" \
+      2>/dev/null || true)"
+  fi
+fi
+
+if [[ -z "$DB_USER" && -n "$DB_NAME" ]] && command -v runuser >/dev/null 2>&1 && command -v psql >/dev/null 2>&1; then
+  DB_NAME_SQL="${DB_NAME//\'/\'\'}"
+  DB_USER="$(runuser -u postgres -- psql -d postgres -Atqc \
+    "SELECT r.rolname FROM pg_database d JOIN pg_roles r ON r.oid=d.datdba WHERE d.datname='${DB_NAME_SQL}' LIMIT 1" \
+    2>/dev/null || true)"
+fi
 
 [[ -n "$GITHUB_OWNER" ]] || fail GITHUB_OWNER_NOT_CONFIGURED
 [[ -n "$GITHUB_REPO" ]] || fail GITHUB_REPO_NOT_CONFIGURED
@@ -62,7 +110,7 @@ api(){
     -H 'Accept: application/vnd.github+json' \
     -H "Authorization: Bearer $GITHUB_TOKEN" \
     -H 'X-GitHub-Api-Version: 2022-11-28' \
-    -H 'User-Agent: Shiny-Backup-OneClick-R1' "$@"
+    -H 'User-Agent: Shiny-Backup-OneClick-R133' "$@"
 }
 
 status(){
@@ -181,7 +229,7 @@ backup(){
       -H "Authorization: Bearer $GITHUB_TOKEN" \
       -H 'X-GitHub-Api-Version: 2022-11-28' \
       -H 'Content-Type: application/json' \
-      -H 'User-Agent: Shiny-Backup-OneClick-R1' \
+      -H 'User-Agent: Shiny-Backup-OneClick-R133' \
       --data "$release_payload" "$API/releases")"; then
     fail "GitHub rechazo crear $tag. El token instalado necesita permiso de escritura Contents en $GITHUB_REPO."
   fi

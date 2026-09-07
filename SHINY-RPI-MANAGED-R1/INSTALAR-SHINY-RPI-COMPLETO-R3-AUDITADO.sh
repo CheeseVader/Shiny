@@ -1089,9 +1089,10 @@ cat > /etc/systemd/system/shiny-updater.timer <<'EOF'
 Description=Consulta periódica de actualizaciones Shiny
 
 [Timer]
-OnBootSec=5min
-OnUnitActiveSec=6h
-RandomizedDelaySec=10min
+OnBootSec=45s
+OnUnitActiveSec=5min
+AccuracySec=15s
+RandomizedDelaySec=0
 Persistent=true
 
 [Install]

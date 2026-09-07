@@ -83,6 +83,7 @@ Description=Shiny - comprobacion automatica de actualizaciones
 OnBootSec=45s
 OnUnitActiveSec=5min
 AccuracySec=15s
+RandomizedDelaySec=0
 Persistent=true
 
 [Install]
@@ -417,4 +418,85 @@ if [[ "$ENABLE_STORE" == "1" ]]; then
   log "STORE URL: $STATE_DIR/store.url"
 fi
 
+
+# SHINY_GEO_CATALOG_R128_BEGIN
+GEO_RESTORE="$APP_DIR/backend/scripts/ensure-geo-catalog-rpi.sh"
+if [[ -f "$GEO_RESTORE" ]]; then
+  chmod 0755 "$GEO_RESTORE" || true
+  APP_DIR="$APP_DIR" bash "$GEO_RESTORE" || warn "Restauracion geografica pendiente; Shiny continuara."
+else
+  warn "No encontre $GEO_RESTORE"
+fi
+# SHINY_GEO_CATALOG_R128_END
 exit 0
+# ============================================================
+# SHINY_BACKUP_PROVISION_R130
+# Agente Linux del sistema de backup portable.
+# Windows usa backend/scripts/shiny-backup-agent.ps1 directamente.
+# ============================================================
+BK_SRC="$APP_DIR/backend/scripts/shiny-backup-agent.sh"
+BK_CRYPTO_SRC="$APP_DIR/backend/scripts/shiny-backup-crypto.cjs"
+BK_DIR="/usr/local/lib/shiny-backup"
+BK_DST="$BK_DIR/shiny-backup-agent.sh"
+
+if [[ -f "$BK_SRC" && -f "$BK_CRYPTO_SRC" ]]; then
+  install -d -o root -g root -m 0755 "$BK_DIR"
+  install -d -o root -g root -m 0700 /etc/shiny-backup /var/lib/shiny-backup /var/lib/shiny-backup/backups /var/lib/shiny-backup/tmp
+  install -o root -g root -m 0755 "$BK_SRC" "$BK_DST"
+  cat > /etc/sudoers.d/shiny-backup <<EOF
+shiny ALL=(root) NOPASSWD: $BK_DST
+EOF
+  chmod 0440 /etc/sudoers.d/shiny-backup
+  visudo -cf /etc/sudoers.d/shiny-backup >/dev/null
+fi
+
+# SHINY_UPDATER_DB_IDENTITY_R133_BEGIN
+# Mantiene la identidad PostgreSQL en updater.env sin pedir datos al usuario.
+sync_updater_db_identity_r133(){
+  local cfg="/etc/shiny-updater/updater.env"
+  local app_env="${APP_DIR:-/opt/shiny/app}/backend/.env"
+  [[ -f "$cfg" && -f "$app_env" ]] || return 0
+
+  read_env_value_r133(){
+    local file="$1"; shift
+    local key line value
+    for key in "$@"; do
+      line="$(grep -E "^${key}=" "$file" 2>/dev/null | tail -n1 || true)"
+      [[ -n "$line" ]] || continue
+      value="${line#*=}"
+      value="${value%
+\r'}"
+      if [[ ${#value} -ge 2 && "${value:0:1}" == '"' && "${value: -1}" == '"' ]]; then
+        value="${value:1:${#value}-2}"
+      elif [[ ${#value} -ge 2 && "${value:0:1}" == "'" && "${value: -1}" == "'" ]]; then
+        value="${value:1:${#value}-2}"
+      fi
+      printf '%s' "$value"
+      return 0
+    done
+    return 0
+  }
+
+  upsert_env_r133(){
+    local file="$1" key="$2" value="$3"
+    [[ -n "$value" ]] || return 0
+    if grep -qE "^${key}=" "$file" 2>/dev/null; then
+      sed -i "s|^${key}=.*|${key}=${value}|" "$file"
+    else
+      printf '%s=%s\n' "$key" "$value" >> "$file"
+    fi
+  }
+
+  local db_name db_user db_schema
+  db_name="$(read_env_value_r133 "$app_env" DB_NAME DB_DATABASE PGDATABASE)"
+  db_user="$(read_env_value_r133 "$app_env" DB_USER DB_USERNAME PGUSER)"
+  db_schema="$(read_env_value_r133 "$app_env" DB_SCHEMA)"
+  db_schema="${db_schema:-shiny}"
+
+  upsert_env_r133 "$cfg" DB_NAME "$db_name"
+  upsert_env_r133 "$cfg" DB_USER "$db_user"
+  upsert_env_r133 "$cfg" DB_SCHEMA "$db_schema"
+  chmod 0600 "$cfg" 2>/dev/null || true
+}
+sync_updater_db_identity_r133 || warn "No se pudo sincronizar identidad PostgreSQL en updater.env."
+# SHINY_UPDATER_DB_IDENTITY_R133_END
