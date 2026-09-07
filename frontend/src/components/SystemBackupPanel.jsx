@@ -1,4 +1,4 @@
-/* SHINY_BACKUP_ONE_CLICK_UI_R137_PRIVATE */
+/* SHINY_BACKUP_ONE_CLICK_UI_R138_PRIVATE */
 import React,{useEffect,useState} from 'react';
 import {api} from '../services/api.js';
 import '../system_backup_r130.css';
@@ -56,7 +56,7 @@ export default function SystemBackupPanel(){
     }
   }
 
-  return <section className="content-card bk130" data-backup-ui="1.0.37">
+  return <section className="content-card bk130" data-backup-ui="1.0.38">
     <div className="section-head">
       <div>
         <div className="eyebrow">{TXT.eyebrow}</div>

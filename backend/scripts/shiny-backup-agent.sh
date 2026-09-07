@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
-# SHINY_BACKUP_ONE_CLICK_AGENT_R137
+# SHINY_BACKUP_ONE_CLICK_AGENT_R138
 # Usa /etc/shiny-updater/updater.env. No solicita datos interactivos.
 # Publica backup-* como prerelease dentro del MISMO <Cliente>-Release.
 
@@ -140,62 +140,32 @@ upload_asset(){
     "${upload_base}?name=${encoded}" >/dev/null
 }
 
-# SHINY_BACKUP_WRITE_ACCESS_R137
-# Regla:
-#   1) probar PRIMERO la credencial que ya esta instalada;
-#   2) si ya tiene escritura, NO ejecutar ninguna migracion;
-#   3) solo si sigue siendo read-only, intentar la migracion cifrada R136.
-#
-# Esto corrige R136, que intentaba descifrar la migracion antes de comprobar
-# si el token instalado ya habia sido actualizado directamente en GitHub.
+# SHINY_BACKUP_AUTH_R138
+# No se confia en .permissions.push para autorizar respaldos.
+# La prueba definitiva es la MISMA operacion que necesitamos: crear la Release backup-*.
+# Si GitHub responde 401/403, se migra una credencial verificada y se reintenta una sola vez.
 
-current_repo_access_r137(){
-  local probe code is_private can_push
-  probe="$(mktemp "$TMP/access-r137-XXXXXX.json")"
+migrate_backup_credential_r138(){
+  local release_tag asset_name release_json asset_url asset_id asset_file
+  local new_token probe_tag probe_payload probe_body probe_code probe_id tmpcfg
 
-  code="$(curl -sS -o "$probe" -w '%{http_code}' \
-    -H 'Accept: application/vnd.github+json' \
-    -H "Authorization: Bearer $GITHUB_TOKEN" \
-    -H 'X-GitHub-Api-Version: 2022-11-28' \
-    -H 'User-Agent: Shiny-Backup-OneClick-R137' \
-    "$API" || true)"
+  release_tag="v1.0.38"
+  asset_name="shiny-credential-migration-1.0.38.json"
+  release_json="$(mktemp "$TMP/cred-r138-release-XXXXXX.json")"
 
-  if [[ "$code" != "200" ]]; then
-    rm -f "$probe"
-    return 20
-  fi
-
-  is_private="$(jq -r '.private // false' "$probe")"
-  can_push="$(jq -r '.permissions.push // false' "$probe")"
-  rm -f "$probe"
-
-  [[ "$is_private" == "true" ]] || return 21
-  [[ "$can_push" == "true" ]] || return 22
-  return 0
-}
-
-migrate_backup_credential_r137(){
-  local asset_name release_json asset_url asset_id asset_file
-  local new_token probe code can_push is_private tmpcfg
-
-  # La migracion publicada en 1.0.36 permanece util aunque la app ya sea 1.0.37.
-  asset_name="shiny-credential-migration-1.0.36.json"
-  release_json="$(mktemp "$TMP/cred-r137-release-XXXXXX.json")"
-
-  if ! api "$API/releases/tags/v1.0.36" > "$release_json"; then
+  if ! api "$API/releases/tags/$release_tag" > "$release_json"; then
     rm -f "$release_json"
     fail CREDENTIAL_MIGRATION_RELEASE_UNAVAILABLE
   fi
 
   asset_url="$(jq -r --arg n "$asset_name" '.assets[]? | select(.name==$n) | .url' "$release_json" | head -n1)"
   asset_id="$(jq -r --arg n "$asset_name" '.assets[]? | select(.name==$n) | .id' "$release_json" | head -n1)"
-
   [[ -n "$asset_url" && "$asset_url" != "null" ]] || {
     rm -f "$release_json"
     fail CREDENTIAL_MIGRATION_ASSET_MISSING
   }
 
-  asset_file="$(mktemp "$TMP/cred-r137-XXXXXX.json")"
+  asset_file="$(mktemp "$TMP/cred-r138-XXXXXX.json")"
   if ! curl -fsSL \
       -H 'Accept: application/octet-stream' \
       -H "Authorization: Bearer $GITHUB_TOKEN" \
@@ -210,102 +180,86 @@ migrate_backup_credential_r137(){
     node - "$asset_file" <<'NODE'
 const fs=require('fs');
 const crypto=require('crypto');
-
 try{
-  const file=process.argv[2];
-  const p=JSON.parse(fs.readFileSync(file,'utf8'));
+  const p=JSON.parse(fs.readFileSync(process.argv[2],'utf8'));
   const oldToken=process.env.CURRENT_TOKEN||'';
-
-  if(oldToken.length<20 || p.schema!==1 || p.cipher!=='AES-256-GCM') process.exit(2);
-
-  const salt=Buffer.from(p.salt,'base64');
-  const iv=Buffer.from(p.iv,'base64');
-  const tag=Buffer.from(p.tag,'base64');
-  const ct=Buffer.from(p.ciphertext,'base64');
-  const key=crypto.pbkdf2Sync(Buffer.from(oldToken,'utf8'),salt,Number(p.iterations||150000),32,'sha256');
-
-  const decipher=crypto.createDecipheriv('aes-256-gcm',key,iv);
-  decipher.setAuthTag(tag);
-  const plain=Buffer.concat([decipher.update(ct),decipher.final()]);
-  const data=JSON.parse(plain.toString('utf8'));
-
-  if(data.version!=='1.0.36') process.exit(3);
-  if(data.owner!==process.env.EXPECTED_OWNER || data.repo!==process.env.EXPECTED_REPO) process.exit(4);
-  if(typeof data.token!=='string' || data.token.length<20) process.exit(5);
-
+  if(oldToken.length<20||p.schema!==1||p.cipher!=='AES-256-GCM')process.exit(2);
+  const key=crypto.pbkdf2Sync(Buffer.from(oldToken,'utf8'),Buffer.from(p.salt,'base64'),Number(p.iterations||180000),32,'sha256');
+  const decipher=crypto.createDecipheriv('aes-256-gcm',key,Buffer.from(p.iv,'base64'));
+  decipher.setAuthTag(Buffer.from(p.tag,'base64'));
+  const data=JSON.parse(Buffer.concat([decipher.update(Buffer.from(p.ciphertext,'base64')),decipher.final()]).toString('utf8'));
+  if(data.version!=='1.0.38')process.exit(3);
+  if(data.owner!==process.env.EXPECTED_OWNER||data.repo!==process.env.EXPECTED_REPO)process.exit(4);
+  if(typeof data.token!=='string'||data.token.length<20)process.exit(5);
   process.stdout.write(data.token);
-}catch{
-  process.exit(6);
-}
+}catch{process.exit(6);}
 NODE
   )"; then
     rm -f "$release_json" "$asset_file"
     fail CREDENTIAL_MIGRATION_DECRYPT_FAILED
   fi
 
-  probe="$(mktemp "$TMP/cred-r137-probe-XXXXXX.json")"
-  code="$(curl -sS -o "$probe" -w '%{http_code}' \
+  # Verificacion REAL del token nuevo ANTES de persistirlo.
+  probe_tag="backup-auth-r138-$(date +%Y%m%d%H%M%S)-$$"
+  probe_payload="$(jq -cn --arg tag "$probe_tag" '{tag_name:$tag,name:"Shiny backup authorization verification",body:"Temporary authorization verification.",draft:true,prerelease:true}')"
+  probe_body="$(mktemp "$TMP/cred-r138-probe-XXXXXX.json")"
+  probe_code="$(curl -sS -o "$probe_body" -w '%{http_code}' -X POST \
     -H 'Accept: application/vnd.github+json' \
     -H "Authorization: Bearer $new_token" \
     -H 'X-GitHub-Api-Version: 2022-11-28' \
-    -H 'User-Agent: Shiny-Backup-OneClick-R137' \
-    "$API" || true)"
+    -H 'Content-Type: application/json' \
+    -H 'User-Agent: Shiny-Backup-OneClick-R138' \
+    --data "$probe_payload" "$API/releases" || true)"
 
-  [[ "$code" == "200" ]] || {
-    rm -f "$release_json" "$asset_file" "$probe"
+  [[ "$probe_code" == "201" ]] || {
+    rm -f "$release_json" "$asset_file" "$probe_body"
+    unset new_token
+    fail BACKUP_TOKEN_WRITE_REQUIRED
+  }
+
+  probe_id="$(jq -r '.id // empty' "$probe_body")"
+  [[ "$probe_id" =~ ^[0-9]+$ ]] || {
+    rm -f "$release_json" "$asset_file" "$probe_body"
     unset new_token
     fail BACKUP_TOKEN_VALIDATION_FAILED
   }
 
-  is_private="$(jq -r '.private // false' "$probe")"
-  can_push="$(jq -r '.permissions.push // false' "$probe")"
-
-  [[ "$is_private" == "true" ]] || {
-    rm -f "$release_json" "$asset_file" "$probe"
-    unset new_token
-    fail BACKUP_REPO_MUST_BE_PRIVATE
-  }
-  [[ "$can_push" == "true" ]] || {
-    rm -f "$release_json" "$asset_file" "$probe"
-    unset new_token
-    fail BACKUP_TOKEN_WRITE_REQUIRED
-  }
+  # Borrar probe. Si GitHub hubiera creado un tag/ref, intentar limpiarlo tambien.
+  curl -fsS -X DELETE \
+    -H 'Accept: application/vnd.github+json' \
+    -H "Authorization: Bearer $new_token" \
+    -H 'X-GitHub-Api-Version: 2022-11-28' \
+    "$API/releases/$probe_id" >/dev/null 2>&1 || true
+  curl -fsS -X DELETE \
+    -H 'Accept: application/vnd.github+json' \
+    -H "Authorization: Bearer $new_token" \
+    -H 'X-GitHub-Api-Version: 2022-11-28' \
+    "$API/git/refs/tags/$probe_tag" >/dev/null 2>&1 || true
 
   tmpcfg="$(mktemp)"
   NEW_TOKEN="$new_token" python3 - "$UPDATER_ENV" "$tmpcfg" <<'PYCFG'
 from pathlib import Path
 import os,sys
-
-src=Path(sys.argv[1])
-dst=Path(sys.argv[2])
-new=os.environ.get('NEW_TOKEN','')
-if len(new)<20:
-    raise SystemExit(2)
-
+src=Path(sys.argv[1]); dst=Path(sys.argv[2]); new=os.environ.get('NEW_TOKEN','')
+if len(new)<20: raise SystemExit(2)
 lines=src.read_text(encoding='utf-8-sig').replace('\r\n','\n').replace('\r','\n').splitlines()
-out=[]
-done=False
+out=[]; done=False
 for line in lines:
     if line.startswith('GITHUB_TOKEN=') and not done:
-        out.append('GITHUB_TOKEN='+new)
-        done=True
-    else:
-        out.append(line)
-if not done:
-    out.append('GITHUB_TOKEN='+new)
+        out.append('GITHUB_TOKEN='+new); done=True
+    else: out.append(line)
+if not done: out.append('GITHUB_TOKEN='+new)
 dst.write_text('\n'.join(out)+'\n',encoding='utf-8',newline='\n')
 PYCFG
 
   install -o root -g root -m 0600 "$tmpcfg" "$UPDATER_ENV"
   rm -f "$tmpcfg"
-
-  # La operacion actual debe usar inmediatamente la credencial nueva.
   GITHUB_TOKEN="$new_token"
 
-  printf '{"version":"1.0.37","migratedAt":"%s"}\n' "$(date -Iseconds)" > "$ROOT/credential-r137.done"
-  chmod 0600 "$ROOT/credential-r137.done"
+  printf '{"version":"1.0.38","migratedAt":"%s"}\n' "$(date -Iseconds)" > "$ROOT/credential-r138.done"
+  chmod 0600 "$ROOT/credential-r138.done"
 
-  # Asset de transporte de un solo uso: eliminarlo solo DESPUES de confirmar escritura.
+  # Asset de un solo uso: borrar solo despues de verificar y persistir.
   if [[ "$asset_id" =~ ^[0-9]+$ ]]; then
     curl -fsS -X DELETE \
       -H 'Accept: application/vnd.github+json' \
@@ -314,46 +268,30 @@ PYCFG
       "$API/releases/assets/$asset_id" >/dev/null 2>&1 || true
   fi
 
-  rm -f "$release_json" "$asset_file" "$probe"
+  rm -f "$release_json" "$asset_file" "$probe_body"
   unset new_token
 }
 
-ensure_backup_write_access_r137(){
-  local rc=0
-
-  # IMPORTANTE: si el token que YA esta instalado tiene write, continuar directo.
-  if current_repo_access_r137; then
+create_backup_release_r138(){
+  local payload="$1" output="$2" body code
+  body="$(mktemp "$TMP/release-r138-XXXXXX.json")"
+  code="$(curl -sS -o "$body" -w '%{http_code}' -X POST \
+    -H 'Accept: application/vnd.github+json' \
+    -H "Authorization: Bearer $GITHUB_TOKEN" \
+    -H 'X-GitHub-Api-Version: 2022-11-28' \
+    -H 'Content-Type: application/json' \
+    -H 'User-Agent: Shiny-Backup-OneClick-R138' \
+    --data "$payload" "$API/releases" || true)"
+  BACKUP_RELEASE_HTTP="$code"
+  if [[ "$code" == "201" ]]; then
+    cat "$body" > "$output"
+    rm -f "$body"
     return 0
-  else
-    rc=$?
   fi
-
-  case "$rc" in
-    20) fail BACKUP_STORAGE_UNAVAILABLE ;;
-    21) fail BACKUP_REPO_MUST_BE_PRIVATE ;;
-    22) ;;
-    *) fail BACKUP_ACCESS_CHECK_FAILED ;;
-  esac
-
-  # Solo llegamos aqui cuando el token actual puede leer pero NO escribir.
-  migrate_backup_credential_r137
-
-  # Certificar nuevamente despues de la migracion.
-  if current_repo_access_r137; then
-    return 0
-  else
-    rc=$?
-  fi
-
-  case "$rc" in
-    20) fail BACKUP_STORAGE_UNAVAILABLE ;;
-    21) fail BACKUP_REPO_MUST_BE_PRIVATE ;;
-    22) fail BACKUP_TOKEN_WRITE_REQUIRED ;;
-    *) fail BACKUP_ACCESS_CHECK_FAILED ;;
-  esac
+  rm -f "$body"
+  return 1
 }
 backup(){
-  ensure_backup_write_access_r137
   local stamp tag work db_asset db_file db_sha
   local app_tag app_asset app_manifest release_json app_manifest_url app_sha
   local config_asset='' config_file='' config_sha='' uploads_asset='' uploads_file='' uploads_sha=''
@@ -442,15 +380,26 @@ backup(){
   # Crear backup-* como prerelease para NO desplazar releases/latest de la app.
   release_payload="$(jq -cn --arg tag "$tag" --arg name "$CLIENT_NAME backup $stamp" \
     '{tag_name:$tag,name:$name,body:"Respaldo automatico de continuidad.",draft:false,prerelease:true}')"
-  if ! release_created="$(curl -fsS -X POST \
-      -H 'Accept: application/vnd.github+json' \
-      -H "Authorization: Bearer $GITHUB_TOKEN" \
-      -H 'X-GitHub-Api-Version: 2022-11-28' \
-      -H 'Content-Type: application/json' \
-      -H 'User-Agent: Shiny-Backup-OneClick-R133' \
-      --data "$release_payload" "$API/releases")"; then
-    fail BACKUP_RELEASE_CREATE_FAILED
+  release_created_file="$work/release-created.json"
+  BACKUP_RELEASE_HTTP=""
+
+  # Intento REAL con la credencial que YA esta instalada.
+  if ! create_backup_release_r138 "$release_payload" "$release_created_file"; then
+    first_http="$BACKUP_RELEASE_HTTP"
+
+    # Solo 401/403 justifican migrar credencial. Otros errores se reportan directamente.
+    if [[ "$first_http" == "401" || "$first_http" == "403" ]]; then
+      migrate_backup_credential_r138
+      BACKUP_RELEASE_HTTP=""
+      if ! create_backup_release_r138 "$release_payload" "$release_created_file"; then
+        fail BACKUP_RELEASE_CREATE_FAILED_AFTER_MIGRATION
+      fi
+    else
+      fail BACKUP_RELEASE_CREATE_FAILED
+    fi
   fi
+
+  release_created="$(cat "$release_created_file")"
 
   upload_url="$(printf '%s' "$release_created" | jq -r '.upload_url // empty')"
   [[ -n "$upload_url" ]] || fail GITHUB_UPLOAD_URL_MISSING

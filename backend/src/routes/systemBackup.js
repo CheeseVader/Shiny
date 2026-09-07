@@ -1,4 +1,4 @@
-/* SHINY_SYSTEM_BACKUP_ONE_CLICK_R137_PRIVATE */
+/* SHINY_SYSTEM_BACKUP_ONE_CLICK_R138_PRIVATE */
 import { Router } from 'express';
 import { spawn } from 'node:child_process';
 
@@ -61,6 +61,12 @@ function publicBackupError(raw){
   if(/BACKUP_TOKEN_(WRITE_REQUIRED|VALIDATION_FAILED)|BACKUP_ACCESS_CHECK_FAILED/i.test(s)) return {
     error:'BACKUP_STORAGE_FAILED',
     diagnosticCode:'BKP-CRED-WRITE',
+    message:'No fue posible almacenar el respaldo.'
+  };
+
+  if(/BACKUP_RELEASE_CREATE_FAILED_AFTER_MIGRATION/i.test(s)) return {
+    error:'BACKUP_STORAGE_FAILED',
+    diagnosticCode:'BKP-RELEASE-AFTER-CRED',
     message:'No fue posible almacenar el respaldo.'
   };
 
