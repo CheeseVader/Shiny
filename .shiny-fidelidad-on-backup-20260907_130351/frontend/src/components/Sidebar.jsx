@@ -16,7 +16,7 @@ const groups = [
   ['/admin/tcg', 'Catálogo TCG', 'tcg', 'TCG'], ['/admin/tcg-operacion', 'Operación TCG', 'inventory', 'TCG'], ['/admin/buylist', 'Buylist', 'buylist', 'BUYLIST']]
 },
 { label: 'GESTIÓN', items: [
-  ['/admin/promociones', 'Promociones / Fidelidad', 'reports', 'CONTENIDO'], ['/admin/contenido', 'Contenido / Marketing', 'reports', 'CONTENIDO'],
+  ['/admin/promociones', 'Promociones', 'reports', 'CONTENIDO'], ['/admin/contenido', 'Contenido / Marketing', 'reports', 'CONTENIDO'],
   ['/admin/notificaciones', 'Notificaciones / Alertas', 'reports', 'NOTIFICACIONES'], ['/admin/reportes', 'Reportes', 'reports', 'REPORTES'], ['/admin/administracion', 'Usuarios / Permisos', 'system', 'ADMIN'], ['/admin/sistema', 'Sistema', 'system', 'SISTEMA']]
 }];
 

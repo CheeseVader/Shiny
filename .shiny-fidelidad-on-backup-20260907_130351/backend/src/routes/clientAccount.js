@@ -76,7 +76,7 @@ router.get('/me',requireClientAuth,async(req,res)=>{
   res.json({success:true,data:{user:{...req.clientUser,...profile}}});
 });
 router.get('/orders',requireClientAuth,async(req,res)=>{try{const r=await clientOrders(req.clientUser.id_cliente);res.json({success:true,data:r.rows});}catch(e){bad(res,e,500);}});
-router.get('/loyalty',requireClientAuth,async(req,res)=>{try{res.json({success:true,data:await clientLoyalty(req.clientUser.id_cliente)});}catch(e){bad(res,e,500);}});
+router.get('/loyalty',requireClientAuth,async(req,res)=>{if(process.env.SHINY_FEATURE_LOYALTY!=='true')return res.status(404).json({success:false,error:'FEATURE_DISABLED'});try{res.json({success:true,data:await clientLoyalty(req.clientUser.id_cliente)});}catch(e){bad(res,e,500);}});
 router.get('/addresses',requireClientAuth,async(req,res)=>{try{const r=await listAddresses(req.clientUser.id_cliente);res.json({success:true,data:r.rows});}catch(e){bad(res,e,500);}});
 router.post('/addresses',requireClientAuth,async(req,res)=>{try{res.status(201).json({success:true,data:await saveAddress(req.clientUser.id_cliente,req.body||{})});}catch(e){bad(res,e);}});
 

@@ -223,7 +223,7 @@ export async function createTcgSale(input, user) {
     }
     const benefit = await applyBenefitsTx(client, {
       orderId: id, clientId: customerId || '', subtotal,
-      promoCode: String(input.promoCode || ''), points: Number(input.pointsToRedeem || 0),
+      promoCode: String(input.promoCode || ''), points: 0,
       channel: 'TCG_POS', branchId: b.id_sucursal, user
     });
 

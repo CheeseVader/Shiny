@@ -96,9 +96,7 @@ export default function StorePromotionsPage() {
     })() : null}
 
     <section className="shiny-promo-bottom">
-      <article><PublicIcon name="star" size={34}/><span><b>Fidelidad Shiny</b><small>Acumula puntos en ventas confirmadas.</small><Link to="/tienda/cuenta">Ver mis puntos <PublicIcon name="arrow" size={13}/></Link></span></article>
-<article><PublicIcon name="star" size={34}/><div><h2>Fidelidad Shiny</h2><p>Compra, acumula puntos y obtÃ©n recompensas exclusivas.</p><div className="shiny-loyalty-progress"><i/></div><Link to="/tienda/cuenta">Conoce los beneficios</Link></div></article>
-<article><PublicIcon name="mail" size={34}/><div><h2>Recibe próximas promociones</h2><p>Crea tu cuenta para consultar beneficios, pedidos y puntos Shiny.</p><Link to="/tienda/cuenta">Ingresar / Crear cuenta</Link></div></article>
+      <article><PublicIcon name="mail" size={34}/><div><h2>Recibe próximas promociones</h2><p>Crea tu cuenta para consultar beneficios y pedidos Shiny.</p><Link to="/tienda/cuenta">Ingresar / Crear cuenta</Link></div></article>
     </section>
   </main>;
 }

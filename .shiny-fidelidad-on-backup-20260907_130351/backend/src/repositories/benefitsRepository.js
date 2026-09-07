@@ -85,7 +85,7 @@ export async function previewBenefits({ clientId = '', subtotal = 0, promoCode =
 export async function calculateBenefitsTx(client, { clientId = '', subtotal = 0, promoCode = '', points = 0, channel = 'POS_LOCAL', branchId = '', preview = false }) {
   subtotal = round(subtotal);
   const cfg = await settingsTx(client);
-  const enabled = String(cfg['loyalty.enabled'] || 'true') === 'true';
+  const enabled = process.env.SHINY_FEATURE_LOYALTY === 'true' && String(cfg['loyalty.enabled'] || 'false') === 'true';
   const promo = await promotionQuoteTx(client, { code: promoCode, subtotal, channel, branchId, clientId });
   const account = enabled && clientId ? await loyaltyAccountTx(client, clientId, !preview) : null;
   let requested = Math.max(0, i(points));

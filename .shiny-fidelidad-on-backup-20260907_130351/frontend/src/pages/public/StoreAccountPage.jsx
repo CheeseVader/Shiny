@@ -25,7 +25,7 @@ export default function StoreAccountPage() {
   async function loadPrivate() {
     if (!auth.user) return;
     try {
-      const [o, l, d] = await Promise.all([publicApi('/api/client/orders'), publicApi('/api/client/loyalty'), publicApi('/api/client/addresses')]);
+      const [o, d] = await Promise.all([publicApi('/api/client/orders'), publicApi('/api/client/addresses')]); const l = {data:null};
       setOrders(o.data || []);setLoyalty(l.data || null);setAddresses(d.data || []);
     } catch (e) {setMessage(e.message);}
   }

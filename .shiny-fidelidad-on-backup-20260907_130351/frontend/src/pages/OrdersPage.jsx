@@ -1133,7 +1133,7 @@ export default function OrdersPage({ mode = '' }) {
     setMessage('');
     if (!cart.length) {setMessage('El carrito está vacío.');return;}
     const availablePoints = Math.max(0, Number(loyalty?.puntos_disponibles || 0));
-    if (clientId && availablePoints > 0 && Number(pointsToRedeem || 0) === 0) {
+    if (false && clientId && availablePoints > 0 && Number(pointsToRedeem || 0) === 0) {
       setPointsModalOpen(true);return;
     }
     setCheckoutModalOpen(true);

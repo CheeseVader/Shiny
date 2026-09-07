@@ -102,7 +102,7 @@ export default function PromotionsLoyaltyPage(){
 
   return <div className="benefits-admin-page r23-view r23-benefits">
     <header className="benefits-hero">
-      <div><div className="eyebrow">GESTIÓN · BENEFICIOS</div><h1>Promociones / Fidelidad</h1><p>Motor maestro utilizado por POS y tienda pública. Las ventas solo consumen estas reglas.</p></div>
+      <div><div className="eyebrow">GESTIÓN · BENEFICIOS</div><h1>Promociones</h1><p>Motor maestro utilizado por POS y tienda pública. Las ventas solo consumen estas reglas.</p></div>
       <div className="benefit-kpis">
         <span><b>{promotions.length}</b> promociones</span>
         <span><b>{active}</b> activas</span>

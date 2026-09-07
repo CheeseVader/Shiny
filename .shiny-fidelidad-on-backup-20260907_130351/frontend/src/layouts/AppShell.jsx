@@ -22,7 +22,7 @@ const pageMeta = {
   '/admin/devoluciones': ['Devoluciones', 'OPERACIÓN'],
   '/admin/generar-codigo': ['Generar código', 'AUTORIZACIÓN POS'],
   '/admin/comercial': ['Gestión Comercial', 'OPERACIÓN'],
-  '/admin/promociones': ['Promociones / Fidelidad', 'BENEFICIOS'],
+  '/admin/promociones': ['Promociones', 'BENEFICIOS'],
   '/admin/notificaciones': ['Notificaciones / Alertas', 'CONTROL OPERATIVO'],
   '/admin/contenido': ['Contenido / Marketing', 'MARKETING'],
   '/admin/tcg': ['TCG', 'TRADING CARD GAME'],

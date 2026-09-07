@@ -98,7 +98,7 @@ router.post('/pos', async (req, res) => {
       payments: Array.isArray(req.body.payments)?req.body.payments:[],
       notes: String(req.body.notes || '').trim(),
       promoCode: String(req.body.promoCode || '').trim(),
-      pointsToRedeem: Number(req.body.pointsToRedeem || 0),
+      pointsToRedeem: 0,
       manualDiscountType: String(req.body.manualDiscountType || '').trim(),
       manualDiscountValue: Number(req.body.manualDiscountValue || 0),
       manualDiscountReason: String(req.body.manualDiscountReason || '').trim(),
