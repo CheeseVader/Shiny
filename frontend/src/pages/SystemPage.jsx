@@ -2,6 +2,7 @@ import { brandText } from "../config/brand.js";import { useEffect, useState } fr
 import { useOutletContext } from 'react-router';
 import { api } from '../services/api.js';
 import SystemUpdatePanel from '../components/SystemUpdatePanel.jsx';
+import SystemBackupPanel from '../components/SystemBackupPanel.jsx';
 import '../phase_shiny_exact_views_r23.css';
 import '../system_sys_h_r2.css';
 
@@ -348,6 +349,7 @@ export default function SystemPage() {
       <button className={systemSection === 'fx' ? 'active' : ''} onClick={() => setSystemSection('fx')}>Tipo de cambio</button>
       {isSuperadmin ? <button className={systemSection === 'diagnostic' ? 'active' : ''} onClick={() => setSystemSection('diagnostic')}>Diagnóstico técnico</button> : null}
       {isSuperadmin ? <button className={systemSection === 'updates' ? 'active' : ''} onClick={() => setSystemSection('updates')}>Actualizaciones</button> : null}
+      {isSuperadmin ? <button className={systemSection === 'backup' ? 'active' : ''} onClick={() => setSystemSection('backup')}>Respaldo y migración</button> : null}
     </nav>
 
     {systemSection === 'general' ? <section className="content-card system-business-settings">
@@ -431,6 +433,8 @@ export default function SystemPage() {
     </section> : null}
 
     {isSuperadmin && systemSection === 'updates' ? <SystemUpdatePanel /> : null}
+
+    {isSuperadmin && systemSection === 'backup' ? <SystemBackupPanel /> : null}
 
         {/* SHINY_ACCESS_PANEL_R125 */}
     {/* SHINY_HIDE_TEMP_URLS_R126 */}

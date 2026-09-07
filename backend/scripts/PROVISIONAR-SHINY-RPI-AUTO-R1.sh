@@ -428,3 +428,23 @@ else
 fi
 # SHINY_GEO_CATALOG_R128_END
 exit 0
+# ============================================================
+# SHINY_BACKUP_PROVISION_R130
+# Agente Linux del sistema de backup portable.
+# Windows usa backend/scripts/shiny-backup-agent.ps1 directamente.
+# ============================================================
+BK_SRC="$APP_DIR/backend/scripts/shiny-backup-agent.sh"
+BK_CRYPTO_SRC="$APP_DIR/backend/scripts/shiny-backup-crypto.cjs"
+BK_DIR="/usr/local/lib/shiny-backup"
+BK_DST="$BK_DIR/shiny-backup-agent.sh"
+
+if [[ -f "$BK_SRC" && -f "$BK_CRYPTO_SRC" ]]; then
+  install -d -o root -g root -m 0755 "$BK_DIR"
+  install -d -o root -g root -m 0700 /etc/shiny-backup /var/lib/shiny-backup /var/lib/shiny-backup/backups /var/lib/shiny-backup/tmp
+  install -o root -g root -m 0755 "$BK_SRC" "$BK_DST"
+  cat > /etc/sudoers.d/shiny-backup <<EOF
+shiny ALL=(root) NOPASSWD: $BK_DST
+EOF
+  chmod 0440 /etc/sudoers.d/shiny-backup
+  visudo -cf /etc/sudoers.d/shiny-backup >/dev/null
+fi
