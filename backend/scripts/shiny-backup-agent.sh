@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 # SHINY_BACKUP_ENGINE_CLEAN_R140
+# SHINY_BACKUP_EXIT_CLEANUP_R141
 # Motor de respaldo autocontenido.
 # No imprime repositorio, owner, token ni secretos en status/respuestas.
 
@@ -13,6 +14,7 @@ LAST_ERROR="$ROOT/last-error.json"
 
 BKP_STAGE="INIT"
 BKP_FAILED=0
+BKP_WORKDIR=""
 
 emit_error(){
   local code="${1:-UNSPECIFIED}"
@@ -38,6 +40,14 @@ on_err(){
   exit "$rc"
 }
 trap on_err ERR
+
+cleanup_workdir(){
+  local d="${BKP_WORKDIR:-}"
+  if [[ -n "$d" && -d "$d" ]]; then
+    rm -rf -- "$d" >/dev/null 2>&1 || true
+  fi
+}
+trap cleanup_workdir EXIT
 
 need(){ command -v "$1" >/dev/null 2>&1 || fail "MISSING_${1^^}"; }
 
@@ -252,7 +262,7 @@ backup(){
   work="$(mktemp -d "$TMP/create-XXXXXX")" || fail_stage WORKDIR_CREATE_FAILED
   chown root:postgres "$work" || fail_stage WORKDIR_CHOWN_FAILED
   chmod 0770 "$work" || fail_stage WORKDIR_CHMOD_FAILED
-  trap 'rm -rf "$work" >/dev/null 2>&1 || true' EXIT
+  BKP_WORKDIR="$work"
 
   BKP_STAGE="REPOSITORY_ACCESS"
   repo_body="$work/repository.json"
