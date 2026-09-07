@@ -50,7 +50,7 @@ $LocalPreservePrefixes = @(
 )
 
 # Rutas que ni siquiera deben empaquetarse.
-$PackageExcludePrefixes = @(
+$DeltaExcludePrefixes = @(
     'node_modules',
     'backend/node_modules',
     'frontend/node_modules',
@@ -82,7 +82,22 @@ function Test-LocalPreserved([string]$RelativePath) {
 }
 
 function Test-PackageExcluded([string]$RelativePath) {
-    return (Test-PathUnder $RelativePath $PackageExcludePrefixes)
+    # Usado por el DELTA incremental. Conserva SHINY-RPI-MANAGED-R1 protegido.
+    return (Test-PathUnder $RelativePath $DeltaExcludePrefixes)
+}
+
+function Test-FullPackageExcluded([string]$RelativePath) {
+    # El TAR completo SI debe incluir SHINY-RPI-MANAGED-R1 para instalaciones nuevas.
+    # Solo mantenemos fuera dependencias, temporales y metadata Git.
+    $fullExclude = @(
+        'node_modules',
+        'backend/node_modules',
+        'frontend/node_modules',
+        'release-output',
+        'BACKUP-PWA-20260902-125029',
+        '.git'
+    )
+    return (Test-PathUnder $RelativePath $fullExclude)
 }
 
 function Get-GitHubCredential {
@@ -318,7 +333,7 @@ try {
     $TrackedFiles = @(& git ls-files) | ForEach-Object { Normalize-RelPath $_ } | Sort-Object -Unique
     foreach ($rel in $TrackedFiles) {
         if ([string]::IsNullOrWhiteSpace($rel)) { continue }
-        if (Test-PackageExcluded $rel) { continue }
+        if (Test-FullPackageExcluded $rel) { continue }
 
         $src = Join-Path $Root ($rel -replace '/', [IO.Path]::DirectorySeparatorChar)
         if (-not (Test-Path -LiteralPath $src -PathType Leaf)) { continue }
@@ -329,6 +344,13 @@ try {
         Copy-Item -LiteralPath $src -Destination $dst -Force
     }
 
+    # R5.2.2: el paquete completo debe traer el restaurador RPi administrado.
+    $RestoreRel = 'SHINY-RPI-MANAGED-R1/RESTAURAR-CLIENTE-LINUX-DESDE-GITHUB-R2.sh'
+    $RestoreInStage = Join-Path $Stage ($RestoreRel -replace '/', [IO.Path]::DirectorySeparatorChar)
+    if (-not (Test-Path -LiteralPath $RestoreInStage -PathType Leaf)) {
+        Fail "PAQUETE COMPLETO INVALIDO: falta $RestoreRel"
+    }
+    Write-Ok "Restaurador incluido en TAR completo: $RestoreRel"
     # VERSION dentro del paquete completo representa esta Release.
     [System.IO.File]::WriteAllText((Join-Path $Stage 'VERSION'), $Version + "`n", (New-Object System.Text.UTF8Encoding($false)))
 
