@@ -1,4 +1,4 @@
-/* SHINY_SYSTEM_BACKUP_ONE_CLICK_R138_PRIVATE */
+/* SHINY_SYSTEM_BACKUP_ENGINE_CLEAN_R1 */
 import { Router } from 'express';
 import { spawn } from 'node:child_process';
 
@@ -31,85 +31,40 @@ function runAgent(action,timeout=30*60*1000){
   });
 }
 
+function cleanPart(v,fallback){
+  const s=String(v||fallback||'UNKNOWN').toUpperCase().replace(/[^A-Z0-9_]+/g,'_');
+  return s.slice(0,64)||fallback||'UNKNOWN';
+}
+
 function publicBackupError(raw){
   const s=String(raw||'');
+  const stage=cleanPart(s.match(/BKP_STAGE=([A-Z0-9_]+)/i)?.[1],'UNKNOWN');
+  const code=cleanPart(s.match(/BKP_CODE=([A-Z0-9_]+)/i)?.[1],'UNKNOWN');
+  const diagnosticCode=`BKP-${stage}-${code}`.slice(0,140);
 
-  if(/PG_DUMP_FAILED|pg_dump/i.test(s)) return {
-    error:'PG_DUMP_FAILED',
-    diagnosticCode:'BKP-DB',
-    message:'No fue posible generar el respaldo de la base de datos.'
-  };
-
-  if(/BACKUP_REPO_MUST_BE_PRIVATE/i.test(s)) return {
-    error:'BACKUP_STORAGE_FAILED',
-    diagnosticCode:'BKP-PRIVATE',
-    message:'No fue posible almacenar el respaldo.'
-  };
-
-  if(/CREDENTIAL_MIGRATION_DECRYPT_FAILED/i.test(s)) return {
-    error:'BACKUP_STORAGE_FAILED',
-    diagnosticCode:'BKP-CRED-KEY',
-    message:'No fue posible almacenar el respaldo.'
-  };
-
-  if(/CREDENTIAL_MIGRATION_(ASSET_MISSING|DOWNLOAD_FAILED|RELEASE_UNAVAILABLE)/i.test(s)) return {
-    error:'BACKUP_STORAGE_FAILED',
-    diagnosticCode:'BKP-CRED-ASSET',
-    message:'No fue posible almacenar el respaldo.'
-  };
-
-  if(/BACKUP_TOKEN_(WRITE_REQUIRED|VALIDATION_FAILED)|BACKUP_ACCESS_CHECK_FAILED/i.test(s)) return {
-    error:'BACKUP_STORAGE_FAILED',
-    diagnosticCode:'BKP-CRED-WRITE',
-    message:'No fue posible almacenar el respaldo.'
-  };
-
-  if(/BACKUP_RELEASE_CREATE_FAILED_AFTER_MIGRATION/i.test(s)) return {
-    error:'BACKUP_STORAGE_FAILED',
-    diagnosticCode:'BKP-RELEASE-AFTER-CRED',
-    message:'No fue posible almacenar el respaldo.'
-  };
-
-  if(/BACKUP_RELEASE_CREATE_FAILED/i.test(s)) return {
-    error:'BACKUP_STORAGE_FAILED',
-    diagnosticCode:'BKP-RELEASE',
-    message:'No fue posible almacenar el respaldo.'
-  };
-
-  if(/BACKUP_UPLOAD_DATABASE_FAILED/i.test(s)) return {
-    error:'BACKUP_STORAGE_FAILED',
-    diagnosticCode:'BKP-UPLOAD-DB',
-    message:'No fue posible almacenar el respaldo.'
-  };
-
-  if(/BACKUP_UPLOAD_CONFIG_FAILED/i.test(s)) return {
-    error:'BACKUP_STORAGE_FAILED',
-    diagnosticCode:'BKP-UPLOAD-CONFIG',
-    message:'No fue posible almacenar el respaldo.'
-  };
-
-  if(/BACKUP_UPLOAD_FILES_FAILED/i.test(s)) return {
-    error:'BACKUP_STORAGE_FAILED',
-    diagnosticCode:'BKP-UPLOAD-FILES',
-    message:'No fue posible almacenar el respaldo.'
-  };
-
-  if(/BACKUP_UPLOAD_MANIFEST_FAILED/i.test(s)) return {
-    error:'BACKUP_STORAGE_FAILED',
-    diagnosticCode:'BKP-UPLOAD-MANIFEST',
-    message:'No fue posible almacenar el respaldo.'
-  };
-
-  if(/GITHUB|HTTP_4|HTTP_5|release|upload|TOKEN|CREDENTIAL|STORAGE/i.test(s)) return {
-    error:'BACKUP_STORAGE_FAILED',
-    diagnosticCode:'BKP-STORAGE',
-    message:'No fue posible almacenar el respaldo.'
-  };
+  let message='No fue posible completar el respaldo.';
+  if(stage==='DATABASE_DUMP'||stage==='DATABASE_IDENTITY'){
+    message='No fue posible generar el respaldo de la base de datos.';
+  }else if(stage==='REPOSITORY_ACCESS'||stage==='RELEASE_CREATE'){
+    message='No fue posible crear el respaldo remoto.';
+  }else if(stage==='APP_RELEASE'||stage==='APP_MANIFEST_DOWNLOAD'){
+    message='No fue posible validar la versión instalada para el respaldo.';
+  }else if(stage==='CONFIG_ARCHIVE'||stage==='UPLOADS_ARCHIVE'){
+    message='No fue posible preparar los archivos del respaldo.';
+  }else if(stage.startsWith('UPLOAD_')){
+    message='No fue posible subir los archivos del respaldo.';
+  }else if(stage==='MANIFEST_BUILD'){
+    message='No fue posible preparar el manifiesto del respaldo.';
+  }else if(stage==='FINALIZE'){
+    message='El respaldo remoto no pudo registrarse localmente.';
+  }else if(stage==='DEPENDENCIES'||stage==='WORKDIR'){
+    message='No fue posible preparar el entorno de respaldo.';
+  }
 
   return {
     error:'BACKUP_FAILED',
-    diagnosticCode:'BKP-GENERAL',
-    message:'No fue posible completar el respaldo.'
+    diagnosticCode,
+    message:`${message} (${diagnosticCode})`
   };
 }
 
@@ -118,7 +73,7 @@ router.get('/status',async(_req,res)=>{
     const out=await runAgent('status',60000);
     const data=JSON.parse(out||'{}');
     delete data.repo;
-    res.setHeader('Cache-Control','no-store');
+    res.setHeader('Cache-Control','no-store, no-cache, must-revalidate');
     res.json({success:true,data});
   }catch(e){
     console.error('[system-backup/status]',String(e?.message||e));
@@ -126,7 +81,7 @@ router.get('/status',async(_req,res)=>{
       success:false,
       error:'BACKUP_STATUS_FAILED',
       diagnosticCode:'BKP-STATUS',
-      message:'No fue posible consultar el estado del respaldo.'
+      message:'No fue posible consultar el estado del respaldo. (BKP-STATUS)'
     });
   }
 });
@@ -134,13 +89,12 @@ router.get('/status',async(_req,res)=>{
 router.post('/backup',async(_req,res)=>{
   try{
     await runAgent('backup');
-    res.json({
-      success:true,
-      message:'Respaldo creado correctamente.'
-    });
+    res.setHeader('Cache-Control','no-store');
+    res.json({success:true,message:'Respaldo creado correctamente.'});
   }catch(e){
-    console.error('[system-backup/backup]',String(e?.message||e));
-    const pub=publicBackupError(e?.message||e);
+    const raw=String(e?.message||e);
+    console.error('[system-backup/backup]',raw);
+    const pub=publicBackupError(raw);
     res.status(500).json({success:false,...pub});
   }
 });

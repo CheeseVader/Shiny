@@ -1,24 +1,49 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
-# SHINY_BACKUP_ONE_CLICK_AGENT_R138
-# Usa /etc/shiny-updater/updater.env. No solicita datos interactivos.
-# Publica backup-* como prerelease dentro del MISMO <Cliente>-Release.
+# SHINY_BACKUP_ENGINE_CLEAN_R1
+# Motor de respaldo autocontenido.
+# No imprime repositorio, owner, token ni secretos en status/respuestas.
 
 UPDATER_ENV="${SHINY_UPDATER_CONFIG:-/etc/shiny-updater/updater.env}"
 ROOT="${SHINY_BACKUP_ROOT:-/var/lib/shiny-backup}"
 BACKUPS="$ROOT/backups"
 TMP="$ROOT/tmp"
 LAST_JSON="$ROOT/last-backup.json"
+LAST_ERROR="$ROOT/last-error.json"
 
-fail(){ echo "[ERROR] $*" >&2; exit 1; }
-need(){ command -v "$1" >/dev/null 2>&1 || fail "Falta dependencia: $1"; }
-json_escape(){ python3 -c 'import json,sys; print(json.dumps(sys.stdin.read()))'; }
+BKP_STAGE="INIT"
+BKP_FAILED=0
+
+emit_error(){
+  local code="${1:-UNSPECIFIED}"
+  printf '[ERROR] BKP_STAGE=%s\n' "${BKP_STAGE:-UNKNOWN}" >&2
+  printf '[ERROR] BKP_CODE=%s\n' "$code" >&2
+}
+
+fail(){
+  local code="${1:-BACKUP_FAILED}"
+  BKP_FAILED=1
+  emit_error "$code"
+  exit 1
+}
+
+on_err(){
+  local rc=$?
+  if [[ "${BKP_FAILED:-0}" != "1" ]]; then
+    if declare -F write_last_error >/dev/null 2>&1; then
+      write_last_error "${BKP_STAGE:-UNKNOWN}" "UNEXPECTED_RC_${rc}" || true
+    fi
+    emit_error "UNEXPECTED_RC_${rc}"
+  fi
+  exit "$rc"
+}
+trap on_err ERR
+
+need(){ command -v "$1" >/dev/null 2>&1 || fail "MISSING_${1^^}"; }
 
 [[ $EUID -eq 0 ]] || fail ROOT_REQUIRED
-[[ -f "$UPDATER_ENV" ]] || fail "No existe $UPDATER_ENV"
-for c in curl jq tar pg_dump psql runuser sha256sum python3 node; do need "$c"; done
+[[ -f "$UPDATER_ENV" ]] || fail UPDATER_CONFIG_MISSING
 
-# Normalizar CRLF/BOM sin imprimir secretos.
 sed -i '1s/^\xEF\xBB\xBF//' "$UPDATER_ENV" 2>/dev/null || true
 sed -i 's/\r$//' "$UPDATER_ENV" 2>/dev/null || true
 # shellcheck disable=SC1090
@@ -51,7 +76,6 @@ env_value(){
     printf '%s' "$value"
     return 0
   done
-  return 0
 }
 
 BACKEND_ENV="$APP_DIR/backend/.env"
@@ -60,61 +84,104 @@ BACKEND_ENV="$APP_DIR/backend/.env"
 [[ -n "$DB_SCHEMA" ]] || DB_SCHEMA="$(env_value "$BACKEND_ENV" DB_SCHEMA)"
 DB_SCHEMA="${DB_SCHEMA:-shiny}"
 
-# Ultimo fallback: detectar la BD real en PostgreSQL sin inventar nombres.
-if [[ -z "$DB_NAME" ]] && command -v runuser >/dev/null 2>&1 && command -v psql >/dev/null 2>&1; then
-  if [[ -n "$DB_USER" ]]; then
-    DB_USER_SQL="${DB_USER//\'/\'\'}"
-    DB_NAME="$(runuser -u postgres -- psql -d postgres -Atqc \
-      "SELECT d.datname FROM pg_database d JOIN pg_roles r ON r.oid=d.datdba WHERE r.rolname='${DB_USER_SQL}' AND d.datistemplate=false ORDER BY CASE WHEN d.datname='shiny_db' THEN 0 ELSE 1 END,d.datname LIMIT 1" \
-      2>/dev/null || true)"
-  fi
-  if [[ -z "$DB_NAME" ]]; then
-    DB_NAME="$(runuser -u postgres -- psql -d postgres -Atqc \
-      "SELECT datname FROM pg_database WHERE datistemplate=false AND datname NOT IN ('postgres') ORDER BY CASE WHEN datname='shiny_db' THEN 0 ELSE 1 END,datname LIMIT 1" \
-      2>/dev/null || true)"
-  fi
-fi
-
-if [[ -z "$DB_USER" && -n "$DB_NAME" ]] && command -v runuser >/dev/null 2>&1 && command -v psql >/dev/null 2>&1; then
-  DB_NAME_SQL="${DB_NAME//\'/\'\'}"
-  DB_USER="$(runuser -u postgres -- psql -d postgres -Atqc \
-    "SELECT r.rolname FROM pg_database d JOIN pg_roles r ON r.oid=d.datdba WHERE d.datname='${DB_NAME_SQL}' LIMIT 1" \
-    2>/dev/null || true)"
-fi
-
 [[ -n "$GITHUB_OWNER" ]] || fail GITHUB_OWNER_NOT_CONFIGURED
 [[ -n "$GITHUB_REPO" ]] || fail GITHUB_REPO_NOT_CONFIGURED
 [[ -n "$GITHUB_TOKEN" ]] || fail GITHUB_TOKEN_NOT_CONFIGURED
-[[ -n "$DB_NAME" ]] || fail DB_NAME_NOT_CONFIGURED
-[[ "$DB_SCHEMA" == "shiny" ]] || fail "DB_SCHEMA esperado shiny; actual=$DB_SCHEMA"
-[[ -d "$APP_DIR" ]] || fail "No existe APP_DIR=$APP_DIR"
-[[ -f "$APP_DIR/VERSION" ]] || fail "No existe $APP_DIR/VERSION"
+[[ -d "$APP_DIR" ]] || fail APP_DIR_MISSING
+[[ -f "$APP_DIR/VERSION" ]] || fail VERSION_FILE_MISSING
 
-if [[ -z "$CLIENT_NAME" ]]; then
-  CLIENT_NAME="${GITHUB_REPO%-Release}"
-fi
+VERSION="$(tr -d '\r\n ' < "$APP_DIR/VERSION")"
+[[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || fail VERSION_INVALID
+[[ "$GITHUB_REPO" == *-Release ]] || fail RELEASE_REPO_INVALID
+
+if [[ -z "$CLIENT_NAME" ]]; then CLIENT_NAME="${GITHUB_REPO%-Release}"; fi
 if [[ -z "$CLIENT_SLUG" ]]; then
   CLIENT_SLUG="$(printf '%s' "$CLIENT_NAME" | sed -E 's/([a-z0-9])([A-Z])/\1_\2/g;s/[^A-Za-z0-9]+/_/g;s/^_+//;s/_+$//' | tr '[:upper:]' '[:lower:]')"
 fi
 DB_USER="${DB_USER:-${CLIENT_SLUG}_app}"
-VERSION="$(tr -d '\r\n ' < "$APP_DIR/VERSION")"
-[[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || fail "VERSION invalida: $VERSION"
-[[ "$GITHUB_REPO" == *-Release ]] || fail "Repo inesperado: $GITHUB_REPO. Debe ser <Cliente>-Release."
 
-mkdir -p "$BACKUPS" "$TMP"
-# El dump corre como postgres. ROOT/TMP permiten solo traversal al grupo postgres.
+mkdir -p "$ROOT" "$BACKUPS" "$TMP"
 chown root:postgres "$ROOT" "$TMP" 2>/dev/null || true
 chmod 0710 "$ROOT" "$TMP"
 chown root:root "$BACKUPS" 2>/dev/null || true
 chmod 0700 "$BACKUPS"
 
 API="https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}"
-api(){
-  curl -fsS \
+
+write_last_error(){
+  local stage="${1:-UNKNOWN}" code="${2:-UNKNOWN}"
+  jq -cn --arg stage "$stage" --arg code "$code" --arg at "$(date -Iseconds)" \
+    '{stage:$stage,code:$code,at:$at}' > "$LAST_ERROR.tmp" 2>/dev/null || return 0
+  chmod 0600 "$LAST_ERROR.tmp" 2>/dev/null || true
+  mv -f "$LAST_ERROR.tmp" "$LAST_ERROR" 2>/dev/null || true
+}
+
+fail_stage(){
+  local code="${1:-BACKUP_FAILED}"
+  write_last_error "${BKP_STAGE:-UNKNOWN}" "$code"
+  fail "$code"
+}
+
+gh_json(){
+  local method="$1" url="$2" output="$3" body="${4:-}"
+  local code args
+  args=(-sS -o "$output" -w '%{http_code}' -X "$method"
+    -H 'Accept: application/vnd.github+json'
+    -H "Authorization: Bearer $GITHUB_TOKEN"
+    -H 'X-GitHub-Api-Version: 2022-11-28'
+    -H 'User-Agent: Shiny-Backup-Engine-Clean-R1')
+  if [[ -n "$body" ]]; then
+    args+=(-H 'Content-Type: application/json' --data "$body")
+  fi
+  code="$(curl "${args[@]}" "$url" || true)"
+  printf '%s' "$code"
+}
+
+download_asset(){
+  local url="$1" output="$2" code
+  code="$(curl -sS -L -o "$output" -w '%{http_code}' \
+    -H 'Accept: application/octet-stream' \
+    -H "Authorization: Bearer $GITHUB_TOKEN" \
+    -H 'X-GitHub-Api-Version: 2022-11-28' \
+    -H 'User-Agent: Shiny-Backup-Engine-Clean-R1' \
+    "$url" || true)"
+  [[ "$code" == "200" ]]
+}
+
+upload_asset(){
+  local upload_base="$1" file="$2" name encoded code body
+  name="$(basename "$file")"
+  encoded="$(python3 -c 'import sys,urllib.parse;print(urllib.parse.quote(sys.argv[1]))' "$name")"
+  body="$(mktemp "$TMP/upload-response-XXXXXX.json")"
+  code="$(curl -sS -o "$body" -w '%{http_code}' -X POST \
     -H 'Accept: application/vnd.github+json' \
     -H "Authorization: Bearer $GITHUB_TOKEN" \
     -H 'X-GitHub-Api-Version: 2022-11-28' \
-    -H 'User-Agent: Shiny-Backup-OneClick-R133' "$@"
+    -H 'Content-Type: application/octet-stream' \
+    -H 'User-Agent: Shiny-Backup-Engine-Clean-R1' \
+    --data-binary "@$file" \
+    "${upload_base}?name=${encoded}" || true)"
+  rm -f "$body"
+  [[ "$code" == "201" ]]
+}
+
+delete_remote_release(){
+  local release_id="${1:-}" tag="${2:-}"
+  [[ "$release_id" =~ ^[0-9]+$ ]] || return 0
+  curl -fsS -X DELETE \
+    -H 'Accept: application/vnd.github+json' \
+    -H "Authorization: Bearer $GITHUB_TOKEN" \
+    -H 'X-GitHub-Api-Version: 2022-11-28' \
+    -H 'User-Agent: Shiny-Backup-Engine-Clean-R1' \
+    "$API/releases/$release_id" >/dev/null 2>&1 || true
+  if [[ -n "$tag" ]]; then
+    curl -fsS -X DELETE \
+      -H 'Accept: application/vnd.github+json' \
+      -H "Authorization: Bearer $GITHUB_TOKEN" \
+      -H 'X-GitHub-Api-Version: 2022-11-28' \
+      -H 'User-Agent: Shiny-Backup-Engine-Clean-R1' \
+      "$API/git/refs/tags/$tag" >/dev/null 2>&1 || true
+  fi
 }
 
 status(){
@@ -127,233 +194,107 @@ status(){
     '{configured:true,platform:"linux",db:$db,version:$version,latestBackup:$latest}'
 }
 
-upload_asset(){
-  local upload_base="$1" file="$2" name encoded
-  name="$(basename "$file")"
-  encoded="$(python3 -c 'import sys,urllib.parse;print(urllib.parse.quote(sys.argv[1]))' "$name")"
-  curl -fsS -X POST \
-    -H 'Accept: application/vnd.github+json' \
-    -H "Authorization: Bearer $GITHUB_TOKEN" \
-    -H 'X-GitHub-Api-Version: 2022-11-28' \
-    -H 'Content-Type: application/octet-stream' \
-    --data-binary "@$file" \
-    "${upload_base}?name=${encoded}" >/dev/null
-}
-
-# SHINY_BACKUP_AUTH_R138
-# No se confia en .permissions.push para autorizar respaldos.
-# La prueba definitiva es la MISMA operacion que necesitamos: crear la Release backup-*.
-# Si GitHub responde 401/403, se migra una credencial verificada y se reintenta una sola vez.
-
-migrate_backup_credential_r138(){
-  local release_tag asset_name release_json asset_url asset_id asset_file
-  local new_token probe_tag probe_payload probe_body probe_code probe_id tmpcfg
-
-  release_tag="v1.0.38"
-  asset_name="shiny-credential-migration-1.0.38.json"
-  release_json="$(mktemp "$TMP/cred-r138-release-XXXXXX.json")"
-
-  if ! api "$API/releases/tags/$release_tag" > "$release_json"; then
-    rm -f "$release_json"
-    fail CREDENTIAL_MIGRATION_RELEASE_UNAVAILABLE
-  fi
-
-  asset_url="$(jq -r --arg n "$asset_name" '.assets[]? | select(.name==$n) | .url' "$release_json" | head -n1)"
-  asset_id="$(jq -r --arg n "$asset_name" '.assets[]? | select(.name==$n) | .id' "$release_json" | head -n1)"
-  [[ -n "$asset_url" && "$asset_url" != "null" ]] || {
-    rm -f "$release_json"
-    fail CREDENTIAL_MIGRATION_ASSET_MISSING
-  }
-
-  asset_file="$(mktemp "$TMP/cred-r138-XXXXXX.json")"
-  if ! curl -fsSL \
-      -H 'Accept: application/octet-stream' \
-      -H "Authorization: Bearer $GITHUB_TOKEN" \
-      -H 'X-GitHub-Api-Version: 2022-11-28' \
-      "$asset_url" -o "$asset_file"; then
-    rm -f "$release_json" "$asset_file"
-    fail CREDENTIAL_MIGRATION_DOWNLOAD_FAILED
-  fi
-
-  if ! new_token="$(
-    CURRENT_TOKEN="$GITHUB_TOKEN" EXPECTED_OWNER="$GITHUB_OWNER" EXPECTED_REPO="$GITHUB_REPO" \
-    node - "$asset_file" <<'NODE'
-const fs=require('fs');
-const crypto=require('crypto');
-try{
-  const p=JSON.parse(fs.readFileSync(process.argv[2],'utf8'));
-  const oldToken=process.env.CURRENT_TOKEN||'';
-  if(oldToken.length<20||p.schema!==1||p.cipher!=='AES-256-GCM')process.exit(2);
-  const key=crypto.pbkdf2Sync(Buffer.from(oldToken,'utf8'),Buffer.from(p.salt,'base64'),Number(p.iterations||180000),32,'sha256');
-  const decipher=crypto.createDecipheriv('aes-256-gcm',key,Buffer.from(p.iv,'base64'));
-  decipher.setAuthTag(Buffer.from(p.tag,'base64'));
-  const data=JSON.parse(Buffer.concat([decipher.update(Buffer.from(p.ciphertext,'base64')),decipher.final()]).toString('utf8'));
-  if(data.version!=='1.0.38')process.exit(3);
-  if(data.owner!==process.env.EXPECTED_OWNER||data.repo!==process.env.EXPECTED_REPO)process.exit(4);
-  if(typeof data.token!=='string'||data.token.length<20)process.exit(5);
-  process.stdout.write(data.token);
-}catch{process.exit(6);}
-NODE
-  )"; then
-    rm -f "$release_json" "$asset_file"
-    fail CREDENTIAL_MIGRATION_DECRYPT_FAILED
-  fi
-
-  # Verificacion REAL del token nuevo ANTES de persistirlo.
-  probe_tag="backup-auth-r138-$(date +%Y%m%d%H%M%S)-$$"
-  probe_payload="$(jq -cn --arg tag "$probe_tag" '{tag_name:$tag,name:"Shiny backup authorization verification",body:"Temporary authorization verification.",draft:true,prerelease:true}')"
-  probe_body="$(mktemp "$TMP/cred-r138-probe-XXXXXX.json")"
-  probe_code="$(curl -sS -o "$probe_body" -w '%{http_code}' -X POST \
-    -H 'Accept: application/vnd.github+json' \
-    -H "Authorization: Bearer $new_token" \
-    -H 'X-GitHub-Api-Version: 2022-11-28' \
-    -H 'Content-Type: application/json' \
-    -H 'User-Agent: Shiny-Backup-OneClick-R138' \
-    --data "$probe_payload" "$API/releases" || true)"
-
-  [[ "$probe_code" == "201" ]] || {
-    rm -f "$release_json" "$asset_file" "$probe_body"
-    unset new_token
-    fail BACKUP_TOKEN_WRITE_REQUIRED
-  }
-
-  probe_id="$(jq -r '.id // empty' "$probe_body")"
-  [[ "$probe_id" =~ ^[0-9]+$ ]] || {
-    rm -f "$release_json" "$asset_file" "$probe_body"
-    unset new_token
-    fail BACKUP_TOKEN_VALIDATION_FAILED
-  }
-
-  # Borrar probe. Si GitHub hubiera creado un tag/ref, intentar limpiarlo tambien.
-  curl -fsS -X DELETE \
-    -H 'Accept: application/vnd.github+json' \
-    -H "Authorization: Bearer $new_token" \
-    -H 'X-GitHub-Api-Version: 2022-11-28' \
-    "$API/releases/$probe_id" >/dev/null 2>&1 || true
-  curl -fsS -X DELETE \
-    -H 'Accept: application/vnd.github+json' \
-    -H "Authorization: Bearer $new_token" \
-    -H 'X-GitHub-Api-Version: 2022-11-28' \
-    "$API/git/refs/tags/$probe_tag" >/dev/null 2>&1 || true
-
-  tmpcfg="$(mktemp)"
-  NEW_TOKEN="$new_token" python3 - "$UPDATER_ENV" "$tmpcfg" <<'PYCFG'
-from pathlib import Path
-import os,sys
-src=Path(sys.argv[1]); dst=Path(sys.argv[2]); new=os.environ.get('NEW_TOKEN','')
-if len(new)<20: raise SystemExit(2)
-lines=src.read_text(encoding='utf-8-sig').replace('\r\n','\n').replace('\r','\n').splitlines()
-out=[]; done=False
-for line in lines:
-    if line.startswith('GITHUB_TOKEN=') and not done:
-        out.append('GITHUB_TOKEN='+new); done=True
-    else: out.append(line)
-if not done: out.append('GITHUB_TOKEN='+new)
-dst.write_text('\n'.join(out)+'\n',encoding='utf-8',newline='\n')
-PYCFG
-
-  install -o root -g root -m 0600 "$tmpcfg" "$UPDATER_ENV"
-  rm -f "$tmpcfg"
-  GITHUB_TOKEN="$new_token"
-
-  printf '{"version":"1.0.38","migratedAt":"%s"}\n' "$(date -Iseconds)" > "$ROOT/credential-r138.done"
-  chmod 0600 "$ROOT/credential-r138.done"
-
-  # Asset de un solo uso: borrar solo despues de verificar y persistir.
-  if [[ "$asset_id" =~ ^[0-9]+$ ]]; then
-    curl -fsS -X DELETE \
-      -H 'Accept: application/vnd.github+json' \
-      -H "Authorization: Bearer $GITHUB_TOKEN" \
-      -H 'X-GitHub-Api-Version: 2022-11-28' \
-      "$API/releases/assets/$asset_id" >/dev/null 2>&1 || true
-  fi
-
-  rm -f "$release_json" "$asset_file" "$probe_body"
-  unset new_token
-}
-
-create_backup_release_r138(){
-  local payload="$1" output="$2" body code
-  body="$(mktemp "$TMP/release-r138-XXXXXX.json")"
-  code="$(curl -sS -o "$body" -w '%{http_code}' -X POST \
-    -H 'Accept: application/vnd.github+json' \
-    -H "Authorization: Bearer $GITHUB_TOKEN" \
-    -H 'X-GitHub-Api-Version: 2022-11-28' \
-    -H 'Content-Type: application/json' \
-    -H 'User-Agent: Shiny-Backup-OneClick-R138' \
-    --data "$payload" "$API/releases" || true)"
-  BACKUP_RELEASE_HTTP="$code"
-  if [[ "$code" == "201" ]]; then
-    cat "$body" > "$output"
-    rm -f "$body"
-    return 0
-  fi
-  rm -f "$body"
+archive_paths(){
+  local output="$1"; shift
+  local tries=0
+  while (( tries < 2 )); do
+    rm -f "$output"
+    if tar -czf "$output" -C "$APP_DIR" "$@" 2>/dev/null; then return 0; fi
+    tries=$((tries+1))
+    sleep 1
+  done
   return 1
 }
+
 backup(){
   local stamp tag work db_asset db_file db_sha
   local app_tag app_asset app_manifest release_json app_manifest_url app_sha
   local config_asset='' config_file='' config_sha='' uploads_asset='' uploads_file='' uploads_sha=''
-  local release_payload release_created upload_url upload_base manifest release_id
+  local manifest release_payload release_body release_code release_id upload_url upload_base
+  local repo_body repo_code app_code
+  local -a cfg_paths=()
+
+  BKP_STAGE="DEPENDENCIES"
+  for c in curl jq tar pg_dump psql runuser sha256sum python3; do need "$c"; done
+
+  BKP_STAGE="DATABASE_IDENTITY"
+  if [[ -z "$DB_NAME" ]]; then
+    DB_NAME="$(runuser -u postgres -- psql -d postgres -Atqc \
+      "SELECT datname FROM pg_database WHERE datistemplate=false AND datname NOT IN ('postgres') ORDER BY CASE WHEN datname='shiny_db' THEN 0 ELSE 1 END,datname LIMIT 1" \
+      2>/dev/null || true)"
+  fi
+  [[ -n "$DB_NAME" ]] || fail_stage DB_NAME_NOT_CONFIGURED
+  [[ "$DB_SCHEMA" == "shiny" ]] || fail_stage DB_SCHEMA_UNEXPECTED
 
   stamp="$(date +%Y%m%d-%H%M%S)"
-  tag="backup-$stamp"
-  work="$(mktemp -d "$TMP/create-XXXXXX")"
-  chown postgres:postgres "$work"
+  tag="backup-${stamp}-$RANDOM"
+
+  BKP_STAGE="WORKDIR"
+  work="$(mktemp -d "$TMP/create-XXXXXX")" || fail_stage WORKDIR_CREATE_FAILED
+  chown root:postgres "$work" || fail_stage WORKDIR_CHOWN_FAILED
+  chmod 0770 "$work" || fail_stage WORKDIR_CHMOD_FAILED
   trap 'rm -rf "$work" >/dev/null 2>&1 || true' EXIT
 
-  # Confirmar acceso al repo y obtener la app exacta instalada.
-  repo_meta="$work/repository.json"
-  api "$API" > "$repo_meta" || fail BACKUP_STORAGE_UNAVAILABLE
-  [[ "$(jq -r '.private // false' "$repo_meta")" == "true" ]] || fail BACKUP_REPO_MUST_BE_PRIVATE
+  BKP_STAGE="REPOSITORY_ACCESS"
+  repo_body="$work/repository.json"
+  repo_code="$(gh_json GET "$API" "$repo_body")"
+  [[ "$repo_code" == "200" ]] || fail_stage REPOSITORY_HTTP_FAILED
+  [[ "$(jq -r '.private // false' "$repo_body" 2>/dev/null)" == "true" ]] || fail_stage REPOSITORY_NOT_PRIVATE
+
+  BKP_STAGE="APP_RELEASE"
   app_tag="v$VERSION"
   release_json="$work/app-release.json"
-  api "$API/releases/tags/$app_tag" > "$release_json" || fail "No existe app release $app_tag"
+  app_code="$(gh_json GET "$API/releases/tags/$app_tag" "$release_json")"
+  [[ "$app_code" == "200" ]] || fail_stage APP_RELEASE_NOT_FOUND
+
   app_asset="shiny-rpi-$VERSION.tar.gz"
-  jq -e --arg n "$app_asset" '.assets[] | select(.name==$n)' "$release_json" >/dev/null \
-    || fail "La release $app_tag no contiene $app_asset"
+  jq -e --arg n "$app_asset" '.assets[]? | select(.name==$n)' "$release_json" >/dev/null 2>&1 \
+    || fail_stage APP_PACKAGE_ASSET_MISSING
 
   app_manifest="manifest-$VERSION.json"
-  app_manifest_url="$(jq -r --arg n "$app_manifest" '.assets[] | select(.name==$n) | .url' "$release_json" | head -n1)"
-  [[ -n "$app_manifest_url" ]] || fail "La release $app_tag no contiene $app_manifest"
-  curl -fsSL \
-    -H 'Accept: application/octet-stream' \
-    -H "Authorization: Bearer $GITHUB_TOKEN" \
-    -H 'X-GitHub-Api-Version: 2022-11-28' \
-    "$app_manifest_url" -o "$work/$app_manifest"
-  app_sha="$(jq -r '.sha256 // empty' "$work/$app_manifest")"
-  [[ "$app_sha" =~ ^[A-Fa-f0-9]{64}$ ]] || fail "SHA256 de app ausente/invalido"
+  app_manifest_url="$(jq -r --arg n "$app_manifest" '.assets[]? | select(.name==$n) | .url' "$release_json" | head -n1)"
+  [[ -n "$app_manifest_url" && "$app_manifest_url" != "null" ]] || fail_stage APP_MANIFEST_ASSET_MISSING
 
-  # Base PostgreSQL exacta.
+  BKP_STAGE="APP_MANIFEST_DOWNLOAD"
+  download_asset "$app_manifest_url" "$work/$app_manifest" || fail_stage APP_MANIFEST_DOWNLOAD_FAILED
+  app_sha="$(jq -r '.sha256 // empty' "$work/$app_manifest" 2>/dev/null || true)"
+  [[ "$app_sha" =~ ^[A-Fa-f0-9]{64}$ ]] || fail_stage APP_MANIFEST_SHA_INVALID
+
+  BKP_STAGE="DATABASE_DUMP"
   db_asset="${DB_NAME}-${stamp}.dump"
   db_file="$work/$db_asset"
   runuser -u postgres -- pg_dump -Fc --no-owner --no-privileges -d "$DB_NAME" -f "$db_file" \
-    || fail PG_DUMP_FAILED
-  db_sha="$(sha256sum "$db_file" | awk '{print $1}')"
+    || fail_stage PG_DUMP_FAILED
+  chown root:root "$db_file" || fail_stage DB_DUMP_CHOWN_FAILED
+  chmod 0600 "$db_file" || fail_stage DB_DUMP_CHMOD_FAILED
+  db_sha="$(sha256sum "$db_file" | awk '{print $1}')" || fail_stage DB_DUMP_SHA_FAILED
+  [[ "$db_sha" =~ ^[A-Fa-f0-9]{64}$ ]] || fail_stage DB_DUMP_SHA_INVALID
 
-  # Configuracion local NO secreta y persistencia adicional.
-  mapfile -t cfg_paths < <(
-    for p in \
-      config/instance.json config/instance.local.json brand.config.json frontend/public/brand.config.json \
-      backend/uploads frontend/public/uploads; do
-      [[ -e "$APP_DIR/$p" ]] && printf '%s\n' "$p"
-    done
-  )
+  BKP_STAGE="CONFIG_ARCHIVE"
+  for p in \
+    config/instance.json config/instance.local.json brand.config.json frontend/public/brand.config.json \
+    backend/uploads frontend/public/uploads; do
+    [[ -e "$APP_DIR/$p" ]] && cfg_paths+=("$p")
+  done
   if [[ ${#cfg_paths[@]} -gt 0 ]]; then
     config_asset="client-config-$stamp.tar.gz"
     config_file="$work/$config_asset"
-    tar -czf "$config_file" -C "$APP_DIR" "${cfg_paths[@]}"
-    config_sha="$(sha256sum "$config_file" | awk '{print $1}')"
+    archive_paths "$config_file" "${cfg_paths[@]}" || fail_stage CONFIG_ARCHIVE_FAILED
+    config_sha="$(sha256sum "$config_file" | awk '{print $1}')" || fail_stage CONFIG_SHA_FAILED
   fi
 
-  if [[ -d "$APP_DIR/uploads" && -n "$(find "$APP_DIR/uploads" -mindepth 1 -maxdepth 1 2>/dev/null | head -n1)" ]]; then
+  BKP_STAGE="UPLOADS_ARCHIVE"
+  if [[ -d "$APP_DIR/uploads" && -n "$(find "$APP_DIR/uploads" -mindepth 1 -maxdepth 1 -print -quit 2>/dev/null)" ]]; then
     uploads_asset="uploads-$stamp.tar.gz"
     uploads_file="$work/$uploads_asset"
-    tar -czf "$uploads_file" -C "$APP_DIR/uploads" .
-    uploads_sha="$(sha256sum "$uploads_file" | awk '{print $1}')"
+    if ! tar -czf "$uploads_file" -C "$APP_DIR/uploads" . 2>/dev/null; then
+      sleep 1
+      tar -czf "$uploads_file" -C "$APP_DIR/uploads" . 2>/dev/null || fail_stage UPLOADS_ARCHIVE_FAILED
+    fi
+    uploads_sha="$(sha256sum "$uploads_file" | awk '{print $1}')" || fail_stage UPLOADS_SHA_FAILED
   fi
 
+  BKP_STAGE="MANIFEST_BUILD"
   manifest="$work/backup-manifest.json"
   jq -n \
     --arg client "$CLIENT_NAME" \
@@ -365,6 +306,7 @@ backup(){
     --arg appSha "$app_sha" \
     --arg dbName "$DB_NAME" \
     --arg dbUser "$DB_USER" \
+    --arg dbSchema "$DB_SCHEMA" \
     --arg dbAsset "$db_asset" \
     --arg dbSha "$db_sha" \
     --arg cfgAsset "$config_asset" \
@@ -373,71 +315,78 @@ backup(){
     --arg upSha "$uploads_sha" \
     '{format:1,client:$client,createdAt:$created,
       app:{owner:$owner,releaseRepo:$repo,tag:$appTag,asset:$appAsset,sha256:$appSha},
-      database:{name:$dbName,schema:"shiny",runtimeUser:$dbUser,asset:$dbAsset,sha256:$dbSha}}
+      database:{name:$dbName,schema:$dbSchema,runtimeUser:$dbUser,asset:$dbAsset,sha256:$dbSha}}
      + (if $cfgAsset!="" then {config:{asset:$cfgAsset,sha256:$cfgSha}} else {} end)
-     + (if $upAsset!="" then {uploads:{asset:$upAsset,sha256:$upSha}} else {} end)' > "$manifest"
+     + (if $upAsset!="" then {uploads:{asset:$upAsset,sha256:$upSha}} else {} end)' > "$manifest" \
+    || fail_stage MANIFEST_BUILD_FAILED
+  jq -e '.format==1 and .app.sha256 and .database.sha256' "$manifest" >/dev/null 2>&1 \
+    || fail_stage MANIFEST_VALIDATION_FAILED
 
-  # Crear backup-* como prerelease para NO desplazar releases/latest de la app.
+  BKP_STAGE="RELEASE_CREATE"
   release_payload="$(jq -cn --arg tag "$tag" --arg name "$CLIENT_NAME backup $stamp" \
-    '{tag_name:$tag,name:$name,body:"Respaldo automatico de continuidad.",draft:false,prerelease:true}')"
-  release_created_file="$work/release-created.json"
-  BACKUP_RELEASE_HTTP=""
+    '{tag_name:$tag,name:$name,body:"Respaldo automatico de continuidad.",draft:false,prerelease:true}')" \
+    || fail_stage RELEASE_PAYLOAD_FAILED
+  release_body="$work/release-created.json"
+  release_code="$(gh_json POST "$API/releases" "$release_body" "$release_payload")"
+  case "$release_code" in
+    201) ;;
+    401|403) fail_stage RELEASE_AUTH_WRITE_REQUIRED ;;
+    422) fail_stage RELEASE_VALIDATION_FAILED ;;
+    *) fail_stage RELEASE_CREATE_HTTP_FAILED ;;
+  esac
 
-  # Intento REAL con la credencial que YA esta instalada.
-  if ! create_backup_release_r138 "$release_payload" "$release_created_file"; then
-    first_http="$BACKUP_RELEASE_HTTP"
+  release_id="$(jq -r '.id // empty' "$release_body" 2>/dev/null || true)"
+  upload_url="$(jq -r '.upload_url // empty' "$release_body" 2>/dev/null || true)"
+  [[ "$release_id" =~ ^[0-9]+$ ]] || fail_stage RELEASE_ID_MISSING
+  [[ -n "$upload_url" && "$upload_url" != "null" ]] || {
+    delete_remote_release "$release_id" "$tag"
+    fail_stage RELEASE_UPLOAD_URL_MISSING
+  }
+  upload_base="${upload_url%%\{*}"
 
-    # Solo 401/403 justifican migrar credencial. Otros errores se reportan directamente.
-    if [[ "$first_http" == "401" || "$first_http" == "403" ]]; then
-      migrate_backup_credential_r138
-      BACKUP_RELEASE_HTTP=""
-      if ! create_backup_release_r138 "$release_payload" "$release_created_file"; then
-        fail BACKUP_RELEASE_CREATE_FAILED_AFTER_MIGRATION
-      fi
-    else
-      fail BACKUP_RELEASE_CREATE_FAILED
+  BKP_STAGE="UPLOAD_DATABASE"
+  if ! upload_asset "$upload_base" "$db_file"; then
+    delete_remote_release "$release_id" "$tag"
+    fail_stage UPLOAD_DATABASE_FAILED
+  fi
+
+  if [[ -n "$config_file" ]]; then
+    BKP_STAGE="UPLOAD_CONFIG"
+    if ! upload_asset "$upload_base" "$config_file"; then
+      delete_remote_release "$release_id" "$tag"
+      fail_stage UPLOAD_CONFIG_FAILED
     fi
   fi
 
-  release_created="$(cat "$release_created_file")"
-
-  upload_url="$(printf '%s' "$release_created" | jq -r '.upload_url // empty')"
-  [[ -n "$upload_url" ]] || fail GITHUB_UPLOAD_URL_MISSING
-  upload_base="${upload_url%%\{*}"
-
-  release_id="$(printf '%s' "$release_created" | jq -r '.id // empty')"
-  [[ "$release_id" =~ ^[0-9]+$ ]] || fail GITHUB_RELEASE_ID_MISSING
-
-  # Datos primero; manifest AL FINAL. Si algo falla, borrar prerelease parcial.
-  if ! upload_asset "$upload_base" "$db_file"; then
-    api -X DELETE "$API/releases/$release_id" >/dev/null 2>&1 || true
-    fail BACKUP_UPLOAD_DATABASE_FAILED
+  if [[ -n "$uploads_file" ]]; then
+    BKP_STAGE="UPLOAD_FILES"
+    if ! upload_asset "$upload_base" "$uploads_file"; then
+      delete_remote_release "$release_id" "$tag"
+      fail_stage UPLOAD_FILES_FAILED
+    fi
   fi
-  if [[ -n "$config_file" ]] && ! upload_asset "$upload_base" "$config_file"; then
-    api -X DELETE "$API/releases/$release_id" >/dev/null 2>&1 || true
-    fail BACKUP_UPLOAD_CONFIG_FAILED
-  fi
-  if [[ -n "$uploads_file" ]] && ! upload_asset "$upload_base" "$uploads_file"; then
-    api -X DELETE "$API/releases/$release_id" >/dev/null 2>&1 || true
-    fail BACKUP_UPLOAD_FILES_FAILED
-  fi
+
+  BKP_STAGE="UPLOAD_MANIFEST"
   if ! upload_asset "$upload_base" "$manifest"; then
-    api -X DELETE "$API/releases/$release_id" >/dev/null 2>&1 || true
-    fail BACKUP_UPLOAD_MANIFEST_FAILED
+    delete_remote_release "$release_id" "$tag"
+    fail_stage UPLOAD_MANIFEST_FAILED
   fi
 
-  cp -f "$manifest" "$BACKUPS/$tag-backup-manifest.json"
-  jq -cn --arg tag "$tag" --arg created "$(date -Iseconds)" --arg repo "$GITHUB_OWNER/$GITHUB_REPO" \
-    '{tag:$tag,createdAt:$created,repo:$repo}' > "$LAST_JSON"
-  chmod 600 "$LAST_JSON"
+  BKP_STAGE="FINALIZE"
+  cp -f "$manifest" "$BACKUPS/$tag-backup-manifest.json" || fail_stage LOCAL_MANIFEST_COPY_FAILED
+  jq -cn --arg tag "$tag" --arg created "$(date -Iseconds)" \
+    '{tag:$tag,createdAt:$created}' > "$LAST_JSON.tmp" || fail_stage LAST_STATE_BUILD_FAILED
+  chmod 0600 "$LAST_JSON.tmp" || fail_stage LAST_STATE_CHMOD_FAILED
+  mv -f "$LAST_JSON.tmp" "$LAST_JSON" || fail_stage LAST_STATE_SAVE_FAILED
+  rm -f "$LAST_ERROR" 2>/dev/null || true
 
+  BKP_STAGE="DONE"
   echo "[OK] BACKUP=$tag"
-
   echo "[OK] DATABASE=$DB_NAME"
 }
 
 case "${1:-status}" in
   status) status ;;
   backup) backup ;;
-  *) fail 'USAGE status|backup' ;;
+  *) fail USAGE_STATUS_OR_BACKUP ;;
 esac

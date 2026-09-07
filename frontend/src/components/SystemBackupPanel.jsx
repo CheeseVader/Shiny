@@ -1,4 +1,4 @@
-/* SHINY_BACKUP_ONE_CLICK_UI_R138_PRIVATE */
+/* SHINY_BACKUP_UI_CLEAN_R1 */
 import React,{useEffect,useState} from 'react';
 import {api} from '../services/api.js';
 import '../system_backup_r130.css';
@@ -20,12 +20,6 @@ const TXT={
   backupFail:`No fue posible crear el respaldo.`
 };
 
-function safeErrorMessage(error,fallback){
-  const base=error?.message||fallback;
-  const code=error?.data?.diagnosticCode||error?.response?.data?.diagnosticCode||'';
-  return code?`${base} (${code})`:base;
-}
-
 export default function SystemBackupPanel(){
   const [st,setSt]=useState(null);
   const [busy,setBusy]=useState(false);
@@ -36,7 +30,7 @@ export default function SystemBackupPanel(){
       const r=await api('/api/v1/system-backup/status');
       setSt(r.data||null);
     }catch(e){
-      setMsg(safeErrorMessage(e,TXT.statusFail));
+      setMsg(e?.message||TXT.statusFail);
     }
   }
 
@@ -50,13 +44,13 @@ export default function SystemBackupPanel(){
       setMsg(r.message||TXT.backupOk);
       await status();
     }catch(e){
-      setMsg(safeErrorMessage(e,TXT.backupFail));
+      setMsg(e?.message||TXT.backupFail);
     }finally{
       setBusy(false);
     }
   }
 
-  return <section className="content-card bk130" data-backup-ui="1.0.38">
+  return <section className="content-card bk130" data-backup-engine="clean-r1" data-backup-version="0.1.2">
     <div className="section-head">
       <div>
         <div className="eyebrow">{TXT.eyebrow}</div>
