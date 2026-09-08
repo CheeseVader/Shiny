@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 # SHINY_BACKUP_ENGINE_CANONICAL_R5_EXACT
+# SHINY_BACKUP_R5_VERIFY_OK_FIX_1.0.58
 # Unico contrato publico: status | backup
 # Backup compatible con RESTAURAR R2/R3:
 # backup-manifest.json con format:1 y esquema obligatorio completo.
@@ -379,7 +380,7 @@ PYVERIFY
     fail DUMP_CONTENT_MISMATCH
   fi
   verify_cleanup
-  ok "Dump certificado: TODAS las tablas shiny conservan el mismo numero de filas."
+  printf '[OK] Dump certificado: TODAS las tablas shiny conservan el mismo numero de filas.\n'
 
   BKP_STAGE="CONFIG_ARCHIVE"
   for p in \
