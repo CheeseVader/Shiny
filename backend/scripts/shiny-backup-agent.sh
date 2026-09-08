@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 # SHINY_BACKUP_ENGINE_CANONICAL_R5_EXACT
-# SHINY_BACKUP_R5_FORCE_DELIVERY_1.0.56
 # Unico contrato publico: status | backup
 # Backup compatible con RESTAURAR R2/R3:
 # backup-manifest.json con format:1 y esquema obligatorio completo.
@@ -326,7 +325,9 @@ PYCOUNTS
   db_file="$work/$db_asset"
   runuser -u postgres -- pg_dump -Fc --no-owner --no-privileges \
     -d "$DB_NAME" -f "$db_file" || fail PG_DUMP_FAILED
-  chown root:root "$db_file"
+  # El dump se crea como postgres y la certificacion tambien se ejecuta como postgres.
+  # No cambiarlo a root:root antes de VERIFY_DUMP_BY_RESTORE: eso provoca Permission denied.
+  chown postgres:postgres "$db_file"
   chmod 0600 "$db_file"
   db_sha="$(sha256sum "$db_file" | awk '{print tolower($1)}')"
   [[ "$db_sha" =~ ^[0-9a-f]{64}$ ]] || fail DB_SHA_INVALID
