@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+/* SHINY_BACKUP_R5_FORCE_DELIVERY_1.0.56 */
 /* SHINY_BACKUP_RUNTIME_REPAIR_R5_EXACT
  * Instala SIEMPRE el mismo agente fuente certificado.
  * Corrige propietarios/permisos y verifica copia exacta.

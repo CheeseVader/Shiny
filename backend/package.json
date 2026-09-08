@@ -40,5 +40,5 @@
     "shinyBackupWeeklySchedule":  "Sun 03:00 local",
     "shinyBackupStorageR32Version":  "1.0.52",
     "shinyBackupEngine":  "R5-EXACT",
-    "shinyBackupRuntimeVersion":  "1.0.55"
+    "shinyBackupRuntimeVersion":  "1.0.56"
 }

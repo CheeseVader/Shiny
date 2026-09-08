@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 # SHINY_BACKUP_ENGINE_CANONICAL_R5_EXACT
+# SHINY_BACKUP_R5_FORCE_DELIVERY_1.0.56
 # Unico contrato publico: status | backup
 # Backup compatible con RESTAURAR R2/R3:
 # backup-manifest.json con format:1 y esquema obligatorio completo.
