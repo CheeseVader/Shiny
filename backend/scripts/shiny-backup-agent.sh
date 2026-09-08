@@ -235,7 +235,19 @@ archive_paths(){
   return 1
 }
 
+# SHINY_BACKUP_STORAGE_SELFHEAL_R32
+prepare_backup_storage_r32(){
+  local storage_root storage_backups storage_tmp
+  storage_root="${ROOT:-${STATE_ROOT:-/var/lib/shiny-backup}}"
+  storage_backups="${BACKUPS:-${LOCAL_DIR:-${storage_root}/backups}}"
+  storage_tmp="${TMP:-${TMP_DIR:-${storage_root}/tmp}}"
+
+  install -d -o root     -g postgres -m 0710 "$storage_root" || return 1
+  install -d -o root     -g root     -m 0700 "$storage_backups" || return 1
+  install -d -o postgres -g postgres -m 0700 "$storage_tmp" || return 1
+}
 backup(){
+  prepare_backup_storage_r32 || { echo "[ERROR] BACKUP_STORAGE_PREP_FAILED" >&2; return 1; }
   local stamp tag work db_asset db_file db_sha
   local app_tag app_asset app_manifest release_json app_manifest_url app_sha
   local config_asset='' config_file='' config_sha='' uploads_asset='' uploads_file='' uploads_sha=''
