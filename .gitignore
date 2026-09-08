@@ -267,3 +267,40 @@ Thumbs.db
 *.ps1.old
 # <<< SHINY OPERATIONAL POWERSHELL R1 <<<
 
+
+# ============================================================
+# SHINY - artefactos locales / temporales / secretos
+# ============================================================
+
+# Dependencias
+node_modules/
+
+# Salidas generadas
+runtime-logs/
+release-output/
+*.log
+*.tmp
+*.temp
+
+# Backups / prepublish
+.shiny-*-backup-*
+.shiny-*-prepublish-*
+*.bak
+*.bak-*
+*.backup
+*.backup-*
+
+# Entorno local / secretos
+.env
+.env.local
+.env.production
+.env.development
+.env.*.local
+updater.env
+
+# SO / editor
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/
+.idea/
