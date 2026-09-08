@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
-# SHINY_BACKUP_ENGINE_CANONICAL_R4
+# SHINY_BACKUP_ENGINE_CANONICAL_R5_EXACT
 # Unico contrato publico: status | backup
 # Backup compatible con RESTAURAR R2/R3:
 # backup-manifest.json con format:1 y esquema obligatorio completo.
@@ -148,7 +148,7 @@ gh_json(){
     -H 'Accept: application/vnd.github+json'
     -H "Authorization: Bearer $GITHUB_TOKEN"
     -H 'X-GitHub-Api-Version: 2022-11-28'
-    -H 'User-Agent: Shiny-Backup-R4')
+    -H 'User-Agent: Shiny-Backup-R5')
   if [[ -n "$body" ]]; then
     args+=(-H 'Content-Type: application/json' --data "$body")
   fi
@@ -169,7 +169,7 @@ download_asset(){
     -H 'Accept: application/octet-stream' \
     -H "Authorization: Bearer $GITHUB_TOKEN" \
     -H 'X-GitHub-Api-Version: 2022-11-28' \
-    -H 'User-Agent: Shiny-Backup-R4' "$url" || true)"
+    -H 'User-Agent: Shiny-Backup-R5' "$url" || true)"
   [[ "$code" == "200" ]]
 }
 
@@ -183,7 +183,7 @@ upload_asset(){
     -H "Authorization: Bearer $GITHUB_TOKEN" \
     -H 'X-GitHub-Api-Version: 2022-11-28' \
     -H 'Content-Type: application/octet-stream' \
-    -H 'User-Agent: Shiny-Backup-R4' \
+    -H 'User-Agent: Shiny-Backup-R5' \
     --data-binary "@$file" "${upload_base}?name=${encoded}" || true)"
   rm -f "$body"
   [[ "$code" == "201" ]]
@@ -196,14 +196,14 @@ delete_release(){
     -H 'Accept: application/vnd.github+json' \
     -H "Authorization: Bearer $GITHUB_TOKEN" \
     -H 'X-GitHub-Api-Version: 2022-11-28' \
-    -H 'User-Agent: Shiny-Backup-R4' \
+    -H 'User-Agent: Shiny-Backup-R5' \
     "$API/releases/$id" >/dev/null 2>&1 || true
   if [[ -n "$tag" ]]; then
     curl -fsS -X DELETE \
       -H 'Accept: application/vnd.github+json' \
       -H "Authorization: Bearer $GITHUB_TOKEN" \
       -H 'X-GitHub-Api-Version: 2022-11-28' \
-      -H 'User-Agent: Shiny-Backup-R4' \
+      -H 'User-Agent: Shiny-Backup-R5' \
       "$API/git/refs/tags/$tag" >/dev/null 2>&1 || true
   fi
 }
@@ -215,7 +215,7 @@ status(){
     --arg schema "$DB_SCHEMA" \
     --arg version "$VERSION" \
     --arg latest "$(jq -r '.tag // empty' "$LAST_JSON" 2>/dev/null || true)" \
-    '{configured:true,engine:"R4",format:1,db:$db,dbUser:$user,schema:$schema,version:$version,latestBackup:$latest}'
+    '{configured:true,engine:"R5-EXACT",format:1,db:$db,dbUser:$user,schema:$schema,version:$version,latestBackup:$latest}'
 }
 
 backup(){
@@ -255,7 +255,7 @@ backup(){
   work="$(mktemp -d "$TMP/create-XXXXXX")"
   chown postgres:postgres "$work"
   chmod 0700 "$work"
-  trap 'rm -rf "$work" 2>/dev/null || true' EXIT
+  trap '[[ -n "${work:-}" ]] && rm -rf "$work" 2>/dev/null || true' EXIT
 
   BKP_STAGE="APP_RELEASE"
   app_tag="v$VERSION"
@@ -282,6 +282,44 @@ backup(){
   fi
   [[ "$app_sha" =~ ^[0-9a-f]{64}$ ]] || fail APP_SHA_INVALID
 
+  BKP_STAGE="ACTIVE_DATABASE_IDENTITY"
+  # RESTAURACION != CLONACION: el backup debe salir de la MISMA BD que usa el backend.
+  # Si .env declara otra BD, se aborta antes de producir un respaldo engañoso.
+  if [[ -f "$APP_DIR/backend/.env" ]]; then
+    runtime_db="$(sed -nE 's/^[[:space:]]*(PGDATABASE|DB_NAME)[[:space:]]*=[[:space:]]*["'\'']?([^"'\'']+)["'\'']?[[:space:]]*$/\2/p' "$APP_DIR/backend/.env" | tail -n1 || true)"
+    if [[ -n "${runtime_db:-}" && "$runtime_db" != "$DB_NAME" ]]; then
+      fail "ACTIVE_DB_MISMATCH_runtime_${runtime_db}_backup_${DB_NAME}"
+    fi
+  fi
+  runuser -u postgres -- psql -X -v ON_ERROR_STOP=1 -d "$DB_NAME" -tAc \
+    "SELECT current_database();" | grep -qx "$DB_NAME" || fail ACTIVE_DB_NOT_REACHABLE
+
+  BKP_STAGE="SOURCE_TABLE_COUNTS"
+  source_counts="$work/source-table-counts.json"
+  runuser -u postgres -- psql -X -v ON_ERROR_STOP=1 -d "$DB_NAME" -At <<'SQLCOUNTS' > "$work/source-counts.tsv"
+SELECT format('%I.%I', schemaname, tablename) || E'\t' ||
+       (xpath('/row/c/text()', query_to_xml(
+          format('SELECT count(*) AS c FROM %I.%I', schemaname, tablename),
+          false, true, ''
+        )))[1]::text
+FROM pg_tables
+WHERE schemaname='shiny'
+ORDER BY tablename;
+SQLCOUNTS
+  python3 - "$work/source-counts.tsv" "$source_counts" <<'PYCOUNTS'
+import json,sys
+src,out=sys.argv[1:3]
+d={}
+for line in open(src,encoding='utf-8'):
+    line=line.rstrip('\n')
+    if not line: continue
+    k,v=line.split('\t',1)
+    v=v.replace('<c>','').replace('</c>','').strip()
+    d[k]=int(v)
+json.dump(d,open(out,'w',encoding='utf-8'),sort_keys=True,separators=(',',':'))
+PYCOUNTS
+  [[ -s "$source_counts" ]] || fail SOURCE_TABLE_COUNTS_EMPTY
+
   BKP_STAGE="DATABASE_DUMP"
   db_asset="${DB_NAME}-${stamp}.dump"
   db_file="$work/$db_asset"
@@ -291,6 +329,55 @@ backup(){
   chmod 0600 "$db_file"
   db_sha="$(sha256sum "$db_file" | awk '{print tolower($1)}')"
   [[ "$db_sha" =~ ^[0-9a-f]{64}$ ]] || fail DB_SHA_INVALID
+
+  BKP_STAGE="VERIFY_DUMP_BY_RESTORE"
+  # Certificación fuerte: restaurar el dump en una BD temporal y comparar
+  # TODAS las tablas del schema shiny por número de filas.
+  verify_db="shiny_verify_${stamp}_${RANDOM}"
+  verify_db="${verify_db//-/_}"
+  runuser -u postgres -- createdb "$verify_db" || fail VERIFY_DB_CREATE_FAILED
+  verify_cleanup(){
+    runuser -u postgres -- psql -X -d postgres -v ON_ERROR_STOP=1 -c \
+      "SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname='${verify_db}' AND pid<>pg_backend_pid();" >/dev/null 2>&1 || true
+    runuser -u postgres -- dropdb --if-exists "$verify_db" >/dev/null 2>&1 || true
+  }
+  if ! runuser -u postgres -- pg_restore --no-owner -d "$verify_db" "$db_file"; then
+    verify_cleanup
+    fail VERIFY_PG_RESTORE_FAILED
+  fi
+
+  runuser -u postgres -- psql -X -v ON_ERROR_STOP=1 -d "$verify_db" -At <<'SQLVERIFY' > "$work/restored-counts.tsv"
+SELECT format('%I.%I', schemaname, tablename) || E'\t' ||
+       (xpath('/row/c/text()', query_to_xml(
+          format('SELECT count(*) AS c FROM %I.%I', schemaname, tablename),
+          false, true, ''
+        )))[1]::text
+FROM pg_tables
+WHERE schemaname='shiny'
+ORDER BY tablename;
+SQLVERIFY
+  restored_counts="$work/restored-table-counts.json"
+  python3 - "$work/restored-counts.tsv" "$restored_counts" <<'PYVERIFY'
+import json,sys
+src,out=sys.argv[1:3]
+d={}
+for line in open(src,encoding='utf-8'):
+    line=line.rstrip('\n')
+    if not line: continue
+    k,v=line.split('\t',1)
+    v=v.replace('<c>','').replace('</c>','').strip()
+    d[k]=int(v)
+json.dump(d,open(out,'w',encoding='utf-8'),sort_keys=True,separators=(',',':'))
+PYVERIFY
+
+  if ! cmp -s "$source_counts" "$restored_counts"; then
+    echo "SOURCE_COUNTS=$(cat "$source_counts")" >&2
+    echo "RESTORED_COUNTS=$(cat "$restored_counts")" >&2
+    verify_cleanup
+    fail DUMP_CONTENT_MISMATCH
+  fi
+  verify_cleanup
+  ok "Dump certificado: TODAS las tablas shiny conservan el mismo numero de filas."
 
   BKP_STAGE="CONFIG_ARCHIVE"
   for p in \
@@ -330,6 +417,7 @@ backup(){
     --arg dbUser "$DB_USER" \
     --arg dbAsset "$db_asset" \
     --arg dbSha "$db_sha" \
+    --slurpfile tableCounts "$source_counts" \
     --arg cfgAsset "$config_asset" \
     --arg cfgSha "$config_sha" \
     --arg upAsset "$uploads_asset" \
@@ -350,7 +438,9 @@ backup(){
         schema:$dbSchema,
         runtimeUser:$dbUser,
         asset:$dbAsset,
-        sha256:$dbSha
+        sha256:$dbSha,
+        verifiedExact:true,
+        tableCounts:$tableCounts[0]
       }
     }
     + (if $cfgAsset!="" then {config:{asset:$cfgAsset,sha256:$cfgSha}} else {} end)
@@ -370,7 +460,10 @@ backup(){
     ((.database.schema // "") == "shiny") and
     ((.database.runtimeUser // "") != "") and
     ((.database.asset // "") != "") and
-    ((.database.sha256 // "") | test("^[A-Fa-f0-9]{64}$"))
+    ((.database.sha256 // "") | test("^[A-Fa-f0-9]{64}$")) and
+    (.database.verifiedExact == true) and
+    ((.database.tableCounts // {}) | type=="object") and
+    ((.database.tableCounts // {}) | length > 0)
   ' "$manifest" >/dev/null || fail BACKUP_MANIFEST_FORMAT1_INVALID
 
   # Validacion adicional: los nombres del manifest deben corresponder a archivos reales.
@@ -386,7 +479,7 @@ backup(){
 
   BKP_STAGE="RELEASE_CREATE"
   release_payload="$(jq -cn --arg tag "$tag" --arg name "$CLIENT_NAME backup $stamp" \
-    '{tag_name:$tag,name:$name,body:"Respaldo automatico Shiny R4 format:1.",draft:false,prerelease:true}')"
+    '{tag_name:$tag,name:$name,body:"Respaldo exacto Shiny R5 format:1 + verificacion de contenido.",draft:false,prerelease:true}')"
   release_body="$work/release-created.json"
   release_code="$(gh_json POST "$API/releases" "$release_body" "$release_payload")"
   [[ "$release_code" == "201" ]] || fail RELEASE_CREATE_FAILED
@@ -450,7 +543,10 @@ backup(){
     ((.database.schema // "") == "shiny") and
     ((.database.runtimeUser // "") != "") and
     ((.database.asset // "") != "") and
-    ((.database.sha256 // "") | test("^[A-Fa-f0-9]{64}$"))
+    ((.database.sha256 // "") | test("^[A-Fa-f0-9]{64}$")) and
+    (.database.verifiedExact == true) and
+    ((.database.tableCounts // {}) | type=="object") and
+    ((.database.tableCounts // {}) | length > 0)
   ' "$published" >/dev/null || {
     delete_release "$release_id" "$tag"
     fail PUBLISHED_MANIFEST_INVALID

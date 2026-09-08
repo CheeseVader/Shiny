@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-/* SHINY_BACKUP_RUNTIME_REPAIR_R4
+/* SHINY_BACKUP_RUNTIME_REPAIR_R5_EXACT
  * Instala SIEMPRE el mismo agente fuente certificado.
  * Corrige propietarios/permisos y verifica copia exacta.
  */
@@ -30,7 +30,7 @@ const sudoers='/etc/sudoers.d/shiny-backup';
 
 if(!fs.existsSync(src)) die(`AGENT_SOURCE_MISSING ${src}`);
 let text=fs.readFileSync(src,'utf8').replace(/^\uFEFF/,'').replace(/\r\n?/g,'\n');
-if(!text.includes('SHINY_BACKUP_ENGINE_CANONICAL_R4')) die('AGENT_SOURCE_NOT_R4');
+if(!text.includes('SHINY_BACKUP_ENGINE_CANONICAL_R5_EXACT')) die('AGENT_SOURCE_NOT_R4');
 if(!text.includes('format:1')) die('AGENT_SOURCE_FORMAT1_MISSING');
 fs.writeFileSync(src,text,{encoding:'utf8',mode:0o755});
 
