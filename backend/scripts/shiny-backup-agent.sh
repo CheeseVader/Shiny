@@ -346,7 +346,21 @@ backup(){
       app:{owner:$owner,releaseRepo:$repo,tag:$appTag,asset:$appAsset,sha256:$appSha},
       database:{name:$dbName,schema:$dbSchema,runtimeUser:$dbUser,asset:$dbAsset,sha256:$dbSha}}
      + (if $cfgAsset!="" then {config:{asset:$cfgAsset,sha256:$cfgSha}} else {} end)
-     + (if $upAsset!="" then {uploads:{asset:$upAsset,sha256:$upSha}} else {} end)' > "$manifest" \
+     + (if $upAsset!="" then {uploads:{asset:$upAsset,sha256:$upSha}} else {} end)' > "$manifest"
+  # SHINY_BACKUP_MANIFEST_FORMAT1_GUARD_R151
+  # Nunca publicar un backup que el restaurador R2.1 no pueda consumir.
+  jq -e '
+    (.format == 1) and
+    ((.client // "") != "") and
+    ((.app.owner // "") != "") and
+    ((.app.releaseRepo // "") != "") and
+    ((.app.tag // "") != "") and
+    ((.app.asset // "") != "") and
+    ((.app.sha256 // "") != "") and
+    ((.database.name // "") != "") and
+    ((.database.asset // "") != "") and
+    ((.database.sha256 // "") != "")
+  ' "$manifest" >/dev/null || fail BACKUP_MANIFEST_FORMAT1_INVALID \
     || fail_stage MANIFEST_BUILD_FAILED
   jq -e '.format==1 and .app.sha256 and .database.sha256' "$manifest" >/dev/null 2>&1 \
     || fail_stage MANIFEST_VALIDATION_FAILED

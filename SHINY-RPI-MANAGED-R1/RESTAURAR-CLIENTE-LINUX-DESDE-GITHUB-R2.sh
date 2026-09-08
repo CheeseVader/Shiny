@@ -169,8 +169,10 @@ if ! download_asset "$BACKUP_JSON" "backup-manifest.json" "$MANIFEST"; then
 fi
 
 FORMAT="$(jq -r '.format // empty' "$MANIFEST")"
-[[ "$FORMAT" == "1" ]] || die "Formato de backup no soportado por R2.1: $FORMAT"
-ok "Formato one-click detectado. No requiere clave privada de cifrado."
+if [[ "$FORMAT" != "1" ]]; then
+  die "Formato de backup no soportado por R2.1: ${FORMAT:-AUSENTE}. El backup seleccionado no fue generado por el agente format:1."
+fi
+ok "Formato one-click format:1 detectado. No requiere clave privada de cifrado."
 
 M_CLIENT="$(jq -r '.client // empty' "$MANIFEST")"
 [[ "$M_CLIENT" == "$CLIENT_NAME" ]] || die "Backup de otro cliente: $M_CLIENT."

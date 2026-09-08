@@ -1,3 +1,4 @@
+// SHINY_BACKUP_REPROVISION_R151 - reinstala agente format:1 via postinstall
 'use strict';
 
 const { spawnSync } = require('node:child_process');

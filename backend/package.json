@@ -1,4 +1,5 @@
 {
+  "shinyBackupManifestFormat": 1,
   "name": "tcg-store-api",
   "version": "1.0.0",
   "private": true,
